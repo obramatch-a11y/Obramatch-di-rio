@@ -14,52 +14,11 @@ import AgentesMatchModal from './components/AgentesMatchModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { HardHat } from 'lucide-react';
 
-function ObraMatchDebugBanner() {
-  return (
-    <div 
-      className="fixed top-0 left-0 right-0 z-[999999] bg-amber-500 text-blue-950 min-h-[48px] p-4 flex flex-col items-center justify-center gap-2 shadow-xl font-bold"
-      id="obramatch-debug-banner"
-    >
-      <div className="text-center text-sm md:text-base tracking-wider uppercase">
-        OBRAMATCH VISÍVEL - ECOSSISTEMA OBRAMATCH
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-3 mt-1">
-        <a 
-          href="https://obramatch.com.br/" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="bg-blue-950 hover:bg-blue-900 text-amber-400 px-4 py-1.5 rounded-xl text-xs transition-all shadow-md cursor-pointer"
-        >
-          ObraMatch
-        </a>
-        <a 
-          href="https://obramatchof.blogspot.com/" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="bg-blue-950 hover:bg-blue-900 text-amber-400 px-4 py-1.5 rounded-xl text-xs transition-all shadow-md cursor-pointer"
-        >
-          Blog ObraMatch
-        </a>
-        <a 
-          href="https://agentes.obramatch.com.br/" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="bg-blue-950 hover:bg-blue-900 text-amber-400 px-4 py-1.5 rounded-xl text-xs transition-all shadow-md cursor-pointer"
-        >
-          Agentes Match
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function AppContent() {
   const { user, loading, currentView, showAgentesModal, closeAgentesModal, selectedAgentId } = useApp();
 
   return (
-    <div className="pt-[110px] md:pt-[96px] min-h-screen bg-slate-950 flex flex-col">
-      <ObraMatchDebugBanner />
-
+    <div className="min-h-screen bg-slate-950 flex flex-col">
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <motion.div

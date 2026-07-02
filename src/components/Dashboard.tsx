@@ -29,6 +29,7 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import AdSenseBlock from './AdSenseBlock';
 import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
+import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
 
 const ECOSYSTEM_SLIDES = [
   {
@@ -281,41 +282,7 @@ export default function Dashboard() {
         </AnimatePresence>
 
         {/* Ecossistema ObraMatch required by step 2 */}
-        <div className="mb-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="dashboard-ecosystem-top">
-          <div>
-            <h2 className="text-xl font-extrabold text-white">Ecossistema ObraMatch</h2>
-            <p className="text-xs text-slate-400 mt-1">
-              Contrate profissionais, leia conteúdos técnicos e utilize agentes especializados do ecossistema ObraMatch.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <ObraMatchEcosystemCard
-              tipo="site"
-              titulo="Plataforma ObraMatch"
-              descricao="Encontre fornecedores e profissionais avaliados para sua obra com total segurança, sem intermediários e com histórico de obras visível."
-              textoBotao="Visitar Plataforma"
-              url="https://obramatch.com.br/"
-              variante="card"
-            />
-            <ObraMatchEcosystemCard
-              tipo="blog"
-              titulo="Blog ObraMatch"
-              descricao="Aprenda sobre engenharia, normas reguladoras, impermeabilização, cura de concreto e as melhores práticas no Blog Técnico Oficial."
-              textoBotao="Acessar Blog"
-              url="https://obramatchof.blogspot.com/"
-              variante="card"
-            />
-            <ObraMatchEcosystemCard
-              tipo="agentes"
-              titulo="Agentes Match"
-              descricao="Use nossos agentes especialistas de inteligência artificial para tirar dúvidas rápidas sobre normas ABNT e suporte técnico de campo."
-              textoBotao="Consultar Agentes"
-              url="https://agentes.obramatch.com.br/"
-              variante="card"
-            />
-          </div>
-        </div>
+        <ObraMatchEcosystemSection variant="dashboard" className="mb-8" />
 
         {/* Dual-column Grid Layout for Obras & ObraMatch Ecosystem */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

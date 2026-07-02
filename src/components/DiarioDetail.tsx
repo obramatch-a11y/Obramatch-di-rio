@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { motion } from 'motion/react';
 import AdSenseBlock from './AdSenseBlock';
 import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
+import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
 import { 
   ArrowLeft, 
   Printer, 
@@ -295,39 +296,7 @@ export default function DiarioDetail() {
 
           {/* Custom Promotional section required by step 3 & 7 */}
           <div className="mt-8 pt-8 border-t border-slate-900/50 space-y-6" id="diario-detail-ecosystem-footer">
-            <div className="bg-slate-900/50 border border-slate-850 rounded-2xl p-6 text-center space-y-4">
-              <h4 className="text-sm font-bold text-slate-300">
-                Conheça mais soluções no ecossistema ObraMatch.
-              </h4>
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold">
-                <a
-                  href="https://obramatch.com.br/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
-                >
-                  ObraMatch
-                </a>
-                <span className="text-slate-600">•</span>
-                <a
-                  href="https://obramatchof.blogspot.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
-                >
-                  Blog ObraMatch
-                </a>
-                <span className="text-slate-600">•</span>
-                <a
-                  href="https://agentes.obramatch.com.br/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
-                >
-                  Agentes Match
-                </a>
-              </div>
-            </div>
+            <ObraMatchEcosystemSection variant="footer" className="mt-0" />
             
             <AdSenseBlock className="w-full" />
           </div>

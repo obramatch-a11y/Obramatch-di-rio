@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
+import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
@@ -605,34 +606,7 @@ export default function DiarioForm() {
         </div>
 
         {/* Support Card - Step 3 requirement (Apoio técnico ObraMatch) */}
-        <div className="mt-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="diario-form-support-card">
-          <div>
-            <h3 className="text-lg font-extrabold text-white">Apoio técnico ObraMatch</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Precisa de orientação técnica? Consulte os Agentes Match ou leia conteúdos do Blog ObraMatch.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a
-              href="https://agentes.obramatch.com.br/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/10"
-            >
-              <Bot className="w-4 h-4" />
-              <span>Agentes Match</span>
-            </a>
-            <a
-              href="https://obramatchof.blogspot.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4 text-amber-500" />
-              <span>Blog ObraMatch</span>
-            </a>
-          </div>
-        </div>
+        <ObraMatchEcosystemSection variant="diario" className="mt-8" />
       </main>
 
       <AnimatePresence>

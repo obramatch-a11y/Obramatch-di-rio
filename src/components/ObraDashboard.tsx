@@ -29,6 +29,7 @@ import {
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import AdSenseBlock from './AdSenseBlock';
 import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
+import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
 
 export default function ObraDashboard() {
   const { 
@@ -553,34 +554,7 @@ export default function ObraDashboard() {
             </div>
 
             {/* Content recommended for your work required by step 3 */}
-            <div className="mt-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="obra-ecosystem-content">
-              <div>
-                <h3 className="text-lg font-extrabold text-white">Conteúdo ObraMatch</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Veja conteúdos técnicos e soluções do ecossistema ObraMatch para acompanhar sua obra com mais segurança.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <a
-                  href="https://obramatchof.blogspot.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/10"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  <span>Acessar Blog ObraMatch</span>
-                </a>
-                <a
-                  href="https://agentes.obramatch.com.br/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Bot className="w-4 h-4 text-amber-400" />
-                  <span>Abrir Agentes Match</span>
-                </a>
-              </div>
-            </div>
+            <ObraMatchEcosystemSection variant="obra" className="mt-8" />
 
             {/* AdSense Block / Institutional Ad Slot required by step 7 */}
             <div className="mt-6">

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
-import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle, Globe, BookOpen, Bot } from 'lucide-react';
+import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
 import AdSenseBlock from './AdSenseBlock';
+import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -265,47 +266,9 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4"
-          id="login-ecosystem-card"
+          className="w-full"
         >
-          <div className="flex items-center gap-2 text-amber-400 font-extrabold text-sm uppercase tracking-wider">
-            <Construction className="w-4 h-4 text-amber-500" />
-            <span>Ecossistema ObraMatch</span>
-          </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Acesse também a plataforma ObraMatch, o Blog ObraMatch e os Agentes Match para apoiar sua obra.
-          </p>
-          <div className="grid grid-cols-1 gap-2.5 pt-1">
-            <a
-              href="https://obramatch.com.br/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/10"
-            >
-              <Globe className="w-4 h-4" />
-              <span>ObraMatch</span>
-            </a>
-            <div className="grid grid-cols-2 gap-2">
-              <a
-                href="https://obramatchof.blogspot.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Blog ObraMatch</span>
-              </a>
-              <a
-                href="https://agentes.obramatch.com.br/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Bot className="w-3.5 h-3.5" />
-                <span>Agentes Match</span>
-              </a>
-            </div>
-          </div>
+          <ObraMatchEcosystemSection variant="login" />
         </motion.div>
 
         {/* Fixed position Google AdSense / Institutional promo required by step 7 */}
