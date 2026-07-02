@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Obra } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,7 +15,10 @@ import {
   ChevronRight,
   HardHat,
   X,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Download,
+  Smartphone,
+  Check
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -33,6 +36,58 @@ export default function Dashboard() {
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // PWA states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showPwaBanner, setShowPwaBanner] = useState(true);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('beforeinstallprompt event captured');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const checkStandalone = () => {
+      const isStandaloneMode = 
+        window.matchMedia('(display-mode: standalone)').matches || 
+        (window.navigator as any).standalone === true;
+      setIsStandalone(isStandaloneMode);
+    };
+
+    const detectIOS = () => {
+      const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      setIsIOS(isIOSDevice);
+    };
+
+    checkStandalone();
+    detectIOS();
+
+    const handleAppInstalled = () => {
+      setIsStandalone(true);
+      setDeferredPrompt(null);
+      console.log('App successfully installed!');
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+  };
 
   const handleSignOut = () => {
     signOut(auth);
@@ -113,6 +168,59 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full pt-8">
+        {/* PWA Install Banner */}
+        <AnimatePresence>
+          {showPwaBanner && !isStandalone && (deferredPrompt || isIOS) && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mb-6 bg-slate-900 border border-amber-500/30 rounded-3xl p-5 shadow-2xl relative overflow-hidden"
+            >
+              {/* Subtle accent background glow */}
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl" />
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl shrink-0">
+                    <Smartphone className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
+                      Instalar ObraMatch Diário
+                      <span className="text-xs bg-amber-500/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full">PWA</span>
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                      {isIOS 
+                        ? "Para instalar no seu iPhone ou iPad, toque no ícone de Compartilhar no navegador Safari e selecione 'Adicionar à Tela de Início'."
+                        : "Instale o aplicativo na sua tela inicial para acesso instantâneo de alta performance e funcionamento offline completo!"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto self-end sm:self-center shrink-0">
+                  {!isIOS && deferredPrompt && (
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
+                    >
+                      <Download className="w-4 h-4" />
+                      Instalar Agora
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowPwaBanner(false)}
+                    className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer shrink-0 ml-auto"
+                    title="Fechar"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>

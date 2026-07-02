@@ -4,13 +4,13 @@
   "description": "Aplicativo de registro diário de execução de obras",
   "icons": [
     {
-      "src": "/icon-192.jpg",
-      "type": "image/jpeg",
+      "src": "/icon-192.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "/icon-512.jpg",
-      "type": "image/jpeg",
+      "src": "/icon-512.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ],
