@@ -36,6 +36,11 @@ export default function Login() {
   const [isChrome, setIsChrome] = useState<boolean>(false);
   const [manifestHref, setManifestHref] = useState<string>('');
 
+  // Real-time globally captured states
+  const [hasWindowDeferredPrompt, setHasWindowDeferredPrompt] = useState<boolean>(false);
+  const [appInstalledEventFired, setAppInstalledEventFired] = useState<boolean>(false);
+  const [appInstalledEventTime, setAppInstalledEventTime] = useState<string>('');
+
   // Run diagnostics function
   const runDiagnostics = () => {
     // 1. Service Worker Support
@@ -109,28 +114,78 @@ export default function Login() {
   };
 
   useEffect(() => {
+    // Função para checar as propriedades globais no window de forma reativa
+    const checkWindowPWAProperties = () => {
+      const hasPrompt = !!(window as any).__deferredPrompt;
+      setHasWindowDeferredPrompt(hasPrompt);
+      if (hasPrompt) {
+        setDeferredPrompt((window as any).__deferredPrompt);
+        setBeforeinstallpromptFired(true);
+      }
+      
+      const isInstalled = !!(window as any).__appInstalled;
+      if (isInstalled) {
+        setAppInstalledEventFired(true);
+      }
+    };
+
+    // Checa inicialmente ao montar o componente
+    checkWindowPWAProperties();
+
+    // Ouvintes para os eventos globais customizados disparados por main.tsx
+    const handleGlobalPrompt = (e: any) => {
+      console.log('beforeinstallprompt recebido (evento global em Login.tsx)', e.detail);
+      setHasWindowDeferredPrompt(true);
+      setDeferredPrompt(e.detail || (window as any).__deferredPrompt);
+      setBeforeinstallpromptFired(true);
+    };
+
+    const handleGlobalInstalled = () => {
+      console.log('appinstalled recebido (evento global em Login.tsx)');
+      setAppInstalledEventFired(true);
+      setAppInstalledEventTime(new Date().toLocaleTimeString());
+    };
+
+    window.addEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
+    window.addEventListener('appinstalled_global_received', handleGlobalInstalled);
+
+    // Ouvintes padrão locais para redundância direta
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      (window as any).__deferredPrompt = e;
       setDeferredPrompt(e);
       setBeforeinstallpromptFired(true);
-      console.log('beforeinstallprompt event triggered and saved');
+      setHasWindowDeferredPrompt(true);
+      console.log('beforeinstallprompt recebido (redundância local em Login.tsx)');
+    };
+
+    const handleAppInstalledLocal = () => {
+      (window as any).__appInstalled = true;
+      setAppInstalledEventFired(true);
+      setAppInstalledEventTime(new Date().toLocaleTimeString());
+      console.log('appinstalled recebido (redundância local em Login.tsx)');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalledLocal);
 
-    // Initial run of diagnostics
+    // Execução inicial dos diagnósticos
     runDiagnostics();
 
-    // Check periodically for changes (e.g., controller changes after sw activation)
+    // Polling de atualização periódica para status ativos e reativos
     const interval = setInterval(() => {
-      // Keep checking controller and ready status
       if ('serviceWorker' in navigator) {
         setSwController(!!navigator.serviceWorker.controller);
       }
+      // Re-audita propriedades globais caso tenham sido modificadas em background
+      checkWindowPWAProperties();
     }, 2000);
 
     return () => {
+      window.removeEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
+      window.removeEventListener('appinstalled_global_received', handleGlobalInstalled);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalledLocal);
       clearInterval(interval);
     };
   }, []);
@@ -447,6 +502,32 @@ export default function Login() {
                   <span className="flex items-center gap-1.5 font-semibold">
                     {beforeinstallpromptFired ? (
                       <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> SIM (Disparado)</span>
+                    ) : (
+                      <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* window.__deferredPrompt existe? */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 font-medium">window.__deferredPrompt existe?</span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    {hasWindowDeferredPrompt ? (
+                      <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> SIM</span>
+                    ) : (
+                      <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Evento appinstalled recebido */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 font-medium">Evento appinstalled Ocorreu?</span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    {appInstalledEventFired ? (
+                      <span className="text-emerald-400 flex items-center gap-1" title={appInstalledEventTime}>
+                        <Check className="w-3.5 h-3.5" /> SIM {appInstalledEventTime && `(${appInstalledEventTime})`}
+                      </span>
                     ) : (
                       <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO</span>
                     )}
