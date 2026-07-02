@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Match rules for /obras and its subcollections
+    match /obras/{obraId} {
+      allow read, write: if isSignedIn() 
+        && (resource == null || resource.data.ownerId == request.auth.uid)
+        && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+
+      match /diarios/{diarioId} {
+        allow read, write: if isSignedIn()
+          && (resource == null || resource.data.ownerId == request.auth.uid)
+          && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+
+        match /fotos/{fotoId} {
+          allow read, write: if isSignedIn()
+            && (resource == null || resource.data.ownerId == request.auth.uid)
+            && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+        }
+      }
+    }
+  }
+}
