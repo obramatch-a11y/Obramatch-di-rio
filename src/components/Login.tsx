@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
@@ -10,6 +10,44 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [installStatus, setInstallStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      console.log('beforeinstallprompt event triggered and saved');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) {
+      setInstallStatus('Instalação ainda não disponível. Abra no Chrome, aguarde alguns segundos e tente novamente.');
+      return;
+    }
+    
+    setInstallStatus(null);
+    deferredPrompt.prompt();
+    
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to install prompt: ${outcome}`);
+    
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+      setDeferredPrompt(null);
+      setInstallStatus('Instalando aplicativo...');
+    } else {
+      console.log('User dismissed the install prompt');
+      setInstallStatus('Instalação cancelada pelo usuário.');
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -166,6 +204,37 @@ export default function Login() {
           </svg>
           Google
         </button>
+
+        {/* PWA Installation Section */}
+        <div className="mt-6 pt-6 border-t border-slate-800/60">
+          {deferredPrompt ? (
+            <button
+              onClick={handleInstallClick}
+              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/15 text-sm"
+            >
+              <Construction className="w-5 h-5 animate-bounce" />
+              Instalar Aplicativo
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 items-center text-center">
+              <button
+                onClick={handleInstallClick}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm border border-slate-700/50"
+              >
+                Instalar Aplicativo
+              </button>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Instalação ainda não disponível. Abra no Chrome, aguarde alguns segundos e tente novamente.
+              </p>
+            </div>
+          )}
+
+          {installStatus && (
+            <p className="text-xs text-amber-400 font-medium text-center mt-2.5">
+              {installStatus}
+            </p>
+          )}
+        </div>
 
         <div className="text-center mt-8">
           <button

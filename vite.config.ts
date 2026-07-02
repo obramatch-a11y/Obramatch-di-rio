@@ -13,31 +13,33 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         injectRegister: 'auto',
         strategies: 'generateSW',
+        manifestFilename: 'manifest.json',
         manifest: {
+          id: '/',
           short_name: 'ObraMatch',
           name: 'ObraMatch Diário',
           description: 'Aplicativo de registro diário de execução de obras',
           icons: [
             {
-              src: 'icon-192.png',
+              src: '/icon-192.png',
               type: 'image/png',
               sizes: '192x192',
               purpose: 'any'
             },
             {
-              src: 'icon-192.png',
+              src: '/icon-192.png',
               type: 'image/png',
               sizes: '192x192',
               purpose: 'maskable'
             },
             {
-              src: 'icon-512.png',
+              src: '/icon-512.png',
               type: 'image/png',
               sizes: '512x512',
               purpose: 'any'
             },
             {
-              src: 'icon-512.png',
+              src: '/icon-512-maskable.png',
               type: 'image/png',
               sizes: '512x512',
               purpose: 'maskable'
@@ -47,8 +49,10 @@ export default defineConfig(() => {
           background_color: '#020617',
           theme_color: '#f59e0b',
           display: 'standalone',
+          display_override: ['standalone', 'minimal-ui'],
           orientation: 'portrait',
-          scope: '/'
+          scope: '/',
+          prefer_related_applications: false
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
