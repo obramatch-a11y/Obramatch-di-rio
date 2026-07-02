@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -21,8 +21,15 @@ import {
   Save,
   Compass,
   FileQuestion,
-  Eraser
+  Eraser,
+  Sparkles,
+  Bot,
+  BookOpen,
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
+import { getContextualRecommendations } from '../lib/ecosystemData';
+import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
@@ -32,9 +39,13 @@ const CLIMA_OPTIONS = [
 ];
 
 export default function DiarioForm() {
-  const { selectedObra, createDiario, editingDiario, updateDiario, setView } = useApp();
+  const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal } = useApp();
 
   const isEditing = !!editingDiario;
+
+  // Success modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedReport, setSavedReport] = useState<any>(null);
 
   // Form Fields
   const [data, setData] = useState('');
@@ -275,10 +286,14 @@ export default function DiarioForm() {
     try {
       if (isEditing && editingDiario) {
         await updateDiario(editingDiario.id, reportData, uploadedPhotos);
-        setView('diario-detail', selectedObra, { ...editingDiario, ...reportData });
+        const completeReport = { id: editingDiario.id, ...editingDiario, ...reportData, fotos: uploadedPhotos };
+        setSavedReport(completeReport);
+        setShowSuccessModal(true);
       } else {
         const id = await createDiario(reportData, uploadedPhotos);
-        setView('obra-dashboard', selectedObra);
+        const completeReport = { id, ...reportData, fotos: uploadedPhotos };
+        setSavedReport(completeReport);
+        setShowSuccessModal(true);
       }
     } catch (err) {
       console.error(err);
@@ -574,8 +589,172 @@ export default function DiarioForm() {
             </div>
           </div>
 
+          {/* Bottom Save Button - Ensures there is a Save button right before the support block */}
+          <div className="pt-6 border-t border-slate-900 flex justify-end">
+            <button
+              type="button"
+              onClick={handleSaveReport}
+              disabled={!atividades}
+              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3.5 px-8 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 hover:shadow-amber-500/25 text-sm"
+            >
+              <Save className="w-5 h-5" />
+              <span>Salvar Diário de Obra</span>
+            </button>
+          </div>
+
+        </div>
+
+        {/* Support Card - Step 3 requirement (Apoio técnico ObraMatch) */}
+        <div className="mt-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="diario-form-support-card">
+          <div>
+            <h3 className="text-lg font-extrabold text-white">Apoio técnico ObraMatch</h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Precisa de orientação técnica? Consulte os Agentes Match ou leia conteúdos do Blog ObraMatch.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href="https://agentes.obramatch.com.br/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/10"
+            >
+              <Bot className="w-4 h-4" />
+              <span>Agentes Match</span>
+            </a>
+            <a
+              href="https://obramatchof.blogspot.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4 text-amber-500" />
+              <span>Blog ObraMatch</span>
+            </a>
+          </div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {showSuccessModal && savedReport && (() => {
+          const recommendations = getContextualRecommendations(savedReport.atividades);
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+              />
+
+              {/* Modal Body */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto"
+              >
+                <div className="text-center mb-6">
+                  <div className="mx-auto w-16 h-16 bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-xl shadow-emerald-500/10">
+                    <Check className="w-8 h-8 stroke-[2.5]" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white font-sans">
+                    Diário Registrado com Sucesso!
+                  </h3>
+                  <p className="text-slate-400 text-xs mt-1">
+                    O relatório foi consolidado e armazenado na nuvem de forma segura.
+                  </p>
+                </div>
+
+                {recommendations && (
+                  <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-5 mb-6 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
+                      <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+                      <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest">
+                        Recomendações para a Próxima Etapa
+                      </h4>
+                    </div>
+
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Identificamos que sua obra está na fase de <span className="font-bold text-amber-400">{recommendations.stageName}</span>. Veja estas sugestões úteis do ecossistema ObraMatch:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                      
+                      {/* Blog Post */}
+                      <div className="bg-slate-900/50 border border-slate-850 rounded-xl p-4 flex flex-col justify-between group">
+                        <div className="space-y-1.5">
+                          <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-wider block">
+                            Blog Recomendado
+                          </span>
+                          <h5 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
+                            {recommendations.article.title}
+                          </h5>
+                          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                            {recommendations.article.summary}
+                          </p>
+                        </div>
+                        <a
+                          href={recommendations.article.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-amber-400 hover:text-amber-300 mt-3 flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <span>Ler no Blog</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+
+                      {/* Specialist Agent */}
+                      <div className="bg-slate-900/50 border border-slate-850 rounded-xl p-4 flex flex-col justify-between group">
+                        <div className="space-y-1.5">
+                          <span className="text-[9px] font-extrabold text-purple-400 uppercase tracking-wider block">
+                            Suporte de Especialista
+                          </span>
+                          <h5 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+                            {recommendations.agent.name}
+                          </h5>
+                          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                            {recommendations.agent.description}
+                          </p>
+                        </div>
+                        <a
+                          href="https://agentes.obramatch.com.br/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-bold text-amber-400 hover:text-amber-300 mt-3 flex items-center gap-1 cursor-pointer transition-colors text-left"
+                        >
+                          <span>Acessar Agente</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation Actions */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-800">
+                  <button
+                    onClick={() => setView('obra-dashboard', selectedObra)}
+                    className="w-full sm:flex-1 py-3 px-4 border border-slate-800 hover:bg-slate-850 text-slate-300 hover:text-white font-semibold rounded-xl transition-all cursor-pointer text-xs"
+                  >
+                    Voltar para Obra
+                  </button>
+                  <button
+                    onClick={() => setView('diario-detail', selectedObra, savedReport)}
+                    className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/10"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Ver Detalhes & PDF
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

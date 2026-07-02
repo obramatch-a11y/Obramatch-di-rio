@@ -25,6 +25,10 @@ interface AppContextType {
   selectedObra: Obra | null;
   selectedDiario: Diario | null;
   editingDiario: Diario | null;
+  showAgentesModal: boolean;
+  selectedAgentId: string | null;
+  openAgentesModal: (agentId?: string | null) => void;
+  closeAgentesModal: () => void;
   setView: (view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline', obra?: Obra | null, diario?: Diario | null) => void;
   createObra: (obra: Omit<Obra, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateObra: (id: string, obra: Partial<Obra>) => Promise<void>;
@@ -49,6 +53,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [selectedDiario, setSelectedDiario] = useState<Diario | null>(null);
   const [editingDiario, setEditingDiario] = useState<Diario | null>(null);
+  const [showAgentesModal, setShowAgentesModal] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
+  const openAgentesModal = (agentId: string | null = null) => {
+    setSelectedAgentId(agentId);
+    setShowAgentesModal(true);
+  };
+
+  const closeAgentesModal = () => {
+    setShowAgentesModal(false);
+    setSelectedAgentId(null);
+  };
 
   // Monitor network status
   useEffect(() => {
@@ -339,6 +355,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       selectedObra,
       selectedDiario,
       editingDiario,
+      showAgentesModal,
+      selectedAgentId,
+      openAgentesModal,
+      closeAgentesModal,
       setView,
       createObra,
       updateObra,

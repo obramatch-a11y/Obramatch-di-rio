@@ -21,8 +21,14 @@ import {
   Clock,
   ExternalLink,
   Sparkles,
-  Info
+  Info,
+  BookOpen,
+  Star,
+  Bot
 } from 'lucide-react';
+import { getContextualRecommendations } from '../lib/ecosystemData';
+import AdSenseBlock from './AdSenseBlock';
+import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
 
 export default function ObraDashboard() {
   const { 
@@ -32,7 +38,8 @@ export default function ObraDashboard() {
     setView, 
     updateObra, 
     deleteObra, 
-    deleteDiario 
+    deleteDiario,
+    openAgentesModal
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'diarios' | 'fotos' | 'timeline'>('diarios');
@@ -49,6 +56,11 @@ export default function ObraDashboard() {
   const [loading, setLoading] = useState(false);
 
   if (!selectedObra) return null;
+
+  // Contextual Recommendations based on current diary or obra details
+  const latestDiaryText = diarios[0]?.atividades || '';
+  const scanText = `${selectedObra.nome} ${selectedObra.observacoes || ''} ${latestDiaryText}`;
+  const recommendations = getContextualRecommendations(scanText);
 
   const handleEditObra = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -431,6 +443,152 @@ export default function ObraDashboard() {
             </div>
           )}
         </div>
+
+        {/* Dynamic Contextual Recommendations & Ecosystem Integration */}
+        {recommendations && (
+          <div className="mt-12 border-t border-slate-900 pt-10 pb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+              <h3 className="text-lg font-black text-white font-sans">
+                Conteúdo Recomendado & Parceiros
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-6 max-w-2xl leading-relaxed">
+              Com base nos registros recentes desta obra, selecionamos artigos do blog, suporte de especialistas e profissionais recomendados para a etapa atual.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              
+              {/* 1. Contextual Blog Article */}
+              <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-5 flex flex-col justify-between group hover:border-blue-500/25 transition-all">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-extrabold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider inline-block">
+                    Blog ObraMatch
+                  </span>
+                  <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
+                    {recommendations.article.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
+                    {recommendations.article.summary}
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-900/50 mt-4 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Leitura: {recommendations.article.readTime}
+                  </span>
+                  <a
+                    href={recommendations.article.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Ler Artigo</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* 2. Specialty AI Support Agent */}
+              <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-5 flex flex-col justify-between group hover:border-purple-500/25 transition-all">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-extrabold text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider inline-block">
+                    Agente Match AI
+                  </span>
+                  <h4 className="text-sm font-bold text-white group-hover:text-purple-400 transition-colors">
+                    {recommendations.agent.name}
+                  </h4>
+                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
+                    {recommendations.agent.description}
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-900/50 mt-4 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {recommendations.agent.specialty}
+                  </span>
+                  <a
+                    href="https://agentes.obramatch.com.br/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Acessar Agente</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* 3. Pre-vetted Professional */}
+              <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-5 flex flex-col justify-between group hover:border-emerald-500/25 transition-all">
+                <div className="space-y-3">
+                  <span className="text-[10px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider inline-block">
+                    Profissionais na Sua Região
+                  </span>
+                  <h4 className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    {recommendations.professional.name}
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-300">
+                    <span className="text-amber-400 font-bold">★ {recommendations.professional.rating.toFixed(1)}</span>
+                    <span className="text-slate-500">({recommendations.professional.reviews} avaliações)</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
+                    {recommendations.professional.role} • {recommendations.professional.location}
+                  </p>
+                </div>
+                <div className="pt-4 border-t border-slate-900/50 mt-4 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Histórico Verificado
+                  </span>
+                  <a
+                    href="https://obramatch.com.br/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Conectar</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Content recommended for your work required by step 3 */}
+            <div className="mt-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="obra-ecosystem-content">
+              <div>
+                <h3 className="text-lg font-extrabold text-white">Conteúdo ObraMatch</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Veja conteúdos técnicos e soluções do ecossistema ObraMatch para acompanhar sua obra com mais segurança.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <a
+                  href="https://obramatchof.blogspot.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-amber-500/10"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>Acessar Blog ObraMatch</span>
+                </a>
+                <a
+                  href="https://agentes.obramatch.com.br/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-slate-200 text-center font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Bot className="w-4 h-4 text-amber-400" />
+                  <span>Abrir Agentes Match</span>
+                </a>
+              </div>
+            </div>
+
+            {/* AdSense Block / Institutional Ad Slot required by step 7 */}
+            <div className="mt-6">
+              <AdSenseBlock className="w-full" />
+            </div>
+
+          </div>
+        )}
       </main>
 
       {/* Edit Obra Modal */}

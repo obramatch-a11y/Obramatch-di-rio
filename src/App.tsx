@@ -10,11 +10,12 @@ import Dashboard from './components/Dashboard';
 import ObraDashboard from './components/ObraDashboard';
 import DiarioForm from './components/DiarioForm';
 import DiarioDetail from './components/DiarioDetail';
+import AgentesMatchModal from './components/AgentesMatchModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { HardHat } from 'lucide-react';
 
 function AppContent() {
-  const { user, loading, currentView } = useApp();
+  const { user, loading, currentView, showAgentesModal, closeAgentesModal, selectedAgentId } = useApp();
 
   if (loading) {
     return (
@@ -53,6 +54,16 @@ function AppContent() {
           {currentView === 'diario-form' && <DiarioForm />}
           {currentView === 'diario-detail' && <DiarioDetail />}
         </motion.div>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAgentesModal && (
+          <AgentesMatchModal
+            isOpen={showAgentesModal}
+            onClose={closeAgentesModal}
+            initialAgentId={selectedAgentId}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

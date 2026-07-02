@@ -18,15 +18,74 @@ import {
   FileSpreadsheet,
   Download,
   Smartphone,
-  Check
+  Check,
+  Bot,
+  Sparkles,
+  BookOpen,
+  Star,
+  ArrowRight
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
+import AdSenseBlock from './AdSenseBlock';
+import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
+
+const ECOSYSTEM_SLIDES = [
+  {
+    type: 'blog',
+    title: 'Blog ObraMatch',
+    tagline: 'Cura do Concreto: Evitar Fissuras',
+    description: 'Procedimentos fundamentais de hidratação e proteção para concretagem perfeita de lajes.',
+    actionLabel: 'Acessar Blog Oficial',
+    link: 'https://obramatchof.blogspot.com/',
+    icon: BookOpen,
+    color: 'border-blue-500/20 bg-blue-500/5 text-blue-400'
+  },
+  {
+    type: 'agent',
+    title: 'Agentes Match AI',
+    tagline: 'Fale com o especialista de NBR',
+    description: 'Dúvidas rápidas sobre normas reguladoras da ABNT, incluindo NBR 15575 e acessibilidade.',
+    actionLabel: 'Abrir Agentes Match',
+    link: 'https://agentes.obramatch.com.br/',
+    icon: Bot,
+    color: 'border-amber-500/20 bg-amber-500/5 text-amber-400'
+  },
+  {
+    type: 'pro',
+    title: 'Profissional em Destaque',
+    tagline: 'Marcos Roberto Santos • 5.0 ★',
+    description: 'Mestre de obras especializado em fundações residenciais e leitura de sondagem SPT.',
+    actionLabel: 'Conhecer Site Oficial',
+    link: 'https://obramatch.com.br/',
+    icon: Star,
+    color: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400'
+  },
+  {
+    type: 'news',
+    title: 'Novidades do Ecossistema',
+    tagline: 'Laudos de Patologias',
+    description: 'Gere relatórios completos de vistorias técnicas integrados com as fotos do diário de obra.',
+    actionLabel: 'Conhecer Soluções',
+    link: 'https://obramatch.com.br/',
+    icon: Sparkles,
+    color: 'border-purple-500/20 bg-purple-500/5 text-purple-400'
+  }
+];
 
 export default function Dashboard() {
-  const { obras, createObra, setView, online, user } = useApp();
+  const { obras, createObra, setView, online, user, openAgentesModal } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto rotate ecosystem card
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % ECOSYSTEM_SLIDES.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Form states
   const [nome, setNome] = useState('');
@@ -221,101 +280,187 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* Ecossistema ObraMatch required by step 2 */}
+        <div className="mb-8 p-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl space-y-4" id="dashboard-ecosystem-top">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
-              Minhas Obras
-            </h2>
-            <p className="text-slate-400 text-sm mt-1">
-              Selecione uma obra para gerenciar ou registrar o diário de hoje.
+            <h2 className="text-xl font-extrabold text-white">Ecossistema ObraMatch</h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Contrate profissionais, leia conteúdos técnicos e utilize agentes especializados do ecossistema ObraMatch.
             </p>
           </div>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 hover:shadow-amber-500/25 text-sm"
-          >
-            <Plus className="w-5 h-5" />
-            Nova Obra
-          </button>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ObraMatchEcosystemCard
+              tipo="site"
+              titulo="Plataforma ObraMatch"
+              descricao="Encontre fornecedores e profissionais avaliados para sua obra com total segurança, sem intermediários e com histórico de obras visível."
+              textoBotao="Visitar Plataforma"
+              url="https://obramatch.com.br/"
+              variante="card"
+            />
+            <ObraMatchEcosystemCard
+              tipo="blog"
+              titulo="Blog ObraMatch"
+              descricao="Aprenda sobre engenharia, normas reguladoras, impermeabilização, cura de concreto e as melhores práticas no Blog Técnico Oficial."
+              textoBotao="Acessar Blog"
+              url="https://obramatchof.blogspot.com/"
+              variante="card"
+            />
+            <ObraMatchEcosystemCard
+              tipo="agentes"
+              titulo="Agentes Match"
+              descricao="Use nossos agentes especialistas de inteligência artificial para tirar dúvidas rápidas sobre normas ABNT e suporte técnico de campo."
+              textoBotao="Consultar Agentes"
+              url="https://agentes.obramatch.com.br/"
+              variante="card"
+            />
+          </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Pesquisar por nome da obra ou cliente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 bg-slate-900/50 border border-slate-900 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 rounded-2xl text-white placeholder-slate-500 outline-none transition-all text-sm"
-          />
+        {/* Dual-column Grid Layout for Obras & ObraMatch Ecosystem */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Projects List (8 Columns) */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Welcome Section */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-sans">
+                  Minhas Obras
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Selecione uma obra para gerenciar ou registrar o diário de hoje.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 hover:shadow-amber-500/25 text-sm"
+              >
+                <Plus className="w-5 h-5" />
+                Nova Obra
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Pesquisar por nome da obra ou cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-900/50 border border-slate-900 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 rounded-2xl text-white placeholder-slate-500 outline-none transition-all text-sm"
+              />
+            </div>
+
+            {/* Obras Grid */}
+            {filteredObras.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-slate-900/20 border border-dashed border-slate-900 rounded-3xl text-center px-4">
+                <FileSpreadsheet className="w-16 h-16 text-slate-700 stroke-[1.5] mb-4" />
+                <h3 className="text-lg font-bold text-slate-300">Nenhuma obra cadastrada</h3>
+                <p className="text-slate-500 text-sm mt-1 max-w-sm">
+                  {searchTerm ? 'Nenhuma obra corresponde aos termos pesquisados.' : 'Comece cadastrando sua primeira obra clicando no botão "Nova Obra".'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredObras.map((obra) => {
+                  // Format last update or set placeholder
+                  const lastUpdated = obra.updatedAt 
+                    ? new Date(obra.updatedAt.seconds * 1000).toLocaleDateString('pt-BR') 
+                    : 'Não disponível';
+
+                  return (
+                    <motion.div
+                      key={obra.id}
+                      whileHover={{ y: -4 }}
+                      onClick={() => setView('obra-dashboard', obra)}
+                      className="bg-slate-900/50 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 rounded-3xl p-6 shadow-xl shadow-slate-950/20 cursor-pointer flex flex-col justify-between transition-all group"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between mb-4">
+                          <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                            Ativa
+                          </span>
+                          <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+                        </div>
+
+                        <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                          {obra.nome}
+                        </h3>
+                        <p className="text-slate-400 text-sm mt-1 mb-4 flex items-center gap-1.5">
+                          <User className="w-4 h-4 text-slate-600" />
+                          Cliente: {obra.cliente}
+                        </p>
+
+                        <div className="space-y-2 pt-4 border-t border-slate-900/50">
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span className="truncate">{obra.endereco || 'Sem endereço registrado'}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <Calendar className="w-3.5 h-3.5" />
+                            <span>Início: {new Date(obra.dataInicio).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-900/50 text-xs text-slate-500">
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Atualizado: {lastUpdated}</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: ObraMatch Ecosystem Sidebar (4 Columns) - Required by step 3 & 7 */}
+          <div className="lg:col-span-4 space-y-6" id="dashboard-ecosystem-sidebar">
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wider border-b border-slate-800 pb-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                <span>Ecossistema ObraMatch</span>
+              </h3>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <ObraMatchEcosystemCard
+                  tipo="site"
+                  titulo="Buscar Profissionais"
+                  descricao="Encontre fornecedores e profissionais avaliados para sua obra com total segurança, sem intermediários e com histórico visível."
+                  textoBotao="Buscar no Site"
+                  url="https://obramatch.com.br/"
+                  variante="card"
+                />
+
+                <ObraMatchEcosystemCard
+                  tipo="blog"
+                  titulo="Aprender no Blog"
+                  descricao="Acompanhe dicas de engenharia, normas técnicas da ABNT, impermeabilização, cura do concreto e novidades."
+                  textoBotao="Acessar Blog"
+                  url="https://obramatchof.blogspot.com/"
+                  variante="card"
+                />
+
+                <ObraMatchEcosystemCard
+                  tipo="agentes"
+                  titulo="Abrir Agentes Match"
+                  descricao="Use nossos agentes de inteligência artificial especializados para responder suas dúvidas de suporte de campo."
+                  textoBotao="Acessar Agentes"
+                  url="https://agentes.obramatch.com.br/"
+                  variante="card"
+                />
+              </div>
+            </div>
+
+            {/* AdSense Block or Institutional Promotion */}
+            <AdSenseBlock className="w-full" />
+          </div>
+
         </div>
-
-        {/* Obras Grid */}
-        {filteredObras.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-slate-900/20 border border-dashed border-slate-900 rounded-3xl text-center px-4">
-            <FileSpreadsheet className="w-16 h-16 text-slate-700 stroke-[1.5] mb-4" />
-            <h3 className="text-lg font-bold text-slate-300">Nenhuma obra cadastrada</h3>
-            <p className="text-slate-500 text-sm mt-1 max-w-sm">
-              {searchTerm ? 'Nenhuma obra corresponde aos termos pesquisados.' : 'Comece cadastrando sua primeira obra clicando no botão "Nova Obra".'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredObras.map((obra) => {
-              // Format last update or set placeholder
-              const lastUpdated = obra.updatedAt 
-                ? new Date(obra.updatedAt.seconds * 1000).toLocaleDateString('pt-BR') 
-                : 'Não disponível';
-
-              return (
-                <motion.div
-                  key={obra.id}
-                  whileHover={{ y: -4 }}
-                  onClick={() => setView('obra-dashboard', obra)}
-                  className="bg-slate-900/50 hover:bg-slate-900 border border-slate-900 hover:border-slate-800 rounded-3xl p-6 shadow-xl shadow-slate-950/20 cursor-pointer flex flex-col justify-between transition-all group"
-                >
-                  <div>
-                    <div className="flex items-start justify-between mb-4">
-                      <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                        Ativa
-                      </span>
-                      <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
-                    </div>
-
-                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                      {obra.nome}
-                    </h3>
-                    <p className="text-slate-400 text-sm mt-1 mb-4 flex items-center gap-1.5">
-                      <User className="w-4 h-4 text-slate-600" />
-                      Cliente: {obra.cliente}
-                    </p>
-
-                    <div className="space-y-2 pt-4 border-t border-slate-900/50">
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="truncate">{obra.endereco || 'Sem endereço registrado'}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Início: {new Date(obra.dataInicio).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-900/50 text-xs text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Atualizado: {lastUpdated}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
       </main>
 
       {/* Slide-over Modal for New Obra */}

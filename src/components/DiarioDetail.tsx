@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion } from 'motion/react';
+import AdSenseBlock from './AdSenseBlock';
+import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
 import { 
   ArrowLeft, 
   Printer, 
@@ -290,7 +292,47 @@ export default function DiarioDetail() {
               )}
             </div>
           </div>
+
+          {/* Custom Promotional section required by step 3 & 7 */}
+          <div className="mt-8 pt-8 border-t border-slate-900/50 space-y-6" id="diario-detail-ecosystem-footer">
+            <div className="bg-slate-900/50 border border-slate-850 rounded-2xl p-6 text-center space-y-4">
+              <h4 className="text-sm font-bold text-slate-300">
+                Conheça mais soluções no ecossistema ObraMatch.
+              </h4>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold">
+                <a
+                  href="https://obramatch.com.br/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
+                >
+                  ObraMatch
+                </a>
+                <span className="text-slate-600">•</span>
+                <a
+                  href="https://obramatchof.blogspot.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
+                >
+                  Blog ObraMatch
+                </a>
+                <span className="text-slate-600">•</span>
+                <a
+                  href="https://agentes.obramatch.com.br/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber-400 hover:text-amber-300 underline transition-colors"
+                >
+                  Agentes Match
+                </a>
+              </div>
+            </div>
+            
+            <AdSenseBlock className="w-full" />
+          </div>
         </main>
+
       </div>
 
       {/* PRINT-ONLY TECHNICAL REPORT (CLEAN PORTUGUESE TECHNICAL LAYOUT OTIMIZADO PARA PDF) */}
@@ -447,8 +489,13 @@ export default function DiarioDetail() {
         </div>
 
         {/* Generation stamp in footer */}
-        <div className="mt-16 text-center text-[10px] text-slate-400 font-sans border-t border-slate-100 pt-3">
-          Relatório gerado automaticamente através da plataforma ObraMatch Diário. Todos os direitos reservados.
+        <div className="mt-16 text-center font-sans border-t border-slate-200 pt-4 flex flex-col items-center gap-1">
+          <p className="text-[10px] text-slate-500 font-bold">
+            Relatório gerado automaticamente via ObraMatch Diário.
+          </p>
+          <p className="text-[9px] text-slate-400 max-w-xl leading-relaxed">
+            ObraMatch: Encontre profissionais avaliados para sua obra com mais segurança. Economize tempo, tenha histórico de obras visível e faça contato direto sem intermediários. Acesse o site oficial em <a href="https://obramatch.com.br/" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-600 hover:underline">obramatch.com.br</a>
+          </p>
         </div>
       </div>
 
