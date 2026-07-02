@@ -26,6 +26,16 @@ export default function Login() {
   const [iconMaskable, setIconMaskable] = useState<boolean | null>(null);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState<boolean>(true); // Open by default for mobile debugging
 
+  // Advanced diagnostic states
+  const [isIframe, setIsIframe] = useState<boolean>(false);
+  const [hasBeforeInstallPromptEvent, setHasBeforeInstallPromptEvent] = useState<boolean | null>(null);
+  const [installedAppsStatus, setInstalledAppsStatus] = useState<string>('Não verificado');
+  const [isIOS, setIsIOS] = useState<boolean>(false);
+  const [isAndroid, setIsAndroid] = useState<boolean>(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState<boolean>(false);
+  const [isChrome, setIsChrome] = useState<boolean>(false);
+  const [manifestHref, setManifestHref] = useState<string>('');
+
   // Run diagnostics function
   const runDiagnostics = () => {
     // 1. Service Worker Support
@@ -58,7 +68,12 @@ export default function Login() {
     setDisplayMode(mode);
 
     // 6. User Agent
-    setUserAgentStr(navigator.userAgent);
+    const ua = navigator.userAgent;
+    setUserAgentStr(ua);
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
+    setIsAndroid(/Android/.test(ua));
+    setIsInAppBrowser(/FBAN|FBAV|Instagram|Snapchat|FBIOS|Messenger|WhatsApp|Line|SBrowser|MiuiBrowser/.test(ua));
+    setIsChrome(/Chrome|CriOS|HeadlessChrome/.test(ua) && !/Edge|Edg|OPR|OPiOS|Vivaldi|YaBrowser|Silk/.test(ua));
 
     // 7. Check PWA Icons
     const checkIcon = (src: string, callback: (ok: boolean) => void) => {
@@ -70,6 +85,27 @@ export default function Login() {
     checkIcon('/icon-192.png', setIcon192);
     checkIcon('/icon-512.png', setIcon512);
     checkIcon('/icon-512-maskable.png', setIconMaskable);
+
+    // 8. Extra audits
+    setIsIframe(window.self !== window.top);
+    setHasBeforeInstallPromptEvent('BeforeInstallPromptEvent' in window);
+
+    // 9. Installed Related Apps
+    if ('getInstalledRelatedApps' in navigator) {
+      (navigator as any).getInstalledRelatedApps()
+        .then((apps: any[]) => {
+          setInstalledAppsStatus(apps && apps.length > 0 ? `Sim (${apps.map((a: any) => a.id || a.platform).join(', ')})` : 'Não');
+        })
+        .catch((err: any) => {
+          setInstalledAppsStatus(`Erro: ${err.message || err}`);
+        });
+    } else {
+      setInstalledAppsStatus('Não suportado pelo navegador');
+    }
+
+    // 10. Manifest link check
+    const link = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
+    setManifestHref(link ? link.href : 'Não encontrado');
   };
 
   useEffect(() => {
@@ -397,15 +433,57 @@ export default function Login() {
                   </span>
                 </div>
 
+                {/* Link do Manifesto */}
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Caminho do Manifesto:</span>
+                  <span className="text-slate-300 font-mono text-[10px] truncate max-w-[180px]" title={manifestHref}>
+                    {manifestHref || 'Não verificado'}
+                  </span>
+                </div>
+
                 {/* 5. beforeinstallpromptFired */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between border-t border-slate-800/40 pt-2 mt-1">
                   <span className="text-slate-300 font-medium">Evento de Instalação Recebido:</span>
                   <span className="flex items-center gap-1.5 font-semibold">
                     {beforeinstallpromptFired ? (
-                      <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> SIM (Prompt Pronto)</span>
+                      <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> SIM (Disparado)</span>
                     ) : (
-                      <span className="text-amber-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO</span>
+                      <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO</span>
                     )}
+                  </span>
+                </div>
+
+                {/* Suporte nativo ao BeforeInstallPromptEvent */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 font-medium">Suporte Native Prompt API:</span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    {hasBeforeInstallPromptEvent === null ? (
+                      <span className="text-slate-500">?</span>
+                    ) : hasBeforeInstallPromptEvent ? (
+                      <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> SIM (Chrome/Android)</span>
+                    ) : (
+                      <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> NÃO (iOS/Safari/Firefox)</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Rodando em IFrame */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 font-medium">Rodando em IFrame:</span>
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    {isIframe ? (
+                      <span className="text-rose-400 flex items-center gap-1"><X className="w-3.5 h-3.5" /> SIM (Instalação Bloqueada)</span>
+                    ) : (
+                      <span className="text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" /> NÃO (OK)</span>
+                    )}
+                  </span>
+                </div>
+
+                {/* Aplicativo já Instalado (getInstalledRelatedApps) */}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 font-medium">PWA já Instalado no Disp.:</span>
+                  <span className={`flex items-center gap-1.5 font-semibold ${installedAppsStatus.includes('Sim') ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {installedAppsStatus}
                   </span>
                 </div>
 
@@ -413,6 +491,16 @@ export default function Login() {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-300 font-medium">Modo de Exibição Atual:</span>
                   <span className="text-amber-400 font-mono font-semibold uppercase">{displayMode || 'Carregando...'}</span>
+                </div>
+
+                {/* Detecção de Plataforma */}
+                <div className="flex items-center justify-between border-t border-slate-800/40 pt-2 mt-1 text-[11px]">
+                  <span className="text-slate-400">Plataforma Detectada:</span>
+                  <span className="text-slate-300 font-medium font-mono">
+                    {isIOS ? 'iOS (Apple)' : isAndroid ? 'Android' : 'Desktop/Outros'}
+                    {isInAppBrowser && ' + In-App WebView'}
+                    {isChrome && ' + Chrome Browser'}
+                  </span>
                 </div>
 
                 {/* 7. icon192Loaded */}
@@ -459,19 +547,80 @@ export default function Login() {
               </div>
 
               {/* Dicas de resolução baseadas no status */}
-              <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex gap-2">
-                <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-slate-400 text-[11px] leading-relaxed">
-                  {!swSupported && <p>Este navegador não suporta PWA/Service Workers. Utilize o Google Chrome no Android ou Safari no iOS.</p>}
-                  {swSupported && !swController && <p>O Service Worker foi registrado, mas ainda não está controlando a página. Experimente recarregar a página (F5) para ativá-lo.</p>}
-                  {swSupported && swController && !beforeinstallpromptFired && (
-                    <p>
-                      Requisitos técnicos atendidos! O Chrome aguarda engajamento do usuário (toques na tela ou alguns segundos de navegação) antes de disparar o prompt de instalação. <strong>Toque na tela, interaja e aguarde!</strong>
+              <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-2xl flex gap-2">
+                <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-slate-300 text-[11px] leading-relaxed space-y-1">
+                  {/* 1. Sem suporte a SW */}
+                  {!swSupported && (
+                    <p className="text-rose-400 font-medium">
+                      Este navegador não suporta PWA/Service Workers. Use o Google Chrome no Android ou Safari no iOS.
                     </p>
                   )}
+
+                  {/* 2. SW não ativo */}
+                  {swSupported && !swController && (
+                    <p className="text-amber-400">
+                      O Service Worker está registrado, mas ainda não está ativo. Experimente recarregar a página (F5) para ativá-lo.
+                    </p>
+                  )}
+
+                  {/* 3. Rodando em IFrame */}
+                  {isIframe && (
+                    <p className="text-rose-400">
+                      <strong>Bloqueado por IFrame:</strong> Você está vendo o site de dentro de um iframe (ex: visualizador do AI Studio). Navegadores proíbem disparar o prompt de instalação dentro de iframes por segurança. Abra o site em uma aba separada!
+                    </p>
+                  )}
+
+                  {/* 4. In-App Browser */}
+                  {isInAppBrowser && (
+                    <p className="text-rose-400">
+                      <strong>Bloqueado por In-App WebView:</strong> Você abriu o site dentro de um aplicativo como WhatsApp, Instagram ou Facebook. Esses aplicativos usam WebViews internas que não permitem instalar PWAs. Toque nas configurações do topo (três pontinhos) e selecione <strong>"Abrir no Chrome"</strong> ou <strong>"Abrir no navegador"</strong>.
+                    </p>
+                  )}
+
+                  {/* 5. Sem suporte à API (Safari/iOS) */}
+                  {swSupported && swController && !hasBeforeInstallPromptEvent && !isIframe && !isInAppBrowser && (
+                    <p className="text-amber-400">
+                      <strong>Limitação do Navegador (iOS/Safari):</strong> Seu dispositivo/navegador não suporta a API de instalação direta em tela. 
+                      {isIOS ? (
+                        <span> No iPhone/iPad, para instalar, toque no botão <strong>"Compartilhar"</strong> (ícone de seta pra cima no Safari) e depois selecione <strong>"Adicionar à Tela de Início"</strong>.</span>
+                      ) : (
+                        <span> Use o Google Chrome no Android ou PC para instalação de um clique.</span>
+                      )}
+                    </p>
+                  )}
+
+                  {/* 6. Já instalado */}
+                  {swSupported && swController && (displayMode === 'standalone' || installedAppsStatus.includes('Sim')) && (
+                    <p className="text-emerald-400 font-medium">
+                      O aplicativo já está instalado no seu dispositivo ou rodando em modo Standalone! Verifique sua tela de início ou lista de aplicativos.
+                    </p>
+                  )}
+
+                  {/* 7. Chrome suporta mas não disparou (Cooldown / Engajamento) */}
+                  {swSupported && swController && hasBeforeInstallPromptEvent && !beforeinstallpromptFired && !isIframe && !isInAppBrowser && !installedAppsStatus.includes('Sim') && displayMode !== 'standalone' && (
+                    <div className="space-y-1.5">
+                      <p className="text-amber-400 font-medium">
+                        Requisitos técnicos validados perfeitamente! Por que o Chrome não disparou o prompt?
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1 text-slate-400 text-[10.5px]">
+                        <li>
+                          <strong>Supressão por Rejeição (Cooldown):</strong> Se você já clicou em "Cancelar" ou fechou o prompt de instalação anteriormente neste site, o Chrome bloqueia novos disparos temporariamente (cooldown de semanas a meses) para evitar spam.
+                        </li>
+                        <li>
+                          <strong>Falta de Engajamento:</strong> O Chrome exige uma interação real na página (toque na tela, rolagem, cliques) antes de disparar o evento.
+                        </li>
+                        <li>
+                          <strong>Como testar e forçar:</strong> Abra o site em uma <strong>Aba Anônima</strong>, ou limpe totalmente o cache e cookies do site nas configurações do Chrome, depois faça um clique/toque na tela para o Chrome disparar o prompt instantaneamente!
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* 8. Sucesso completo */}
                   {beforeinstallpromptFired && (
                     <p className="text-emerald-400 font-medium">
-                      Tudo pronto! O botão "Instalar Aplicativo" no topo do painel principal já deve estar ativo.
+                      Tudo validado! O botão "Instalar Aplicativo" no topo do painel principal já está ativo. Clique nele para realizar a instalação.
                     </p>
                   )}
                 </div>
