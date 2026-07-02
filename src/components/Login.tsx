@@ -216,14 +216,8 @@ export default function Login() {
               Instalar Aplicativo
             </button>
           ) : (
-            <div className="flex flex-col gap-2 items-center text-center">
-              <button
-                onClick={handleInstallClick}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm border border-slate-700/50"
-              >
-                Instalar Aplicativo
-              </button>
-              <p className="text-xs text-slate-500 leading-relaxed">
+            <div className="flex flex-col items-center text-center bg-slate-950/40 border border-slate-800/50 p-4 rounded-2xl">
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">
                 Instalação ainda não disponível. Abra no Chrome, aguarde alguns segundos e tente novamente.
               </p>
             </div>
