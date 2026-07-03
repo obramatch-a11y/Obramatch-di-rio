@@ -96,6 +96,26 @@ export default function Dashboard() {
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Connection offline transition states
+  const [wasOffline, setWasOffline] = useState(!online);
+  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
+
+  useEffect(() => {
+    if (online) {
+      if (wasOffline) {
+        setShowSyncSuccess(true);
+        const timer = setTimeout(() => {
+          setShowSyncSuccess(false);
+        }, 5000);
+        setWasOffline(false);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      setWasOffline(true);
+      setShowSyncSuccess(false);
+    }
+  }, [online, wasOffline]);
+
   // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
@@ -259,6 +279,66 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full pt-8">
+        {/* Connection Status Banners */}
+        <AnimatePresence mode="popLayout">
+          {!online && (
+            <motion.div
+              key="offline-banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 bg-slate-900 border border-amber-500/20 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-amber-500/5 rounded-full blur-xl" />
+              <div className="flex items-start sm:items-center gap-3.5 relative z-10">
+                <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl shrink-0">
+                  <CloudOff className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    Modo Offline Ativo
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Você está navegando sem internet. O ObraMatch salvará todos os diários e fotos localmente no seu dispositivo e sincronizará automaticamente com a nuvem assim que a conexão retornar.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {showSyncSuccess && (
+            <motion.div
+              key="online-success-banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 bg-slate-900 border border-emerald-500/20 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-4 overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl" />
+              <div className="flex items-start sm:items-center gap-3.5 relative z-10">
+                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    Conexão Restaurada!
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Sua conexão com a internet foi restabelecida. Seus dados estão sincronizados e seguros na nuvem do ObraMatch.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSyncSuccess(false)}
+                className="p-1.5 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-all cursor-pointer relative z-10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* PWA Install Banner */}
         <AnimatePresence>
           {showPwaBanner && !isStandalone && (deferredPrompt || isIOS) && (
