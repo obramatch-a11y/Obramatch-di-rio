@@ -28,6 +28,7 @@ import {
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import InstallButton from './InstallButton';
 
 const ECOSYSTEM_SLIDES = [
   {
@@ -369,14 +370,8 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto self-end sm:self-center shrink-0">
-                  {!isIOS && deferredPrompt && (
-                    <button
-                      onClick={handleInstallClick}
-                      className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
-                    >
-                      <Download className="w-4 h-4" />
-                      Instalar Aplicativo
-                    </button>
+                  {!isIOS && (
+                    <InstallButton variant="dashboard" />
                   )}
                   <button
                     onClick={() => setShowPwaBanner(false)}

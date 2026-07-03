@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
 import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import InstallButton from './InstallButton';
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -11,68 +12,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [installStatus, setInstallStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check if prompt was already captured globally
-    const checkWindowPWAProperties = () => {
-      const hasPrompt = (window as any).__deferredPrompt;
-      if (hasPrompt) {
-        setDeferredPrompt(hasPrompt);
-      }
-    };
-
-    checkWindowPWAProperties();
-
-    // Listen for custom global event from main.tsx
-    const handleGlobalPrompt = (e: any) => {
-      setDeferredPrompt(e.detail || (window as any).__deferredPrompt);
-    };
-
-    window.addEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
-
-    // Standard local listener as fallback
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      (window as any).__deferredPrompt = e;
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Periodic check to keep in sync
-    const interval = setInterval(() => {
-      checkWindowPWAProperties();
-    }, 1500);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    
-    setInstallStatus(null);
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to install prompt: ${outcome}`);
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        (window as any).__deferredPrompt = null;
-        setInstallStatus('Instalando aplicativo...');
-      } else {
-        setInstallStatus('Instalação cancelada pelo usuário.');
-      }
-    } catch (err) {
-      console.error(err);
-      setInstallStatus('Ocorreu um erro ao abrir o instalador.');
-    }
-  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -231,24 +170,8 @@ export default function Login() {
             Google
           </button>
 
-          {/* PWA Installation Button - only visible when deferredPrompt exists */}
-          {deferredPrompt && (
-            <div className="mt-6 pt-6 border-t border-slate-800/60">
-              <button
-                onClick={handleInstallClick}
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/15 text-sm"
-              >
-                <Construction className="w-5 h-5 animate-bounce" />
-                Instalar Aplicativo
-              </button>
-
-              {installStatus && (
-                <p className="text-xs text-amber-400 font-medium text-center mt-2.5">
-                  {installStatus}
-                </p>
-              )}
-            </div>
-          )}
+          {/* PWA Installation Button - only visible when installable */}
+          <InstallButton variant="login" className="mt-6 pt-6 border-t border-slate-800/60" />
 
           <div className="text-center mt-8">
             <button
