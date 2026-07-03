@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import AdSenseBlock from './AdSenseBlock';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 const ECOSYSTEM_SLIDES = [
@@ -376,7 +375,7 @@ export default function Dashboard() {
                       className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
                     >
                       <Download className="w-4 h-4" />
-                      Instalar Agora
+                      Instalar Aplicativo
                     </button>
                   )}
                   <button

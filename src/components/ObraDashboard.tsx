@@ -27,7 +27,6 @@ import {
   Bot
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
-import AdSenseBlock from './AdSenseBlock';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 export default function ObraDashboard() {
@@ -554,11 +553,6 @@ export default function ObraDashboard() {
 
             {/* Content recommended for your work required by step 3 */}
             <ObraMatchSoftPromo variant="obra" className="mt-8" />
-
-            {/* AdSense Block / Institutional Ad Slot required by step 7 */}
-            <div className="mt-6">
-              <AdSenseBlock className="w-full" />
-            </div>
 
           </div>
         )}

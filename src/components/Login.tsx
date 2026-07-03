@@ -3,7 +3,6 @@ import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPass
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
 import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
-import AdSenseBlock from './AdSenseBlock';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 export default function Login() {
@@ -270,9 +269,6 @@ export default function Login() {
         >
           <ObraMatchSoftPromo variant="login" />
         </motion.div>
-
-        {/* Fixed position Google AdSense / Institutional promo required by step 7 */}
-        <AdSenseBlock className="w-full" />
       </div>
     </div>
 

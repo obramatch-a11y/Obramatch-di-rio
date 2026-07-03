@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion } from 'motion/react';
-import AdSenseBlock from './AdSenseBlock';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import { 
   ArrowLeft, 
@@ -296,8 +295,6 @@ export default function DiarioDetail() {
           {/* Custom Promotional section required by step 3 & 7 */}
           <div className="mt-8 pt-8 border-t border-slate-900/50 space-y-6" id="diario-detail-ecosystem-footer">
             <ObraMatchSoftPromo variant="footer" className="mt-0" />
-            
-            <AdSenseBlock className="w-full" />
           </div>
         </main>
 
