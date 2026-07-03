@@ -4,7 +4,7 @@ import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
 import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
 import AdSenseBlock from './AdSenseBlock';
-import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
+import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 export default function Login() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -268,7 +268,7 @@ export default function Login() {
           transition={{ duration: 0.5, delay: 0.1 }}
           className="w-full"
         >
-          <ObraMatchEcosystemSection variant="login" />
+          <ObraMatchSoftPromo variant="login" />
         </motion.div>
 
         {/* Fixed position Google AdSense / Institutional promo required by step 7 */}

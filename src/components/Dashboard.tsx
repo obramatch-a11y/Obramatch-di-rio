@@ -28,8 +28,7 @@ import {
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import AdSenseBlock from './AdSenseBlock';
-import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
-import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
+import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 const ECOSYSTEM_SLIDES = [
   {
@@ -104,8 +103,24 @@ export default function Dashboard() {
   const [showPwaBanner, setShowPwaBanner] = useState(true);
 
   useEffect(() => {
+    const checkWindowPWAProperties = () => {
+      const hasPrompt = (window as any).__deferredPrompt;
+      if (hasPrompt) {
+        setDeferredPrompt(hasPrompt);
+      }
+    };
+
+    checkWindowPWAProperties();
+
+    const handleGlobalPrompt = (e: any) => {
+      setDeferredPrompt(e.detail || (window as any).__deferredPrompt);
+    };
+
+    window.addEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
+      (window as any).__deferredPrompt = e;
       setDeferredPrompt(e);
       console.log('beforeinstallprompt event captured');
     };
@@ -115,7 +130,8 @@ export default function Dashboard() {
     const checkStandalone = () => {
       const isStandaloneMode = 
         window.matchMedia('(display-mode: standalone)').matches || 
-        (window.navigator as any).standalone === true;
+        (window.navigator as any).standalone === true ||
+        (window as any).__appInstalled === true;
       setIsStandalone(isStandaloneMode);
     };
 
@@ -130,23 +146,38 @@ export default function Dashboard() {
     const handleAppInstalled = () => {
       setIsStandalone(true);
       setDeferredPrompt(null);
+      (window as any).__deferredPrompt = null;
       console.log('App successfully installed!');
     };
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    const interval = setInterval(() => {
+      checkWindowPWAProperties();
+      checkStandalone();
+    }, 1500);
+
     return () => {
+      window.removeEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      clearInterval(interval);
     };
   }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
-    setDeferredPrompt(null);
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        (window as any).__deferredPrompt = null;
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSignOut = () => {
@@ -281,13 +312,9 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Ecossistema ObraMatch required by step 2 */}
-        <ObraMatchEcosystemSection variant="dashboard" className="mb-8" />
-
-        {/* Dual-column Grid Layout for Obras & ObraMatch Ecosystem */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Projects List (8 Columns) */}
-          <div className="lg:col-span-8 space-y-6">
+        {/* Single-column Layout for Obras & ObraMatch Ecosystem underneath */}
+        <div className="space-y-8">
+          <div className="space-y-6">
             {/* Welcome Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -385,48 +412,8 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Right Column: ObraMatch Ecosystem Sidebar (4 Columns) - Required by step 3 & 7 */}
-          <div className="lg:col-span-4 space-y-6" id="dashboard-ecosystem-sidebar">
-            <div className="space-y-4">
-              <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-wider border-b border-slate-800 pb-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
-                <span>Ecossistema ObraMatch</span>
-              </h3>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <ObraMatchEcosystemCard
-                  tipo="site"
-                  titulo="Buscar Profissionais"
-                  descricao="Encontre fornecedores e profissionais avaliados para sua obra com total segurança, sem intermediários e com histórico visível."
-                  textoBotao="Buscar no Site"
-                  url="https://obramatch.com.br/"
-                  variante="card"
-                />
-
-                <ObraMatchEcosystemCard
-                  tipo="blog"
-                  titulo="Aprender no Blog"
-                  descricao="Acompanhe dicas de engenharia, normas técnicas da ABNT, impermeabilização, cura do concreto e novidades."
-                  textoBotao="Acessar Blog"
-                  url="https://obramatchof.blogspot.com/"
-                  variante="card"
-                />
-
-                <ObraMatchEcosystemCard
-                  tipo="agentes"
-                  titulo="Abrir Agentes Match"
-                  descricao="Use nossos agentes de inteligência artificial especializados para responder suas dúvidas de suporte de campo."
-                  textoBotao="Acessar Agentes"
-                  url="https://agentes.obramatch.com.br/"
-                  variante="card"
-                />
-              </div>
-            </div>
-
-            {/* AdSense Block or Institutional Promotion */}
-            <AdSenseBlock className="w-full" />
-          </div>
-
+          {/* Single, non-repetitive ObraMatch promo block below the main list as requested */}
+          <ObraMatchSoftPromo variant="dashboard" className="mt-8" />
         </div>
       </main>
 

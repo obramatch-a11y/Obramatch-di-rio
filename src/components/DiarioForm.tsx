@@ -29,8 +29,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
-import ObraMatchEcosystemCard from './ObraMatchEcosystemCard';
-import ObraMatchEcosystemSection from './ObraMatchEcosystemSection';
+import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
@@ -604,9 +603,6 @@ export default function DiarioForm() {
           </div>
 
         </div>
-
-        {/* Support Card - Step 3 requirement (Apoio técnico ObraMatch) */}
-        <ObraMatchEcosystemSection variant="diario" className="mt-8" />
       </main>
 
       <AnimatePresence>
@@ -707,6 +703,9 @@ export default function DiarioForm() {
                     </div>
                   </div>
                 )}
+
+                {/* Single, discrete promotion after save */}
+                <ObraMatchSoftPromo variant="diario" className="my-4" />
 
                 {/* Navigation Actions */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-800">
