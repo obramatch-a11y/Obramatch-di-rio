@@ -10,3 +10,5 @@ git-push-script.ts
 git-push-script.js
 
 
+*.zip
+.env.local

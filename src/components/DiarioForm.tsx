@@ -30,6 +30,10 @@ import {
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import { buscarClima } from '../lib/clima';
+import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
+import type { ClimaOficialInfo } from '../types';
+import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
@@ -57,6 +61,17 @@ export default function DiarioForm() {
   const [ocorrencias, setOcorrencias] = useState('');
   const [observacoes, setObservacoes] = useState('');
   
+  // Clima oficial (Open-Meteo) e IA
+  const [climaOficial, setClimaOficial] = useState<ClimaOficialInfo | null>(null);
+  const [buscandoClima, setBuscandoClima] = useState(false);
+  const [gravando, setGravando] = useState(false);
+  const [processandoIa, setProcessandoIa] = useState(false);
+  const [melhorandoTexto, setMelhorandoTexto] = useState(false);
+  const [erroIa, setErroIa] = useState('');
+  const [camposIa, setCamposIa] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   // GPS Coordinates
   const [gps, setGps] = useState<{ latitude: number; longitude: number } | null>(null);
   const [requestingGps, setRequestingGps] = useState(false);
@@ -125,12 +140,14 @@ export default function DiarioForm() {
     setRequestingGps(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setGps({
+        const coords = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
-        });
+        };
+        setGps(coords);
         setGpsStatus('success');
         setRequestingGps(false);
+        if (!isEditing) preencherClimaOficial(coords);
       },
       (error) => {
         console.warn('GPS error:', error);
@@ -145,15 +162,102 @@ export default function DiarioForm() {
     );
   };
 
+  // Clima oficial: prefere o GPS cadastrado na obra; usa o do aparelho como reserva
+  const preencherClimaOficial = async (coordsAparelho?: { latitude: number; longitude: number }) => {
+    const base = selectedObra?.gps || coordsAparelho || gps;
+    if (!base) return;
+    setBuscandoClima(true);
+    const hoje = data || new Date().toISOString().split('T')[0];
+    const resultado = await buscarClima(base.latitude, base.longitude, hoje);
+    setBuscandoClima(false);
+    if (resultado) {
+      setClima(resultado.condicao);
+      setClimaOficial(resultado);
+    }
+  };
+
+  // Seleção manual de clima remove o selo de fonte oficial
+  const selecionarClimaManual = (valor: string) => {
+    setClima(valor);
+    if (climaOficial && valor !== climaOficial.condicao) setClimaOficial(null);
+  };
+
+  // ✨ Ditar diário: grava áudio e a IA estrutura os campos do RDO
+  const iniciarGravacao = async () => {
+    setErroIa('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '' });
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (ev) => { if (ev.data.size > 0) audioChunksRef.current.push(ev.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size < 1000) { setErroIa('Áudio muito curto. Tente falar por alguns segundos.'); return; }
+        setProcessandoIa(true);
+        try {
+          const base64 = await new Promise<string>((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = () => res(String(reader.result).split(',')[1]);
+            reader.onerror = () => rej(new Error('Falha ao ler o áudio'));
+            reader.readAsDataURL(blob);
+          });
+          const rdo = await estruturarPorAudio(base64, blob.type || 'audio/webm');
+          if (rdo.atividades) setAtividades(rdo.atividades);
+          if (rdo.equipe) setEquipe(rdo.equipe);
+          if (rdo.materiais) setMateriais(rdo.materiais);
+          if (rdo.ocorrencias) setOcorrencias(rdo.ocorrencias);
+          if (rdo.observacoes) setObservacoes(rdo.observacoes);
+          setCamposIa(true);
+        } catch (err: any) {
+          setErroIa(err?.message || 'Não foi possível processar o áudio.');
+        } finally {
+          setProcessandoIa(false);
+        }
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setGravando(true);
+    } catch {
+      setErroIa('Não foi possível acessar o microfone. Verifique as permissões do navegador.');
+    }
+  };
+
+  const pararGravacao = () => {
+    mediaRecorderRef.current?.stop();
+    setGravando(false);
+  };
+
+  // "Melhorar texto": reescreve as atividades como redação técnica de RDO
+  const handleMelhorarTexto = async () => {
+    if (!atividades.trim()) return;
+    setErroIa('');
+    setMelhorandoTexto(true);
+    try {
+      const melhorado = await melhorarTexto(atividades);
+      setAtividades(melhorado);
+    } catch (err: any) {
+      setErroIa(err?.message || 'Não foi possível melhorar o texto.');
+    } finally {
+      setMelhorandoTexto(false);
+    }
+  };
+
   // Image upload and client-side compression
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadingImage(true);
+    let pendentes = files.length;
+    const concluirUm = () => {
+      pendentes -= 1;
+      if (pendentes <= 0) setUploadingImage(false);
+    };
 
     Array.from(files).forEach((file: any) => {
       const reader = new FileReader();
+      reader.onerror = concluirUm;
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target?.result as string;
@@ -195,12 +299,12 @@ export default function DiarioForm() {
               }
             ]);
           }
+          concluirUm();
         };
+        img.onerror = concluirUm;
       };
       reader.readAsDataURL(file);
     });
-
-    setUploadingImage(false);
   };
 
   const removePhoto = (index: number) => {
@@ -227,7 +331,7 @@ export default function DiarioForm() {
     ctx.moveTo(x, y);
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#f8fafc'; // White ink for dark card styling
+    ctx.strokeStyle = '#0f172a'; // Tinta escura: visível no PDF impresso (fundo branco)
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -264,16 +368,27 @@ export default function DiarioForm() {
   const handleSaveReport = async () => {
     if (!atividades) return;
 
-    // Capture signature if drawn
+    // Capture signature if drawn (exporta com fundo branco para o PDF)
     let signatureUrl = '';
-    if (hasSignature) {
-      signatureUrl = canvasRef.current?.toDataURL() || '';
+    if (hasSignature && canvasRef.current) {
+      const origem = canvasRef.current;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = origem.width;
+      exportCanvas.height = origem.height;
+      const ectx = exportCanvas.getContext('2d');
+      if (ectx) {
+        ectx.fillStyle = '#ffffff';
+        ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+        ectx.drawImage(origem, 0, 0);
+        signatureUrl = exportCanvas.toDataURL('image/png');
+      }
     }
 
     const reportData = {
       data,
       horario,
       clima,
+      climaOficial: climaOficial || null,
       equipe,
       atividades,
       materiais,
@@ -331,7 +446,50 @@ export default function DiarioForm() {
       {/* Form Area */}
       <main className="max-w-4xl mx-auto px-4 w-full pt-8 flex-1">
         <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 sm:p-8 space-y-6">
-          
+
+          {/* Section: Ditar diário com IA */}
+          {!isEditing && (
+            <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1">
+                <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Ditar diário
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Fale o que aconteceu na obra e a IA preenche os campos do RDO para você revisar.
+                </p>
+                {erroIa && <p className="text-xs text-red-400 mt-1.5 font-semibold">{erroIa}</p>}
+                {camposIa && !erroIa && (
+                  <p className="text-xs text-emerald-400 mt-1.5 font-semibold">✓ Campos preenchidos pela IA — revise antes de salvar.</p>
+                )}
+              </div>
+              {processandoIa ? (
+                <div className="py-3 px-5 bg-slate-950 border border-slate-800 text-amber-400 font-bold rounded-2xl flex items-center gap-2 text-xs">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Estruturando RDO...
+                </div>
+              ) : gravando ? (
+                <button
+                  type="button"
+                  onClick={pararGravacao}
+                  className="py-3 px-5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs animate-pulse"
+                >
+                  <Square className="w-4 h-4 fill-current" />
+                  Parar e processar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={iniciarGravacao}
+                  className="py-3 px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs shadow-lg shadow-amber-500/10"
+                >
+                  <Mic className="w-4 h-4" />
+                  Gravar áudio
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Section: Metadata (Data, Hora, Clima, GPS) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-slate-900">
             <div className="space-y-4">
@@ -392,9 +550,19 @@ export default function DiarioForm() {
 
             {/* Clima Selection */}
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Condições do Clima
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  Condições do Clima
+                </label>
+                {buscandoClima ? (
+                  <span className="text-[10px] text-slate-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Consultando fonte oficial...</span>
+                ) : climaOficial ? (
+                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    Fonte oficial · {climaOficial.tempMin}–{climaOficial.tempMax}°C · {climaOficial.chuvaMm}mm
+                  </span>
+                ) : null}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {CLIMA_OPTIONS.map((item) => {
                   const Icon = item.icon;
@@ -403,7 +571,7 @@ export default function DiarioForm() {
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => setClima(item.value)}
+                      onClick={() => selecionarClimaManual(item.value)}
                       className={`flex items-center gap-2.5 p-3.5 border rounded-2xl font-semibold cursor-pointer text-xs transition-all ${
                         isSelected 
                           ? 'border-amber-400 text-amber-400 bg-amber-500/10' 
@@ -422,9 +590,20 @@ export default function DiarioForm() {
           {/* Section: Main details */}
           <div className="space-y-4">
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                Atividades Executadas (Progresso do Dia) *
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  Atividades Executadas (Progresso do Dia) *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleMelhorarTexto}
+                  disabled={!atividades.trim() || melhorandoTexto}
+                  className="flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 disabled:opacity-40 cursor-pointer transition-all"
+                >
+                  {melhorandoTexto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Melhorar texto
+                </button>
+              </div>
               <textarea
                 required
                 rows={4}
@@ -573,7 +752,7 @@ export default function DiarioForm() {
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="bg-slate-900 border border-slate-800 rounded-xl cursor-crosshair max-w-full touch-none"
+                className="bg-slate-100 border border-slate-300 rounded-xl cursor-crosshair max-w-full touch-none"
               />
               <div className="flex justify-between items-center w-full mt-3 text-xs text-slate-400">
                 <span>{hasSignature ? '✓ Assinado' : 'Toque acima para assinar'}</span>

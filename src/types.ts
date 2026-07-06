@@ -6,6 +6,8 @@ export interface Obra {
   responsavelTecnico: string;
   dataInicio: string;
   observacoes: string;
+  gps?: GPSLocation | null;       // Localização da obra (base do clima oficial)
+  proximoNumeroRdo?: number;      // Numeração sequencial dos RDOs
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
@@ -16,12 +18,24 @@ export interface GPSLocation {
   longitude: number;
 }
 
+export interface ClimaOficialInfo {
+  condicao: string;
+  tempMax: number;
+  tempMin: number;
+  chuvaMm: number;
+  fonte: string;
+}
+
 export interface Diario {
   id: string;
   obraId: string;
+  numeroRdo?: number;                     // RDO Nº sequencial por obra
   data: string;
   horario: string;
   clima: string;
+  climaOficial?: ClimaOficialInfo | null; // Clima de fonte oficial (Open-Meteo)
+  origem?: 'app' | 'telegram';
+  hashIntegridade?: string;               // SHA-256 do conteúdo confirmado
   equipe: string;
   atividades: string;
   materiais: string;

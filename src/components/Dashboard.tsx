@@ -29,6 +29,8 @@ import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import InstallButton from './InstallButton';
+import PerfilBadge from './PerfilBadge';
+import TelegramConnect from './TelegramConnect';
 
 const ECOSYSTEM_SLIDES = [
   {
@@ -89,6 +91,8 @@ export default function Dashboard() {
 
   // Form states
   const [nome, setNome] = useState('');
+  const [gpsObra, setGpsObra] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [capturandoGps, setCapturandoGps] = useState(false);
   const [cliente, setCliente] = useState('');
   const [endereco, setEndereco] = useState('');
   const [responsavelTecnico, setResponsavelTecnico] = useState('');
@@ -217,9 +221,11 @@ export default function Dashboard() {
         responsavelTecnico,
         dataInicio,
         observacoes,
+        gps: gpsObra,
       });
       // Clear form and close modal
       setNome('');
+      setGpsObra(null);
       setCliente('');
       setEndereco('');
       setResponsavelTecnico('');
@@ -231,6 +237,19 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const capturarGpsObra = () => {
+    if (!navigator.geolocation) return;
+    setCapturandoGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsObra({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        setCapturandoGps(false);
+      },
+      () => setCapturandoGps(false),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
   };
 
   const filteredObras = obras.filter(obra => 
@@ -388,6 +407,10 @@ export default function Dashboard() {
 
         {/* Single-column Layout for Obras & ObraMatch Ecosystem underneath */}
         <div className="space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <PerfilBadge />
+            <TelegramConnect />
+          </div>
           <div className="space-y-6">
             {/* Welcome Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -578,6 +601,26 @@ export default function Dashboard() {
                     placeholder="Rua das Flores, 123 - Centro"
                     className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Localização da Obra (para o clima oficial do RDO)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={capturarGpsObra}
+                      disabled={capturandoGps}
+                      className="py-3 px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-semibold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs"
+                    >
+                      <MapPin className="w-4 h-4 text-amber-500" />
+                      {capturandoGps ? 'Capturando...' : 'Capturar localização'}
+                    </button>
+                    <div className="flex-1 px-4 py-3 bg-slate-950/30 rounded-2xl border border-slate-900 text-xs font-mono text-slate-400 truncate">
+                      {gpsObra ? `📍 ${gpsObra.latitude.toFixed(5)}, ${gpsObra.longitude.toFixed(5)}` : 'Estando na obra, toque para capturar'}
+                    </div>
+                  </div>
                 </div>
 
                 <div>

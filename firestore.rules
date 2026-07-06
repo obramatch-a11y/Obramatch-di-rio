@@ -12,6 +12,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Perfil do usuário (vínculo Telegram, controle de uso da IA)
+    match /usuarios/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
     // Match rules for /obras and its subcollections
     match /obras/{obraId} {
       allow read, write: if isSignedIn() 

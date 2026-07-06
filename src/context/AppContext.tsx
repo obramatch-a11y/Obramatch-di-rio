@@ -9,10 +9,13 @@ import {
   updateDoc, 
   deleteDoc, 
   doc, 
-  serverTimestamp 
+  serverTimestamp,
+  runTransaction
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError } from '../firebase';
 import { Obra, Diario, Foto, OperationType } from '../types';
+import { uploadFoto } from '../lib/storage';
+import { calcularHashRdo } from '../lib/hash';
 
 interface AppContextType {
   user: User | null;
@@ -259,9 +262,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     try {
+      // Numeração sequencial do RDO (transação sobre o documento da obra)
+      const obraRef = doc(db, 'obras', selectedObra.id);
+      const numeroRdo = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(obraRef);
+        const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
+        const numero = Math.max(atual, diarios.length + 1);
+        tx.update(obraRef, { proximoNumeroRdo: numero + 1, updatedAt: serverTimestamp() });
+        return numero;
+      });
+
+      // Código de integridade (SHA-256 do conteúdo canônico)
+      const hashIntegridade = await calcularHashRdo({
+        obraId: selectedObra.id,
+        numeroRdo,
+        data: diarioData.data,
+        horario: diarioData.horario,
+        clima: diarioData.clima || '',
+        equipe: diarioData.equipe || '',
+        atividades: diarioData.atividades || '',
+        materiais: diarioData.materiais || '',
+        ocorrencias: diarioData.ocorrencias || '',
+        observacoes: diarioData.observacoes || '',
+        gps: diarioData.gps || null,
+      });
+
       // Add the diary document
       const docRef = await addDoc(collection(db, diariosPath), {
         ...diarioData,
+        numeroRdo,
+        hashIntegridade,
+        origem: 'app',
         obraId: selectedObra.id,
         ownerId: user.uid,
         createdAt: serverTimestamp(),
@@ -270,13 +301,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const diaryId = docRef.id;
 
-      // Add associated photos to subcollection
+      // Fotos: upload ao Supabase Storage (fallback: base64) e gravação da URL
       const photosPath = `${diariosPath}/${diaryId}/fotos`;
-      for (const photo of base64Photos) {
+      for (let i = 0; i < base64Photos.length; i++) {
+        const photo = base64Photos[i];
+        const url = await uploadFoto(photo.url, `${selectedObra.id}/${diaryId}/foto-${Date.now()}-${i}`);
         await addDoc(collection(db, photosPath), {
           diarioId: diaryId,
           obraId: selectedObra.id,
-          url: photo.url,
+          url,
           legenda: photo.legenda,
           data: diarioData.data,
           horario: diarioData.horario,
@@ -301,19 +334,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
     try {
+      // Recalcula o código de integridade quando os campos do RDO mudam
+      const original = diarios.find((d) => d.id === id);
+      const combinado = { ...(original || {}), ...diarioData } as Diario;
+      const hashIntegridade = await calcularHashRdo({
+        obraId: selectedObra.id,
+        numeroRdo: combinado.numeroRdo || 0,
+        data: combinado.data || '',
+        horario: combinado.horario || '',
+        clima: combinado.clima || '',
+        equipe: combinado.equipe || '',
+        atividades: combinado.atividades || '',
+        materiais: combinado.materiais || '',
+        ocorrencias: combinado.ocorrencias || '',
+        observacoes: combinado.observacoes || '',
+        gps: combinado.gps || null,
+      });
+
       await updateDoc(doc(db, 'obras', selectedObra.id, 'diarios', id), {
         ...diarioData,
+        hashIntegridade,
         updatedAt: serverTimestamp(),
       });
 
       // If new photos were provided, add them as well
       if (base64Photos && base64Photos.length > 0) {
         const photosPath = `${diarioPath}/fotos`;
-        for (const photo of base64Photos) {
+        for (let i = 0; i < base64Photos.length; i++) {
+          const photo = base64Photos[i];
+          const url = await uploadFoto(photo.url, `${selectedObra.id}/${id}/foto-${Date.now()}-${i}`);
           await addDoc(collection(db, photosPath), {
             diarioId: id,
             obraId: selectedObra.id,
-            url: photo.url,
+            url,
             legenda: photo.legenda,
             data: diarioData.data || new Date().toISOString().split('T')[0],
             horario: diarioData.horario || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { calcularHashRdo } from '../lib/hash';
+import { ShieldCheck, ShieldAlert } from 'lucide-react';
 import { motion } from 'motion/react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import { 
@@ -35,8 +37,28 @@ const CLIMA_ICONS: { [key: string]: any } = {
 export default function DiarioDetail() {
   const { selectedObra, selectedDiario, deleteDiario, setView, fotos } = useApp();
   const [copied, setCopied] = useState(false);
+  const [verificacao, setVerificacao] = useState<'idle' | 'integro' | 'alterado' | 'verificando'>('idle');
 
   if (!selectedObra || !selectedDiario) return null;
+
+  const verificarIntegridade = async () => {
+    if (!selectedDiario.hashIntegridade) return;
+    setVerificacao('verificando');
+    const recalculado = await calcularHashRdo({
+      obraId: selectedDiario.obraId,
+      numeroRdo: selectedDiario.numeroRdo || 0,
+      data: selectedDiario.data || '',
+      horario: selectedDiario.horario || '',
+      clima: selectedDiario.clima || '',
+      equipe: selectedDiario.equipe || '',
+      atividades: selectedDiario.atividades || '',
+      materiais: selectedDiario.materiais || '',
+      ocorrencias: selectedDiario.ocorrencias || '',
+      observacoes: selectedDiario.observacoes || '',
+      gps: selectedDiario.gps || null,
+    });
+    setVerificacao(recalculado === selectedDiario.hashIntegridade ? 'integro' : 'alterado');
+  };
 
   const dPhotos = fotos.filter(f => f.diarioId === selectedDiario.id);
   const ClimaIcon = CLIMA_ICONS[selectedDiario.clima || 'Ensolarado'] || Sun;
@@ -120,10 +142,29 @@ export default function DiarioDetail() {
           {/* Action Header Card */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Relatório de Evolução</span>
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                Relatório de Evolução{selectedDiario.numeroRdo ? ` · RDO Nº ${String(selectedDiario.numeroRdo).padStart(3, '0')}` : ''}
+              </span>
               <h2 className="text-2xl font-black text-white mt-1">
                 Diário de Obra — {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
               </h2>
+              {selectedDiario.hashIntegridade && (
+                <button
+                  onClick={verificarIntegridade}
+                  className={`mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer transition-all border ${
+                    verificacao === 'alterado'
+                      ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                  }`}
+                  title="Recalcula o código de integridade e compara com o registrado"
+                >
+                  {verificacao === 'alterado' ? <ShieldAlert className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                  {verificacao === 'idle' && `🔒 Integridade ${selectedDiario.hashIntegridade.slice(0, 8)} — toque para verificar`}
+                  {verificacao === 'verificando' && 'Verificando...'}
+                  {verificacao === 'integro' && '✅ Registro íntegro — sem alterações'}
+                  {verificacao === 'alterado' && '⚠️ Conteúdo divergente do código registrado'}
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -308,9 +349,9 @@ export default function DiarioDetail() {
           <div>
             <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">ECOSSISTEMA OBRAMATCH</span>
             <h1 className="text-2xl font-black text-slate-900 font-sans tracking-tight mt-1">
-              OBRAMATCH DIÁRIO
+              RELATÓRIO DIÁRIO DE OBRA{selectedDiario.numeroRdo ? ` — RDO Nº ${String(selectedDiario.numeroRdo).padStart(3, '0')}` : ''}
             </h1>
-            <p className="text-xs text-slate-500 italic mt-1">Relatório Técnico Diário de Execução</p>
+            <p className="text-xs text-slate-500 italic mt-1">ObraMatch Diário · Relatório Técnico Diário de Execução</p>
           </div>
           <div className="text-right">
             <div className="text-lg font-extrabold text-slate-900 font-mono">
@@ -336,7 +377,14 @@ export default function DiarioDetail() {
           </div>
           <div>
             <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">CLIMA / CONDIÇÕES:</span>
-            <span className="text-slate-900 font-semibold">{selectedDiario.clima || 'Ensolarado'}</span>
+            <span className="text-slate-900 font-semibold">
+              {selectedDiario.clima || 'Ensolarado'}
+              {selectedDiario.climaOficial && (
+                <span className="block text-[10px] text-slate-600 font-normal mt-0.5">
+                  {selectedDiario.climaOficial.tempMin}°C a {selectedDiario.climaOficial.tempMax}°C · Precipitação: {selectedDiario.climaOficial.chuvaMm}mm · Fonte oficial: Open-Meteo
+                </span>
+              )}
+            </span>
           </div>
           {selectedObra.endereco && (
             <div className="col-span-2">
@@ -455,8 +503,13 @@ export default function DiarioDetail() {
 
         {/* Generation stamp in footer */}
         <div className="mt-16 text-center font-sans border-t border-slate-200 pt-4 flex flex-col items-center gap-1">
+          {selectedDiario.hashIntegridade && (
+            <p className="text-[9px] text-slate-600 font-mono mb-1">
+              🔒 Código de integridade (SHA-256): {selectedDiario.hashIntegridade}
+            </p>
+          )}
           <p className="text-[10px] text-slate-500 font-bold">
-            Relatório gerado automaticamente via ObraMatch Diário.
+            Documento gerado pelo ObraMatch Diário — diario.obramatch.com.br
           </p>
           <p className="text-[9px] text-slate-400 max-w-xl leading-relaxed">
             ObraMatch: Encontre profissionais avaliados para sua obra com mais segurança. Economize tempo, tenha histórico de obras visível e faça contato direto sem intermediários. Acesse o site oficial em <a href="https://obramatch.com.br/" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-600 hover:underline">obramatch.com.br</a>
