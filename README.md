@@ -1,51 +1,48 @@
-# ObraMatch Diário 🚧
+# ObraMatch Diário
 
-Aplicação moderna para controle diário de obras e relatórios de acompanhamento, com suporte offline (PWA) e integração direta com Firebase (Authentication e Firestore).
+Diário de Obra (RDO) por app e por **Telegram com IA** — parte do ecossistema [ObraMatch](https://obramatch.com.br).
 
-## 🚀 Como Hospedar Grátis (Vercel, Netlify ou Cloudflare Pages)
+**Diferenciais:**
+- 🎙 **Registro por áudio no Telegram** (@diariomatchbot): a IA transcreve e estrutura o RDO — nada é salvo sem confirmação
+- 🌤 **Clima de fonte oficial** (Open-Meteo) preenchido automaticamente pelo GPS da obra
+- 🔒 **Código de integridade SHA-256** em cada RDO + verificação no app — valor probatório em perícias
+- 📋 **RDO numerado** com PDF padrão de mercado (assinaturas RT e cliente)
+- 🏗 Ponte com o marketplace ObraMatch (selo "Profissional que documenta")
 
-Esta aplicação foi configurada para funcionar perfeitamente em qualquer plataforma de hospedagem de aplicações estáticas (Single Page Applications - SPA).
+## Stack (custo zero, sem VPS)
+React 19 + Vite + Tailwind 4 (PWA) · Firebase Auth/Firestore · Cloudflare Pages + Pages Functions · Gemini (nível gratuito) · Supabase Storage · Open-Meteo
 
-### Configurações de Deploy Recomendadas
+## Deploy — Cloudflare Pages
+1. Conecte este repositório na Cloudflare Pages — build `npm run build`, saída `dist`
+2. Configure as variáveis de ambiente (Settings → Environment variables):
 
-- **Framework Preset**: Vite / React (ou `Other`)
-- **Build Command**: `npm run build`
-- **Publish / Output Directory**: `dist`
-- **Node.js Version**: 18 ou superior
+| Variável | O que é |
+|---|---|
+| `GEMINI_API_KEY` | Chave gratuita do Google AI Studio |
+| `TELEGRAM_BOT_TOKEN` | Token do bot (@BotFather) |
+| `TELEGRAM_SECRET` | Senha longa inventada por você (protege o webhook) |
+| `FIREBASE_SERVICE_ACCOUNT` | JSON completo da credencial de serviço (Firebase → Contas de serviço) |
+| `FIREBASE_WEB_API_KEY` | Chave web pública do projeto Firebase |
+| `FIREBASE_DB_ID` | ID do banco Firestore (veja `firebase-applet-config.json`; em projeto próprio: `(default)`) |
+| `SUPABASE_URL` | URL do projeto Supabase (fotos) |
+| `SUPABASE_SERVICE_KEY` | Service role key do Supabase |
 
----
+Frontend (opcional, para fotos direto do app): `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
 
-## ☁️ Plataformas de Deploy Gratuito
+3. Publique as regras do `firestore.rules` no Console do Firebase
+4. Crie o bucket público `diario-fotos` no Supabase
+5. Ative o webhook do bot abrindo uma vez: `https://SEU-DOMINIO/api/setup-webhook?secret=SEU_TELEGRAM_SECRET`
 
-### 1. Vercel (Recomendado)
-1. Conecte sua conta do GitHub na [Vercel](https://vercel.com).
-2. Clique em **Add New** > **Project** e selecione este repositório.
-3. Certifique-se de que o diretório de saída está definido como `dist`.
-4. Clique em **Deploy**.
-5. No painel do projeto, vá em **Settings** > **Domains** e adicione o domínio: `diario.obramatch.com.br`.
+## Endpoints (Pages Functions)
+- `POST /api/ia` — IA do app (ditar diário / melhorar texto), autenticada, limite 20/dia por usuário
+- `POST /api/telegram` — webhook do bot
+- `GET /api/setup-webhook?secret=` — registra o webhook
+- `GET /api/perfil-publico?uid=` — resumo público para o marketplace
 
-### 2. Netlify
-1. Conecte sua conta do GitHub no [Netlify](https://netlify.com).
-2. Clique em **Add new site** > **Import an existing project** e selecione este repositório do GitHub.
-3. Configure o diretório de saída como `dist`.
-4. Clique em **Deploy site**.
-5. O arquivo `public/_redirects` já está incluso para garantir que o roteamento de páginas (SPA fallback) funcione perfeitamente.
-6. Vá em **Domain settings** e adicione seu domínio personalizado: `diario.obramatch.com.br`.
-
-### 3. Cloudflare Pages
-1. Conecte seu GitHub no painel do [Cloudflare Pages](https://pages.cloudflare.com).
-2. Selecione este repositório e configure o framework preset como **Vite**.
-3. Defina o build command como `npm run build` e o diretório de saída como `dist`.
-4. Salve e implante.
-5. Em **Custom Domains**, adicione o domínio `diario.obramatch.com.br` e siga as instruções DNS da Cloudflare.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-
-- **React 18** & **Vite**
-- **TypeScript**
-- **Tailwind CSS** (Estilização Moderna)
-- **Firebase Authentication** (Controle de Acesso)
-- **Firebase Firestore** (Banco de Dados em Tempo Real)
-- **PWA (Progressive Web App)** (Instalável e Offline com Service Workers)
+## Desenvolvimento
+```bash
+npm install
+npm run dev        # app local
+npm run typecheck  # verificação de tipos
+npm run build      # build de produção
+```

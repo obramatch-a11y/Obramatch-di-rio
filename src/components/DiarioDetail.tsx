@@ -486,19 +486,30 @@ export default function DiarioDetail() {
         )}
 
         {/* Signatures footer block */}
-        <div className="mt-12 pt-8 border-t border-slate-300 font-sans flex flex-col items-center">
-          {selectedDiario.assinatura && (
-            <div className="mb-3 flex justify-center">
-              <img 
-                src={selectedDiario.assinatura} 
-                alt="Assinatura" 
-                className="max-h-20 object-contain" 
-              />
+        <div className="mt-12 pt-6 font-sans">
+          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-8">
+            7. ASSINATURAS
+          </h3>
+          <div className="grid grid-cols-2 gap-12">
+            <div className="flex flex-col items-center">
+              {selectedDiario.assinatura ? (
+                <div className="mb-2 flex justify-center h-20 items-end">
+                  <img src={selectedDiario.assinatura} alt="Assinatura do Responsável Técnico" className="max-h-20 object-contain" />
+                </div>
+              ) : (
+                <div className="h-20" />
+              )}
+              <div className="w-full border-t border-slate-900 my-1"></div>
+              <p className="text-xs font-bold text-slate-900 uppercase text-center">{selectedObra.responsavelTecnico}</p>
+              <p className="text-[10px] text-slate-500">Responsável Técnico (CREA/CAU)</p>
             </div>
-          )}
-          <div className="w-64 border-t border-slate-900 my-1"></div>
-          <p className="text-xs font-bold text-slate-900 uppercase">{selectedObra.responsavelTecnico}</p>
-          <p className="text-[10px] text-slate-500">Responsável Técnico (CREA/CAU)</p>
+            <div className="flex flex-col items-center">
+              <div className="h-20" />
+              <div className="w-full border-t border-slate-900 my-1"></div>
+              <p className="text-xs font-bold text-slate-900 uppercase text-center">{selectedObra.cliente}</p>
+              <p className="text-[10px] text-slate-500">Cliente / Contratante — Ciência do registro</p>
+            </div>
+          </div>
         </div>
 
         {/* Generation stamp in footer */}
@@ -506,6 +517,13 @@ export default function DiarioDetail() {
           {selectedDiario.hashIntegridade && (
             <p className="text-[9px] text-slate-600 font-mono mb-1">
               🔒 Código de integridade (SHA-256): {selectedDiario.hashIntegridade}
+            </p>
+          )}
+          {(selectedDiario.gps || selectedDiario.origem) && (
+            <p className="text-[9px] text-slate-500 font-mono mb-1">
+              {selectedDiario.gps ? `GPS: ${selectedDiario.gps.latitude.toFixed(6)}, ${selectedDiario.gps.longitude.toFixed(6)}` : ''}
+              {selectedDiario.gps && selectedDiario.origem ? ' · ' : ''}
+              {selectedDiario.origem === 'telegram' ? 'Registrado via Telegram com confirmação do responsável' : selectedDiario.origem === 'app' ? 'Registrado via aplicativo' : ''}
             </p>
           )}
           <p className="text-[10px] text-slate-500 font-bold">
