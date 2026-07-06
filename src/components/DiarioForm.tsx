@@ -124,11 +124,12 @@ export default function DiarioForm() {
     } else {
       // Automatic values
       const now = new Date();
-      setData(now.toISOString().split('T')[0]);
+      const todayISO = now.toISOString().split('T')[0];
+      setData(todayISO);
       setHorario(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       
-      // Auto trigger GPS on create
-      handleRequestGps();
+      // Auto trigger GPS on create, passing today's date explicitly since state update is async
+      handleRequestGps(todayISO);
     }
   }, [isEditing, editingDiario]);
 
@@ -150,13 +151,14 @@ export default function DiarioForm() {
   };
 
   // Handle GPS request
-  const handleRequestGps = () => {
+  const handleRequestGps = (dataParam?: string) => {
     if (!navigator.geolocation) {
       setGpsStatus('error');
       return;
     }
 
     setRequestingGps(true);
+    const dataAtual = dataParam || data || new Date().toISOString().split('T')[0];
 
     // Preferir GPS da obra se disponível
     const obraGps = selectedObra?.gps;
@@ -164,7 +166,6 @@ export default function DiarioForm() {
       setGps({ latitude: obraGps.latitude, longitude: obraGps.longitude });
       setGpsStatus('success');
       setRequestingGps(false);
-      const dataAtual = data || new Date().toISOString().split('T')[0];
       fetchClimaAutomatico(obraGps.latitude, obraGps.longitude, dataAtual);
       return;
     }
@@ -176,7 +177,6 @@ export default function DiarioForm() {
         setGps({ latitude: lat, longitude: lon });
         setGpsStatus('success');
         setRequestingGps(false);
-        const dataAtual = data || new Date().toISOString().split('T')[0];
         fetchClimaAutomatico(lat, lon, dataAtual);
       },
       (error) => {
@@ -242,9 +242,15 @@ export default function DiarioForm() {
             }
             resolve();
           };
-          img.onerror = () => resolve();
+          img.onerror = () => {
+            console.warn('Falha ao processar imagem:', file.name);
+            resolve();
+          };
         };
-        reader.onerror = () => resolve();
+        reader.onerror = () => {
+          console.warn('Falha ao ler arquivo:', file.name);
+          resolve();
+        };
         reader.readAsDataURL(file);
       });
     });

@@ -6,6 +6,8 @@ export interface DadosClima {
   fonte: 'open-meteo';
 }
 
+const OPEN_METEO_API = 'https://api.open-meteo.com/v1/forecast';
+
 /**
  * Converte weather_code da Open-Meteo para descrição em português.
  * Referência: https://open-meteo.com/en/docs#weathervariables
@@ -38,7 +40,7 @@ export async function buscarClima(lat: number, lon: number, dataISO: string): Pr
     end_date: dataISO,
   });
 
-  const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+  const url = `${OPEN_METEO_API}?${params.toString()}`;
   const response = await fetch(url);
 
   if (!response.ok) {
