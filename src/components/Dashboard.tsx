@@ -95,6 +95,8 @@ export default function Dashboard() {
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
   const [observacoes, setObservacoes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [obraGps, setObraGps] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [capturandoGps, setCapturandoGps] = useState(false);
 
   // Connection offline transition states
   const [wasOffline, setWasOffline] = useState(!online);
@@ -204,6 +206,21 @@ export default function Dashboard() {
     signOut(auth);
   };
 
+  const handleCapturarGpsObra = () => {
+    if (!navigator.geolocation) return;
+    setCapturandoGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setObraGps({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        setCapturandoGps(false);
+      },
+      () => {
+        setCapturandoGps(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome || !cliente || !responsavelTecnico) return;
@@ -217,6 +234,7 @@ export default function Dashboard() {
         responsavelTecnico,
         dataInicio,
         observacoes,
+        gps: obraGps || undefined,
       });
       // Clear form and close modal
       setNome('');
@@ -225,6 +243,7 @@ export default function Dashboard() {
       setResponsavelTecnico('');
       setDataInicio(new Date().toISOString().split('T')[0]);
       setObservacoes('');
+      setObraGps(null);
       setShowAddModal(false);
     } catch (err) {
       console.error(err);
@@ -603,6 +622,29 @@ export default function Dashboard() {
                     placeholder="Notas ou detalhes iniciais do contrato..."
                     className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm resize-none"
                   />
+                </div>
+
+                {/* GPS da Obra */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Localização GPS da Obra
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCapturarGpsObra}
+                      disabled={capturandoGps}
+                      className="py-2.5 px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-semibold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs disabled:opacity-50"
+                    >
+                      <MapPin className="w-4 h-4 text-amber-500" />
+                      {capturandoGps ? 'Capturando...' : 'Capturar localização da obra'}
+                    </button>
+                    {obraGps && (
+                      <span className="text-xs font-mono text-emerald-400">
+                        📍 {obraGps.latitude.toFixed(5)}, {obraGps.longitude.toFixed(5)}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-800">

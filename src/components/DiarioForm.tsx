@@ -26,10 +26,13 @@ import {
   Bot,
   BookOpen,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  BadgeCheck
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import { buscarClima, DadosClima } from '../lib/clima';
+import { ClimaOficial } from '../types';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
@@ -51,6 +54,7 @@ export default function DiarioForm() {
   const [data, setData] = useState('');
   const [horario, setHorario] = useState('');
   const [clima, setClima] = useState('Ensolarado');
+  const [climaOficial, setClimaOficial] = useState<ClimaOficial | null>(null);
   const [equipe, setEquipe] = useState('');
   const [atividades, setAtividades] = useState('');
   const [materiais, setMateriais] = useState('');
@@ -71,12 +75,23 @@ export default function DiarioForm() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
 
+  // Initialize canvas with white background on mount
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
   // Load defaults or edit values
   useEffect(() => {
     if (isEditing && editingDiario) {
       setData(editingDiario.data);
       setHorario(editingDiario.horario);
       setClima(editingDiario.clima || 'Ensolarado');
+      setClimaOficial(editingDiario.climaOficial || null);
       setEquipe(editingDiario.equipe || '');
       setAtividades(editingDiario.atividades || '');
       setMateriais(editingDiario.materiais || '');
@@ -94,10 +109,12 @@ export default function DiarioForm() {
           if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
+              // Fill white background before drawing saved signature
+              ctx.fillStyle = '#f8fafc';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
               const img = new Image();
               img.src = editingDiario.assinatura!;
               img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0);
               };
             }
@@ -107,30 +124,60 @@ export default function DiarioForm() {
     } else {
       // Automatic values
       const now = new Date();
-      setData(now.toISOString().split('T')[0]);
+      const todayISO = now.toISOString().split('T')[0];
+      setData(todayISO);
       setHorario(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       
-      // Auto trigger GPS on create
-      handleRequestGps();
+      // Auto trigger GPS on create, passing today's date explicitly since state update is async
+      handleRequestGps(todayISO);
     }
   }, [isEditing, editingDiario]);
 
+  // Buscar clima automaticamente quando GPS for obtido
+  const fetchClimaAutomatico = async (lat: number, lon: number, dateISO: string) => {
+    try {
+      const dadosClima = await buscarClima(lat, lon, dateISO);
+      setClima(dadosClima.condicao);
+      setClimaOficial({
+        condicao: dadosClima.condicao,
+        tempMax: dadosClima.tempMax,
+        tempMin: dadosClima.tempMin,
+        chuvaMm: dadosClima.chuvaMm,
+        fonte: 'open-meteo',
+      });
+    } catch (err) {
+      console.warn('Falha ao buscar clima automático:', err);
+    }
+  };
+
   // Handle GPS request
-  const handleRequestGps = () => {
+  const handleRequestGps = (dataParam?: string) => {
     if (!navigator.geolocation) {
       setGpsStatus('error');
       return;
     }
 
     setRequestingGps(true);
+    const dataAtual = dataParam || data || new Date().toISOString().split('T')[0];
+
+    // Preferir GPS da obra se disponível
+    const obraGps = selectedObra?.gps;
+    if (obraGps) {
+      setGps({ latitude: obraGps.latitude, longitude: obraGps.longitude });
+      setGpsStatus('success');
+      setRequestingGps(false);
+      fetchClimaAutomatico(obraGps.latitude, obraGps.longitude, dataAtual);
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setGps({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setGps({ latitude: lat, longitude: lon });
         setGpsStatus('success');
         setRequestingGps(false);
+        fetchClimaAutomatico(lat, lon, dataAtual);
       },
       (error) => {
         console.warn('GPS error:', error);
@@ -152,55 +199,65 @@ export default function DiarioForm() {
 
     setUploadingImage(true);
 
-    Array.from(files).forEach((file: any) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          // Compress using canvas to ensure base64 is lightweight (~200KB)
-          const canvas = document.createElement('canvas');
-          const max_width = 800;
-          const max_height = 800;
-          let width = img.width;
-          let height = img.height;
+    const promises = Array.from(files).map((file: File) => {
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target?.result as string;
+          img.onload = () => {
+            // Compress using canvas to ensure base64 is lightweight (~200KB)
+            const canvas = document.createElement('canvas');
+            const max_width = 800;
+            const max_height = 800;
+            let width = img.width;
+            let height = img.height;
 
-          if (width > height) {
-            if (width > max_width) {
-              height *= max_width / width;
-              width = max_width;
-            }
-          } else {
-            if (height > max_height) {
-              width *= max_height / height;
-              height = max_height;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Generate photo metadata
-            const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
-            
-            setUploadedPhotos(prev => [
-              ...prev,
-              {
-                url: compressedUrl,
-                legenda: '',
-                gps: gps || null
+            if (width > height) {
+              if (width > max_width) {
+                height *= max_width / width;
+                width = max_width;
               }
-            ]);
-          }
+            } else {
+              if (height > max_height) {
+                width *= max_height / height;
+                height = max_height;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+              setUploadedPhotos(prev => [
+                ...prev,
+                {
+                  url: compressedUrl,
+                  legenda: '',
+                  gps: gps || null
+                }
+              ]);
+            }
+            resolve();
+          };
+          img.onerror = () => {
+            console.warn('Falha ao processar imagem:', file.name);
+            resolve();
+          };
         };
-      };
-      reader.readAsDataURL(file);
+        reader.onerror = () => {
+          console.warn('Falha ao ler arquivo:', file.name);
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
     });
 
-    setUploadingImage(false);
+    Promise.all(promises).finally(() => {
+      setUploadingImage(false);
+    });
   };
 
   const removePhoto = (index: number) => {
@@ -227,7 +284,7 @@ export default function DiarioForm() {
     ctx.moveTo(x, y);
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#f8fafc'; // White ink for dark card styling
+    ctx.strokeStyle = '#0f172a'; // Traço escuro visível na impressão
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -257,6 +314,8 @@ export default function DiarioForm() {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     setHasSignature(false);
   };
 
@@ -264,16 +323,31 @@ export default function DiarioForm() {
   const handleSaveReport = async () => {
     if (!atividades) return;
 
-    // Capture signature if drawn
+    // Capture signature with white background for print compatibility
     let signatureUrl = '';
-    if (hasSignature) {
-      signatureUrl = canvasRef.current?.toDataURL() || '';
+    if (hasSignature && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Compose onto a white background before exporting
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = canvas.width;
+        exportCanvas.height = canvas.height;
+        const exportCtx = exportCanvas.getContext('2d');
+        if (exportCtx) {
+          exportCtx.fillStyle = '#f8fafc';
+          exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+          exportCtx.drawImage(canvas, 0, 0);
+          signatureUrl = exportCanvas.toDataURL('image/png');
+        }
+      }
     }
 
     const reportData = {
       data,
       horario,
       clima,
+      climaOficial: climaOficial || undefined,
       equipe,
       atividades,
       materiais,
@@ -403,7 +477,10 @@ export default function DiarioForm() {
                     <button
                       key={item.value}
                       type="button"
-                      onClick={() => setClima(item.value)}
+                      onClick={() => {
+                        setClima(item.value);
+                        setClimaOficial(null); // Usuário alterou manualmente — remover selo oficial
+                      }}
                       className={`flex items-center gap-2.5 p-3.5 border rounded-2xl font-semibold cursor-pointer text-xs transition-all ${
                         isSelected 
                           ? 'border-amber-400 text-amber-400 bg-amber-500/10' 
@@ -416,6 +493,17 @@ export default function DiarioForm() {
                   );
                 })}
               </div>
+
+              {/* Selo de fonte oficial */}
+              {climaOficial && (
+                <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-semibold">
+                  <BadgeCheck className="w-4 h-4 shrink-0" />
+                  <span>
+                    Clima de fonte oficial (Open-Meteo) — {climaOficial.tempMin}°C / {climaOficial.tempMax}°C
+                    {climaOficial.chuvaMm > 0 && ` · Chuva: ${climaOficial.chuvaMm}mm`}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -561,7 +649,7 @@ export default function DiarioForm() {
               </p>
             </div>
 
-            <div className="bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col items-center max-w-md mx-auto relative overflow-hidden">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center max-w-md mx-auto relative overflow-hidden">
               <canvas
                 ref={canvasRef}
                 width={380}
@@ -573,7 +661,8 @@ export default function DiarioForm() {
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="bg-slate-900 border border-slate-800 rounded-xl cursor-crosshair max-w-full touch-none"
+                style={{ backgroundColor: '#f8fafc' }}
+                className="border border-slate-600 rounded-xl cursor-crosshair max-w-full touch-none"
               />
               <div className="flex justify-between items-center w-full mt-3 text-xs text-slate-400">
                 <span>{hasSignature ? '✓ Assinado' : 'Toque acima para assinar'}</span>

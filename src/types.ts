@@ -6,6 +6,8 @@ export interface Obra {
   responsavelTecnico: string;
   dataInicio: string;
   observacoes: string;
+  gps?: GPSLocation | null;
+  proximoNumeroRdo?: number;
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
@@ -16,12 +18,22 @@ export interface GPSLocation {
   longitude: number;
 }
 
+export interface ClimaOficial {
+  condicao: string;
+  tempMax: number;
+  tempMin: number;
+  chuvaMm: number;
+  fonte: 'open-meteo';
+}
+
 export interface Diario {
   id: string;
   obraId: string;
+  numeroRdo?: number;
   data: string;
   horario: string;
   clima: string;
+  climaOficial?: ClimaOficial | null;
   equipe: string;
   atividades: string;
   materiais: string;
