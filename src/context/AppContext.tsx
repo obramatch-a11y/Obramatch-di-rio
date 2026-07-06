@@ -9,10 +9,13 @@ import {
   updateDoc, 
   deleteDoc, 
   doc, 
-  serverTimestamp 
+  serverTimestamp,
+  runTransaction,
+  increment
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError } from '../firebase';
-import { Obra, Diario, Foto, OperationType } from '../types';
+import { Obra, Diario, Foto, OperationType, ClimaOficial } from '../types';
+import { uploadFoto } from '../lib/storage';
 
 interface AppContextType {
   user: User | null;
@@ -33,8 +36,8 @@ interface AppContextType {
   createObra: (obra: Omit<Obra, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateObra: (id: string, obra: Partial<Obra>) => Promise<void>;
   deleteObra: (id: string) => Promise<void>;
-  createDiario: (diario: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>, base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]) => Promise<string>;
-  updateDiario: (id: string, diario: Partial<Diario>, base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]) => Promise<void>;
+  createDiario: (diario: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>, base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null; climaOficial?: ClimaOficial | null }[]) => Promise<string>;
+  updateDiario: (id: string, diario: Partial<Diario>, base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null; climaOficial?: ClimaOficial | null }[]) => Promise<void>;
   deleteDiario: (id: string) => Promise<void>;
 }
 
@@ -253,15 +256,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Diario Operations
   const createDiario = async (
     diarioData: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>,
-    base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
+    base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null; climaOficial?: ClimaOficial | null }[]
   ): Promise<string> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
     
     const diariosPath = `obras/${selectedObra.id}/diarios`;
+    const obraRef = doc(db, 'obras', selectedObra.id);
+
     try {
-      // Add the diary document
+      // Calcular próximo número de RDO em transação atômica
+      let numeroRdo = 1;
+      await runTransaction(db, async (transaction) => {
+        const obraSnap = await transaction.get(obraRef);
+        const current = obraSnap.exists() ? (obraSnap.data()?.proximoNumeroRdo ?? 1) : 1;
+        numeroRdo = current;
+        transaction.update(obraRef, { proximoNumeroRdo: increment(1) });
+      });
+
+      // Adicionar o documento do diário com numeroRdo
       const docRef = await addDoc(collection(db, diariosPath), {
         ...diarioData,
+        numeroRdo,
         obraId: selectedObra.id,
         ownerId: user.uid,
         createdAt: serverTimestamp(),
@@ -270,13 +285,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const diaryId = docRef.id;
 
-      // Add associated photos to subcollection
+      // Fazer upload das fotos para Supabase e gravar apenas URL no Firestore
       const photosPath = `${diariosPath}/${diaryId}/fotos`;
-      for (const photo of base64Photos) {
+      for (let i = 0; i < base64Photos.length; i++) {
+        const photo = base64Photos[i];
+        let fotoUrl = photo.url;
+
+        // Tentar upload ao Supabase; se falhar, manter base64 como fallback
+        try {
+          const storagePath = `obras/${selectedObra.id}/diarios/${diaryId}/foto-${i + 1}`;
+          fotoUrl = await uploadFoto(photo.url, storagePath);
+        } catch (uploadErr) {
+          console.warn('Upload ao Supabase falhou, usando base64 como fallback:', uploadErr);
+        }
+
         await addDoc(collection(db, photosPath), {
           diarioId: diaryId,
           obraId: selectedObra.id,
-          url: photo.url,
+          url: fotoUrl,
           legenda: photo.legenda,
           data: diarioData.data,
           horario: diarioData.horario,
@@ -295,7 +321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateDiario = async (
     id: string, 
     diarioData: Partial<Diario>,
-    base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
+    base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null; climaOficial?: ClimaOficial | null }[]
   ): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
     
@@ -306,14 +332,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: serverTimestamp(),
       });
 
-      // If new photos were provided, add them as well
+      // If new photos were provided, upload and add them
       if (base64Photos && base64Photos.length > 0) {
         const photosPath = `${diarioPath}/fotos`;
-        for (const photo of base64Photos) {
+        for (let i = 0; i < base64Photos.length; i++) {
+          const photo = base64Photos[i];
+          let fotoUrl = photo.url;
+
+          try {
+            const timestamp = Date.now();
+            const storagePath = `obras/${selectedObra.id}/diarios/${id}/foto-${timestamp}-${i + 1}`;
+            fotoUrl = await uploadFoto(photo.url, storagePath);
+          } catch (uploadErr) {
+            console.warn('Upload ao Supabase falhou, usando base64 como fallback:', uploadErr);
+          }
+
           await addDoc(collection(db, photosPath), {
             diarioId: id,
             obraId: selectedObra.id,
-            url: photo.url,
+            url: fotoUrl,
             legenda: photo.legenda,
             data: diarioData.data || new Date().toISOString().split('T')[0],
             horario: diarioData.horario || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),

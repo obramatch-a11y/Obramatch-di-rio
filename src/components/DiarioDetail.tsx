@@ -121,6 +121,11 @@ export default function DiarioDetail() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Relatório de Evolução</span>
+              {selectedDiario.numeroRdo != null && (
+                <div className="text-xs font-black text-amber-300 mt-0.5 font-mono">
+                  RDO Nº {String(selectedDiario.numeroRdo).padStart(3, '0')}
+                </div>
+              )}
               <h2 className="text-2xl font-black text-white mt-1">
                 Diário de Obra — {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
               </h2>
@@ -313,6 +318,11 @@ export default function DiarioDetail() {
             <p className="text-xs text-slate-500 italic mt-1">Relatório Técnico Diário de Execução</p>
           </div>
           <div className="text-right">
+            {selectedDiario.numeroRdo != null && (
+              <div className="text-sm font-black text-slate-900 font-mono mb-1">
+                RDO Nº {String(selectedDiario.numeroRdo).padStart(3, '0')}
+              </div>
+            )}
             <div className="text-lg font-extrabold text-slate-900 font-mono">
               {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
             </div>
@@ -336,7 +346,15 @@ export default function DiarioDetail() {
           </div>
           <div>
             <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">CLIMA / CONDIÇÕES:</span>
-            <span className="text-slate-900 font-semibold">{selectedDiario.clima || 'Ensolarado'}</span>
+            <span className="text-slate-900 font-semibold">
+              {selectedDiario.clima || 'Ensolarado'}
+              {selectedDiario.climaOficial && (
+                <span className="text-slate-500 font-normal ml-1">
+                  ({selectedDiario.climaOficial.tempMin}°C–{selectedDiario.climaOficial.tempMax}°C
+                  {selectedDiario.climaOficial.chuvaMm > 0 ? `, ${selectedDiario.climaOficial.chuvaMm}mm` : ''} · Open-Meteo)
+                </span>
+              )}
+            </span>
           </div>
           {selectedObra.endereco && (
             <div className="col-span-2">
