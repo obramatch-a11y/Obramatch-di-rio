@@ -165,7 +165,7 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
       obrasDetalhadas.push({
         id,
         nome: campo(d, 'nome'),
-        dono: String(campo(d, 'ownerId')).slice(0, 10) + '...',
+        dono: String(campo(d, 'ownerId')),
         criadaEm: String(campo(d, 'createdAt')).slice(0, 16),
         diarios,
         diarios_campos_brutos: diarios.length
@@ -194,7 +194,8 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
           banco_usado: dbId,
           obras_no_banco: obrasDetalhadas,
           vinculos_telegram: usuarios.map((d: any) => ({
-            uid: (String(d.name).split('/').pop() || '').slice(0, 10) + '...',
+            uid: (String(d.name).split('/').pop() || ''),
+            email: campo(d, 'email') || '(sem email)',
             chatTelegram: campo(d, 'telegramChatId') || '(sem vínculo)',
           })),
         },
