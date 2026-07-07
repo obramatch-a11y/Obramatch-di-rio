@@ -31,6 +31,33 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
 
   const r: Record<string, string> = {};
 
+  // Faxina controlada: ?apagar_obra=ID apaga uma obra específica
+  const apagarObra = url.searchParams.get('apagar_obra');
+  if (apagarObra) {
+    try {
+      const token = await obterAccessToken(env);
+      const { projectId, dbId } = projetoEBanco(env);
+      const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/obras/${apagarObra}`;
+      const info = await fetch(base, { headers: { Authorization: `Bearer ${token}` } });
+      if (!info.ok) {
+        return new Response(JSON.stringify({ resultado: `Obra ${apagarObra} não encontrada (talvez já apagada).` }, null, 2), {
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        });
+      }
+      const docJson: any = await info.json();
+      const nome = docJson?.fields?.nome?.stringValue || '(sem nome)';
+      const del = await fetch(base, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      return new Response(
+        JSON.stringify({ resultado: del.ok ? `Obra "${nome}" (${apagarObra}) apagada com sucesso.` : `Falha ao apagar: HTTP ${del.status}` }, null, 2),
+        { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    } catch (e: any) {
+      return new Response(JSON.stringify({ resultado: 'Erro: ' + String(e?.message || e).slice(0, 180) }, null, 2), {
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    }
+  }
+
   // 1) Presença das variáveis
   r['1_GEMINI_API_KEY'] = env.GEMINI_API_KEY
     ? `presente (começa com "${env.GEMINI_API_KEY.slice(0, 3)}", ${env.GEMINI_API_KEY.length} caracteres)`
