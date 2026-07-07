@@ -29,7 +29,16 @@ async function chamarIa(body: Record<string, unknown>): Promise<any> {
     throw new Error('Limite diário de uso da IA atingido. Tente novamente amanhã.');
   }
   if (!res.ok) {
-    throw new Error('A IA está indisponível no momento. Preencha manualmente ou tente de novo.');
+    let detalhe = '';
+    try {
+      const json = await res.json();
+      detalhe = String(json?.erro || '');
+    } catch {
+      // resposta sem JSON
+    }
+    throw new Error(
+      detalhe || `A IA está indisponível no momento (erro ${res.status}). Preencha manualmente ou tente de novo.`
+    );
   }
   return res.json();
 }

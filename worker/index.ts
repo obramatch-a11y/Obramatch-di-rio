@@ -7,6 +7,7 @@ import { onRequestPost as iaPost } from '../functions/api/ia';
 import { onRequestPost as telegramPost } from '../functions/api/telegram';
 import { onRequestGet as setupWebhookGet } from '../functions/api/setup-webhook';
 import { onRequestGet as perfilPublicoGet } from '../functions/api/perfil-publico';
+import { onRequestGet as diagnosticoGet } from '../functions/api/diagnostico';
 import type { Env as ApiEnv } from '../functions/_lib/google';
 
 interface Env extends ApiEnv {
@@ -49,6 +50,7 @@ export default {
         if (pathname === '/api/telegram' && request.method === 'POST') return await telegramPost(ctx);
         if (pathname === '/api/setup-webhook' && request.method === 'GET') return await setupWebhookGet(ctx);
         if (pathname === '/api/perfil-publico' && request.method === 'GET') return await perfilPublicoGet(ctx);
+        if (pathname === '/api/diagnostico' && request.method === 'GET') return await diagnosticoGet(ctx);
         return json(404, { erro: 'Rota de API não encontrada.' });
       } catch (err) {
         console.error('Erro na API:', err instanceof Error ? err.message : err);

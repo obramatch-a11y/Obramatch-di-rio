@@ -81,9 +81,14 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
     return resposta(413, { erro: 'Áudio muito longo. Grave até ~5 minutos.' });
   }
 
-  // Limite diário (nível gratuito do Gemini)
-  if (!(await dentroDoLimite(env, uid))) {
-    return resposta(429, { erro: 'Limite diário de uso da IA atingido.' });
+  // Limite diário (nível gratuito do Gemini) — melhor esforço:
+  // se o Firestore falhar aqui, a IA continua funcionando mesmo assim.
+  try {
+    if (!(await dentroDoLimite(env, uid))) {
+      return resposta(429, { erro: 'Limite diário de uso da IA atingido.' });
+    }
+  } catch (err: any) {
+    console.error('Aviso: falha ao registrar limite diário:', err?.message || err);
   }
 
   try {
