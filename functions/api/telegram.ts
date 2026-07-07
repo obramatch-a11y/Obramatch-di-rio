@@ -37,9 +37,24 @@ function esc(t: string): string {
   return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+async function contasDoChat(env: Env, chatId: number): Promise<{ uid: string; data: Record<string, any> }[]> {
+  const rows = await fsQuery(env, 'usuarios', 'telegramChatId', chatId, 10);
+  return rows.map((r) => ({ uid: r.id, data: r.data }));
+}
+
 async function usuarioDoChat(env: Env, chatId: number): Promise<{ uid: string; data: Record<string, any> } | null> {
-  const rows = await fsQuery(env, 'usuarios', 'telegramChatId', chatId, 1);
-  return rows.length ? { uid: rows[0].id, data: rows[0].data } : null;
+  const contas = await contasDoChat(env, chatId);
+  if (contas.length === 0) return null;
+  if (contas.length === 1) return contas[0];
+  // Mais de uma conta neste Telegram: usa a que o usuário escolheu por último.
+  const sessao = await fsGet(env, `rdo_pendentes/${chatId}`);
+  const uidEscolhido = sessao?.data?.uidEscolhido;
+  const escolhida = uidEscolhido ? contas.find((c) => c.uid === uidEscolhido) : null;
+  return escolhida || contas[0];
+}
+
+function rotuloConta(c: { uid: string; data: Record<string, any> }): string {
+  return c.data.nome || c.data.email || `Conta ${c.uid.slice(0, 6)}`;
 }
 
 async function obrasDoUsuario(env: Env, uid: string) {
@@ -184,17 +199,40 @@ async function processarRelato(
   }
 
   const pendAnterior = await fsGet(env, `rdo_pendentes/${chatId}`);
-  const obras = await obrasDoUsuario(env, uid);
+
+  // Se este Telegram atende mais de uma conta e ainda nao foi escolhida, pergunta.
+  const contas = await contasDoChat(env, chatId);
+  const uidEscolhido = pendAnterior?.data?.uidEscolhido;
+  if (contas.length > 1 && !uidEscolhido) {
+    const rdoPend: Record<string, any> = {
+      uid, chatId, ...rdo,
+      data: hojeISO(), horario: horaAgora(),
+      fotos: pendAnterior?.data?.fotos || [],
+      climaOficial: null,
+      obraId: null,
+      criadoEm: Date.now(),
+    };
+    await fsSet(env, `rdo_pendentes/${chatId}`, rdoPend);
+    const teclado: TecladoInline = {
+      inline_keyboard: contas.map((c) => [{ text: `\u{1F464} ${rotuloConta(c)}`.slice(0, 60), callback_data: `conta:${c.uid}` }]),
+    };
+    await enviarMensagem(env, chatId, 'Este Telegram esta ligado a mais de uma conta. Registrar em qual?', teclado);
+    return;
+  }
+  const uidFinal = uidEscolhido || uid;
+
+  const obras = await obrasDoUsuario(env, uidFinal);
   if (obras.length === 0) {
     await enviarMensagem(env, chatId, 'Você ainda não tem obra cadastrada. Crie a primeira no app:\nhttps://diario.obramatch.com.br');
     return;
   }
 
   const pend: Record<string, any> = {
-    uid, chatId, ...rdo,
+    uid: uidFinal, chatId, ...rdo,
     data: hojeISO(), horario: horaAgora(),
     fotos: pendAnterior?.data?.fotos || [],
     climaOficial: null,
+    uidEscolhido: uidEscolhido || null,
     obraId: pendAnterior?.data?.obraId || (obras.length === 1 ? obras[0].id : null),
     criadoEm: Date.now(),
   };
@@ -232,7 +270,26 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
       if (!usuario) { await enviarMensagem(env, chatId, 'Conta não vinculada. Abra o app e toque em "Conectar" no cartão do Telegram.'); return new Response('ok'); }
 
       const dado = String(cb.data || '');
-      if (dado.startsWith('obra:')) {
+      if (dado.startsWith('conta:')) {
+        const uidEscolhido = dado.slice(6);
+        await fsSet(env, `rdo_pendentes/${chatId}`, { uidEscolhido });
+        const pend = await fsGet(env, `rdo_pendentes/${chatId}`);
+        const obras = await obrasDoUsuario(env, uidEscolhido);
+        if (obras.length === 0) {
+          await enviarMensagem(env, chatId, 'Essa conta ainda não tem obra cadastrada. Crie a primeira no app:\\nhttps://diario.obramatch.com.br');
+          return new Response('ok');
+        }
+        if (obras.length === 1) {
+          await fsSet(env, `rdo_pendentes/${chatId}`, { obraId: obras[0].id });
+          const p2 = await fsGet(env, `rdo_pendentes/${chatId}`);
+          if (p2) await mostrarPrevia(env, chatId, p2.data);
+        } else {
+          const teclado: TecladoInline = {
+            inline_keyboard: obras.map((o) => [{ text: `🏗 ${o.data.nome}`.slice(0, 60), callback_data: `obra:${o.id}` }]),
+          };
+          await enviarMensagem(env, chatId, 'Esse registro é de qual obra?', teclado);
+        }
+      } else if (dado.startsWith('obra:')) {
         const obraId = dado.slice(5);
         await fsSet(env, `rdo_pendentes/${chatId}`, { obraId });
         const pend = await fsGet(env, `rdo_pendentes/${chatId}`);
