@@ -31,9 +31,12 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
 
   const r: Record<string, string> = {};
 
-  // Faxina controlada: ?apagar_obra=ID apaga uma obra específica
-  const apagarObra = url.searchParams.get('apagar_obra');
-  const apagarUsuario = url.searchParams.get('apagar_usuario');
+  // Comandos destrutivos (apagar obra/usuário) foram DESATIVADOS após a
+  // depuração inicial, por segurança. Para reativar temporariamente em
+  // manutenção, troque MANUTENCAO para true e faça deploy.
+  const MANUTENCAO = false;
+  const apagarObra = MANUTENCAO ? url.searchParams.get('apagar_obra') : null;
+  const apagarUsuario = MANUTENCAO ? url.searchParams.get('apagar_usuario') : null;
   if (apagarUsuario) {
     try {
       const token = await obterAccessToken(env);
