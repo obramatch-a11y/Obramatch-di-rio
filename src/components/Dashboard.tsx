@@ -434,6 +434,9 @@ export default function Dashboard() {
                 <p className="text-slate-400 text-sm mt-1">
                   Selecione uma obra para gerenciar ou registrar o diário de hoje.
                 </p>
+                <p className="text-[11px] text-amber-500/80 font-mono mt-1 break-all">
+                  🔎 logado: {user?.email || '—'} · id: {user?.uid || '—'}
+                </p>
               </div>
 
               <button
