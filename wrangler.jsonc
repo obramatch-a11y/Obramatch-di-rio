@@ -1,11 +1,15 @@
 {
   // Configuração do deploy na Cloudflare (modo Workers).
-  // IMPORTANTE: o "name" precisa ser IGUAL ao nome do Worker no painel da
-  // Cloudflare (Workers & Pages). Se o deploy falhar por nome divergente,
-  // ajuste apenas esta linha.
-  "name": "diarioobramatch",
+  // O "name" tem que bater com o subdomínio da URL: diariomatch.obramatch.workers.dev
+  "name": "diariomatch",
   "main": "worker/index.ts",
   "compatibility_date": "2025-10-01",
+
+  // keep_vars: NÃO apagar as variáveis/segredos configurados no painel da
+  // Cloudflare quando o Worker publicar. Sem isso, cada deploy limpava
+  // TELEGRAM_SECRET, GEMINI_API_KEY etc. — e o segredo deixava de bater.
+  "keep_vars": true,
+
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
