@@ -113,14 +113,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       snapshot.forEach((doc) => {
         obrasList.push({ id: doc.id, ...doc.data() } as Obra);
       });
-      // Sort Obras by updated date or created date
-      obrasList.sort((a, b) => {
-        const dateA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
-        const dateB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
-        return dateB - dateA;
-      });
+      // Ordena por data de atualização/criação de forma ROBUSTA: aceita tanto
+      // timestamp do Firestore ({seconds}) quanto texto ISO (formato gravado
+      // pelo bot do Telegram). Assim uma obra criada pelo bot nunca derruba a
+      // lista inteira (causava "0 obras" mesmo com a obra existindo).
+      const quando = (o: any): number => {
+        const v = o?.updatedAt ?? o?.createdAt;
+        if (!v) return 0;
+        if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
+        if (typeof v === 'string') { const t = Date.parse(v); return isNaN(t) ? 0 : t; }
+        if (typeof v?.toDate === 'function') { try { return v.toDate().getTime(); } catch { return 0; } }
+        return 0;
+      };
+      obrasList.sort((a, b) => quando(b) - quando(a));
       setObras(obrasList);
     }, (error) => {
+      console.error('Erro ao ouvir obras:', error);
       handleFirestoreError(error, OperationType.LIST, obrasPath);
     });
 
