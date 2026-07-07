@@ -143,14 +143,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       snapshot.forEach((doc) => {
         diariosList.push({ id: doc.id, ...doc.data() } as Diario);
       });
-      // Sort Diários by chronological date (and then time) descending
+      // Ordena por data e horário (mais recente primeiro), de forma robusta:
+      // trata qualquer campo ausente ou de tipo inesperado como texto vazio,
+      // para que UM diário mal formado nunca derrube a lista inteira.
       diariosList.sort((a, b) => {
-        const dateComp = b.data.localeCompare(a.data);
+        const dataA = String((a as any).data ?? '');
+        const dataB = String((b as any).data ?? '');
+        const dateComp = dataB.localeCompare(dataA);
         if (dateComp !== 0) return dateComp;
-        return b.horario.localeCompare(a.horario);
+        const horaA = String((a as any).horario ?? '');
+        const horaB = String((b as any).horario ?? '');
+        return horaB.localeCompare(horaA);
       });
       setDiarios(diariosList);
     }, (error) => {
+      console.error('Erro ao ouvir diários:', error);
       handleFirestoreError(error, OperationType.LIST, diariosPath);
     });
 

@@ -300,7 +300,7 @@ export default function ObraDashboard() {
                           </div>
 
                           <h4 className="text-base font-extrabold text-white group-hover:text-amber-400 transition-colors line-clamp-1">
-                            {diario.atividades.split('\n')[0] || 'Registro Diário'}
+                            {(diario.atividades || '').split('\n')[0] || 'Registro Diário'}
                           </h4>
                           <p className="text-slate-400 text-xs mt-2 line-clamp-2 leading-relaxed">
                             {diario.atividades}
@@ -412,7 +412,7 @@ export default function ObraDashboard() {
 
                       <div className="bg-slate-900/30 border border-slate-900 rounded-2xl p-4">
                         <h5 className="font-bold text-white text-sm">
-                          {diario.atividades.split('\n')[0] || 'Progresso Diário'}
+                          {(diario.atividades || '').split('\n')[0] || 'Progresso Diário'}
                         </h5>
                         <p className="text-slate-400 text-xs mt-2 leading-relaxed whitespace-pre-wrap">
                           {diario.atividades}
