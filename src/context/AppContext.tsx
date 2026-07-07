@@ -262,9 +262,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     try {
-      // Numeração sequencial do RDO (transação sobre o documento da obra)
+      // Numeração sequencial do RDO (transação sobre o documento da obra).
+      // BLINDAGEM: se a transação falhar por qualquer motivo (documento da
+      // obra em estado estranho no servidor), usa numeração local e segue —
+      // o diário é o que importa e será salvo mesmo assim.
       const obraRef = doc(db, 'obras', selectedObra.id);
-      const numeroRdo = await runTransaction(db, async (tx) => {
+      let numeroRdo: number;
+      try {
+        numeroRdo = await runTransaction(db, async (tx) => {
         const snap = await tx.get(obraRef);
         const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
         const numero = Math.max(atual, diarios.length + 1);
@@ -284,7 +289,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return numero;
       });
-
+      } catch (txErr: any) {
+        console.warn('Numeração via servidor falhou, usando numeração local:', txErr?.message || txErr);
+        numeroRdo = diarios.length + 1;
+      }
       // Código de integridade (SHA-256 do conteúdo canônico)
       const hashIntegridade = await calcularHashRdo({
         obraId: selectedObra.id,
