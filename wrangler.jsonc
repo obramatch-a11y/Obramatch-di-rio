@@ -3,7 +3,7 @@
   // IMPORTANTE: o "name" precisa ser IGUAL ao nome do Worker no painel da
   // Cloudflare (Workers & Pages). Se o deploy falhar por nome divergente,
   // ajuste apenas esta linha.
-  "name": "obramatch-di-rio",
+  "name": "diarioobramatch",
   "main": "worker/index.ts",
   "compatibility_date": "2025-10-01",
   "assets": {
