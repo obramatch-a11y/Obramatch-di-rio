@@ -151,6 +151,23 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
         dono: String(campo(d, 'ownerId')).slice(0, 10) + '...',
         criadaEm: String(campo(d, 'createdAt')).slice(0, 16),
         diarios,
+        diarios_campos_brutos: diarios.length
+          ? (await (async () => {
+              try {
+                const docs = await listarColecao(env, `obras/${id}/diarios`, 5);
+                return docs.map((x: any) => ({
+                  campos: Object.keys(x.fields || {}),
+                  tipo_ownerId: x.fields?.ownerId ? Object.keys(x.fields.ownerId)[0] : 'AUSENTE',
+                  valor_ownerId: campo(x, 'ownerId'),
+                  tipo_data: x.fields?.data ? Object.keys(x.fields.data)[0] : 'AUSENTE',
+                  tem_atividades: !!x.fields?.atividades,
+                  tem_horario: !!x.fields?.horario,
+                }));
+              } catch {
+                return [];
+              }
+            })())
+          : [],
       });
     }
     return new Response(
