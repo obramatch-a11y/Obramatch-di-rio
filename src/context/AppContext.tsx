@@ -268,7 +268,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const snap = await tx.get(obraRef);
         const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
         const numero = Math.max(atual, diarios.length + 1);
-        tx.update(obraRef, { proximoNumeroRdo: numero + 1, updatedAt: serverTimestamp() });
+        if (snap.exists()) {
+          tx.update(obraRef, { proximoNumeroRdo: numero + 1, updatedAt: serverTimestamp() });
+        } else {
+          // A obra ainda não existe no servidor (ficou presa no cache local
+          // enquanto as gravações eram recusadas). Grava ela inteira agora.
+          const { id: _obraId, ...obraSemId } = selectedObra as any;
+          tx.set(obraRef, {
+            ...obraSemId,
+            ownerId: user.uid,
+            proximoNumeroRdo: numero + 1,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
         return numero;
       });
 

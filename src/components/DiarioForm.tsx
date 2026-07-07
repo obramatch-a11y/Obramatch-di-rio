@@ -416,11 +416,11 @@ export default function DiarioForm() {
       console.error(err);
       const detalhe = String(err?.message || err);
       if (detalhe.includes('permission') || detalhe.includes('PERMISSION_DENIED') || detalhe.includes('insufficient')) {
-        setSaveError('O banco de dados recusou o registro (permissão negada). As regras do Firestore ainda não foram publicadas para este banco.');
+        setSaveError('O banco de dados recusou o registro (permissão negada). Detalhe técnico: ' + detalhe.slice(0, 160));
       } else if (detalhe.includes('unavailable') || detalhe.includes('network') || detalhe.includes('offline')) {
         setSaveError('Sem conexão com o banco de dados. Verifique a internet e tente de novo.');
       } else {
-        setSaveError('Não foi possível salvar o diário. Tente de novo em instantes.');
+        setSaveError('Não foi possível salvar o diário. Detalhe técnico: ' + detalhe.slice(0, 160));
       }
     }
   };
