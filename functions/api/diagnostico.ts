@@ -2,7 +2,24 @@
 // Testa cada credencial DE VERDADE e devolve um relatório do que está
 // funcionando e do que está quebrado. Não expõe nenhum valor secreto.
 
-import { Env, obterAccessToken } from '../_lib/google';
+import { Env, obterAccessToken, projetoEBanco } from '../_lib/google';
+
+async function listarColecao(env: Env, colecao: string, pageSize: number): Promise<any[]> {
+  const token = await obterAccessToken(env);
+  const { projectId, dbId } = projetoEBanco(env);
+  const res = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/${colecao}?pageSize=${pageSize}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status} ao listar ${colecao}`);
+  const json: any = await res.json();
+  return json.documents || [];
+}
+
+function campo(doc: any, nome: string): string {
+  const v = doc?.fields?.[nome];
+  return v?.stringValue ?? v?.integerValue ?? (v?.timestampValue || '');
+}
 
 export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise<Response> => {
   const { request, env } = ctx;
@@ -79,6 +96,36 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
     }
   } catch (e: any) {
     r['9_validacao_de_login'] = 'FALHOU: ' + String(e?.message || e).slice(0, 180);
+  }
+
+  // 6) Raio-X do banco: quais obras e vínculos existem de verdade
+  try {
+    const { dbId } = projetoEBanco(env);
+    const obras = await listarColecao(env, 'obras', 20);
+    const usuarios = await listarColecao(env, 'usuarios', 10);
+    return new Response(
+      JSON.stringify(
+        {
+          ...r,
+          banco_usado: dbId,
+          obras_no_banco: obras.map((d: any) => ({
+            id: String(d.name).split('/').pop(),
+            nome: campo(d, 'nome'),
+            dono: String(campo(d, 'ownerId')).slice(0, 10) + '...',
+            criadaEm: String(campo(d, 'createdAt')).slice(0, 16),
+          })),
+          vinculos_telegram: usuarios.map((d: any) => ({
+            uid: (String(d.name).split('/').pop() || '').slice(0, 10) + '...',
+            chatTelegram: campo(d, 'telegramChatId') || '(sem vínculo)',
+          })),
+        },
+        null,
+        2
+      ),
+      { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+    );
+  } catch (e: any) {
+    r['10_raio_x_banco'] = 'FALHOU: ' + String(e?.message || e).slice(0, 180);
   }
 
   return new Response(JSON.stringify(r, null, 2), {
