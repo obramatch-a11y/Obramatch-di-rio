@@ -1,0 +1,15 @@
+{
+  // Configuração do deploy na Cloudflare (modo Workers).
+  // IMPORTANTE: o "name" precisa ser IGUAL ao nome do Worker no painel da
+  // Cloudflare (Workers & Pages). Se o deploy falhar por nome divergente,
+  // ajuste apenas esta linha.
+  "name": "obramatch-di-rio",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  }
+}

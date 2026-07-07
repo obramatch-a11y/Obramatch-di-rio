@@ -50,6 +50,7 @@ export default function DiarioForm() {
   // Success modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedReport, setSavedReport] = useState<any>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Form Fields
   const [data, setData] = useState('');
@@ -398,6 +399,7 @@ export default function DiarioForm() {
       assinatura: signatureUrl || undefined,
     };
 
+    setSaveError(null);
     try {
       if (isEditing && editingDiario) {
         await updateDiario(editingDiario.id, reportData, uploadedPhotos);
@@ -410,8 +412,16 @@ export default function DiarioForm() {
         setSavedReport(completeReport);
         setShowSuccessModal(true);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      const detalhe = String(err?.message || err);
+      if (detalhe.includes('permission') || detalhe.includes('PERMISSION_DENIED') || detalhe.includes('insufficient')) {
+        setSaveError('O banco de dados recusou o registro (permissão negada). As regras do Firestore ainda não foram publicadas para este banco.');
+      } else if (detalhe.includes('unavailable') || detalhe.includes('network') || detalhe.includes('offline')) {
+        setSaveError('Sem conexão com o banco de dados. Verifique a internet e tente de novo.');
+      } else {
+        setSaveError('Não foi possível salvar o diário. Tente de novo em instantes.');
+      }
     }
   };
 
@@ -783,6 +793,14 @@ export default function DiarioForm() {
 
         </div>
       </main>
+
+      {saveError && (
+        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-4xl mx-auto bg-red-950/95 border border-red-500/40 text-red-200 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl backdrop-blur flex items-start gap-2">
+          <span className="mt-0.5">⚠️</span>
+          <span className="flex-1">{saveError}</span>
+          <button onClick={() => setSaveError(null)} className="text-red-300 hover:text-white font-bold px-1 cursor-pointer">✕</button>
+        </div>
+      )}
 
       <AnimatePresence>
         {showSuccessModal && savedReport && (() => {
