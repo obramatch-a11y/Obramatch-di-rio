@@ -1,4 +1,4 @@
-# ObraMatch Diário 
+# ObraMatch Diário
 
 Diário de Obra (RDO) por app e por **Telegram com IA** — parte do ecossistema [ObraMatch](https://obramatch.com.br).
 
