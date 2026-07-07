@@ -284,6 +284,7 @@ export default function Dashboard() {
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-semibold text-slate-200">{user?.email?.split('@')[0] || 'Usuário'}</span>
               <span className="text-xs text-slate-500">{user?.email}</span>
+              <span className="text-[10px] text-amber-500/70 font-mono">conta: {user?.uid?.slice(0, 10) || '—'}</span>
             </div>
             <button 
               onClick={handleSignOut}
