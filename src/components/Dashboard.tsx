@@ -204,8 +204,20 @@ export default function Dashboard() {
     }
   };
 
-  const handleSignOut = () => {
-    signOut(auth);
+  const handleSignOut = async () => {
+    // Limpa qualquer resíduo de cache antigo do navegador antes de sair,
+    // para nunca reaparecerem obras/diários já apagados.
+    try {
+      const bancos = await (indexedDB as any).databases?.();
+      if (bancos) {
+        for (const b of bancos) {
+          if (b.name && b.name.includes('firestore')) indexedDB.deleteDatabase(b.name);
+        }
+      }
+    } catch {
+      // navegador sem suporte a listagem — segue normalmente
+    }
+    await signOut(auth);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

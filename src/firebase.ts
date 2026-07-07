@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { OperationType, FirestoreErrorInfo } from './types';
 import firebaseConfigJson from '../firebase-applet-config.json';
 
@@ -19,11 +19,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with persistent offline caching enabled!
+// Cache em MEMÓRIA (não em disco). Assim o app nunca mostra obras/diários
+// "fantasma" que já foram apagados no servidor: cada abertura reflete o
+// estado real do banco. Os dados continuam vindo em tempo real via onSnapshot.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager()
-  })
+  localCache: memoryLocalCache()
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
