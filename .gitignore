@@ -12,3 +12,8 @@ git-push-script.js
 
 *.zip
 .env.local
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
