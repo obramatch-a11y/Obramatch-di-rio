@@ -130,17 +130,35 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
     const { dbId } = projetoEBanco(env);
     const obras = await listarColecao(env, 'obras', 20);
     const usuarios = await listarColecao(env, 'usuarios', 10);
+    const obrasDetalhadas = [] as any[];
+    for (const d of obras) {
+      const id = String(d.name).split('/').pop() as string;
+      let diarios: any[] = [];
+      try {
+        const docs = await listarColecao(env, `obras/${id}/diarios`, 20);
+        diarios = docs.map((x: any) => ({
+          rdo: campo(x, 'numeroRdo') || '?',
+          origem: campo(x, 'origem'),
+          data: campo(x, 'data'),
+          dono: String(campo(x, 'ownerId')).slice(0, 10) + '...',
+        }));
+      } catch {
+        // sem diários ou erro de listagem
+      }
+      obrasDetalhadas.push({
+        id,
+        nome: campo(d, 'nome'),
+        dono: String(campo(d, 'ownerId')).slice(0, 10) + '...',
+        criadaEm: String(campo(d, 'createdAt')).slice(0, 16),
+        diarios,
+      });
+    }
     return new Response(
       JSON.stringify(
         {
           ...r,
           banco_usado: dbId,
-          obras_no_banco: obras.map((d: any) => ({
-            id: String(d.name).split('/').pop(),
-            nome: campo(d, 'nome'),
-            dono: String(campo(d, 'ownerId')).slice(0, 10) + '...',
-            criadaEm: String(campo(d, 'createdAt')).slice(0, 16),
-          })),
+          obras_no_banco: obrasDetalhadas,
           vinculos_telegram: usuarios.map((d: any) => ({
             uid: (String(d.name).split('/').pop() || '').slice(0, 10) + '...',
             chatTelegram: campo(d, 'telegramChatId') || '(sem vínculo)',
