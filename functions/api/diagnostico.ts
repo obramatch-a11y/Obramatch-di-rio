@@ -33,6 +33,23 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
 
   // Faxina controlada: ?apagar_obra=ID apaga uma obra específica
   const apagarObra = url.searchParams.get('apagar_obra');
+  const apagarUsuario = url.searchParams.get('apagar_usuario');
+  if (apagarUsuario) {
+    try {
+      const token = await obterAccessToken(env);
+      const { projectId, dbId } = projetoEBanco(env);
+      const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/usuarios/${apagarUsuario}`;
+      const del = await fetch(base, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      return new Response(
+        JSON.stringify({ resultado: del.ok ? `Vínculo de usuário ${apagarUsuario} removido.` : `Falha: HTTP ${del.status}` }, null, 2),
+        { headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    } catch (e: any) {
+      return new Response(JSON.stringify({ resultado: 'Erro: ' + String(e?.message || e).slice(0, 180) }, null, 2), {
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      });
+    }
+  }
   if (apagarObra) {
     try {
       const token = await obterAccessToken(env);

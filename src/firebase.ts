@@ -28,6 +28,10 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+// Força o seletor de conta a aparecer SEMPRE no login. Assim o usuário
+// escolhe conscientemente a conta certa e não entra sem querer em outra,
+// o que criava vínculos duplicados e a sensação de "dados sumiram".
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Standard handleFirestoreError implementation required by skill instructions
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
