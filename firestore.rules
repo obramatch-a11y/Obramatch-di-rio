@@ -2,34 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global default-deny safety net
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Perfil do usuário (vínculo Telegram, controle de uso da IA)
+    // Perfil do usuario (vinculo Telegram, controle de uso da IA)
     match /usuarios/{uid} {
       allow read, write: if isSignedIn() && request.auth.uid == uid;
     }
 
-    // Match rules for /obras and its subcollections
+    // Obras: cada usuario le e escreve apenas as proprias.
+    // A checagem em list (resource nulo) permite a query filtrada por ownerId.
     match /obras/{obraId} {
-      allow read, write: if isSignedIn() 
+      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow write: if isSignedIn()
         && (resource == null || resource.data.ownerId == request.auth.uid)
         && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
 
       match /diarios/{diarioId} {
-        allow read, write: if isSignedIn()
+        allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+        allow write: if isSignedIn()
           && (resource == null || resource.data.ownerId == request.auth.uid)
           && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
 
         match /fotos/{fotoId} {
-          allow read, write: if isSignedIn()
+          allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+          allow write: if isSignedIn()
             && (resource == null || resource.data.ownerId == request.auth.uid)
             && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
         }
