@@ -1,14 +1,20 @@
 {
-  // Configuração do deploy na Cloudflare (modo Workers).
-  // O "name" tem que bater com o subdomínio da URL: diariomatch.obramatch.workers.dev
+  // Deploy na Cloudflare (modo Workers). O "name" bate com o subdomínio:
+  // diariomatch.obramatch.workers.dev
   "name": "diariomatch",
   "main": "worker/index.ts",
   "compatibility_date": "2025-10-01",
 
-  // keep_vars: NÃO apagar as variáveis/segredos configurados no painel da
-  // Cloudflare quando o Worker publicar. Sem isso, cada deploy limpava
-  // TELEGRAM_SECRET, GEMINI_API_KEY etc. — e o segredo deixava de bater.
+  // Não apagar variáveis/segredos do painel a cada deploy.
   "keep_vars": true,
+
+  // Valores NÃO secretos gravados no código (já eram públicos no repositório).
+  // Assim o login/banco e a validação da IA nunca ficam sem essas variáveis.
+  "vars": {
+    "FIREBASE_WEB_API_KEY": "AIzaSyB7Vprg_TBjbG2Mz8npSpKKzkv00Pl-GwE",
+    "FIREBASE_DB_ID": "ai-studio-obramatchdirio-50f11794-035e-49d7-87f9-b0d100f88088",
+    "SUPABASE_URL": "https://sbmqwvalqdhqsslioezk.supabase.co"
+  },
 
   "assets": {
     "directory": "./dist",
