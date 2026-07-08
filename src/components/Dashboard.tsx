@@ -451,7 +451,7 @@ export default function Dashboard() {
 
               <button
                 onClick={() => setShowAddModal(true)}
-                className="bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
+                className="nb-btn nb-btn-primary py-3 px-5 flex items-center justify-center gap-2 text-sm"
               >
                 <Plus className="w-5 h-5" />
                 Nova Obra
@@ -550,7 +550,7 @@ export default function Dashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAddModal(false)}
-              className="absolute inset-0 bg-white"
+              className="absolute inset-0 bg-black/40"
             />
 
             {/* Content Card */}
@@ -558,7 +558,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-lg bg-white border border-[#D1D1D1] rounded-xl p-6 z-10 overflow-y-auto max-h-[90vh]"
+              className="relative w-full max-w-lg nb-card nb-shadow p-6 z-10 overflow-y-auto max-h-[90vh]"
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-nova-obra-title"
@@ -645,7 +645,7 @@ export default function Dashboard() {
                       type="button"
                       onClick={capturarGpsObra}
                       disabled={capturandoGps}
-                      className="py-3 px-4 bg-[#F4F4F4] hover:bg-[#F4F4F4] border border-[#D1D1D1] text-[#222222] font-semibold rounded-xl flex items-center gap-2 cursor-pointer transition-all text-xs"
+                      className="nb-btn nb-btn-ghost py-3 px-4 flex items-center gap-2 text-xs"
                     >
                       <MapPin className="w-4 h-4 text-[#FF6F00]" />
                       {capturandoGps ? 'Capturando...' : 'Capturar localização'}
@@ -685,14 +685,14 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="flex-1 py-3 px-4 border border-[#D1D1D1] hover:bg-[#F4F4F4] hover:border-[#D1D1D1] text-[#222222] hover:text-[#111111] font-semibold rounded-xl transition-all cursor-pointer text-sm"
+                    className="flex-1 nb-btn nb-btn-ghost py-3 px-4 text-sm"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3 px-4 rounded-xl transition-all cursor-pointer text-sm"
+                    className="flex-1 nb-btn nb-btn-primary py-3 px-4 text-sm"
                   >
                     {loading ? 'Adicionando...' : 'Salvar Obra'}
                   </button>
