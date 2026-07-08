@@ -101,6 +101,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return unsubscribe;
   }, []);
 
+  // Handle browser back button (Android back gesture + browser back button)
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      
+      // Se não há estado guardado, volta para dashboard (ponto inicial)
+      if (!state || !state.appView) {
+        setCurrentView('dashboard');
+        setSelectedObra(null);
+        setSelectedDiario(null);
+        setEditingDiario(null);
+        return;
+      }
+
+      // Restaurar a view anterior
+      const targetView = state.appView as 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline';
+      setCurrentView(targetView);
+
+      // Se havia obra selecionada, restaurar (encontrar na lista local)
+      if (state.obraId) {
+        const foundObra = obras.find(o => o.id === state.obraId);
+        setSelectedObra(foundObra || null);
+      } else {
+        setSelectedObra(null);
+      }
+
+      // Se havia diário selecionado, restaurar
+      if (state.diarioId) {
+        const foundDiario = diarios.find(d => d.id === state.diarioId);
+        setSelectedDiario(foundDiario || null);
+        setEditingDiario(foundDiario || null);
+      } else {
+        setSelectedDiario(null);
+        setEditingDiario(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [obras, diarios]);
+
   // Sync Obras from Firestore when authenticated
   useEffect(() => {
     if (!user) return;
@@ -220,6 +261,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (diario !== undefined) {
       setSelectedDiario(diario);
       setEditingDiario(diario);
+    }
+    
+    // Guardar estado na history para suportar o botão voltar do Android
+    // Estado inicial (dashboard) não cria entrada para evitar múltiplas entradas
+    if (view !== 'dashboard') {
+      window.history.pushState(
+        { 
+          appView: view,
+          obraId: obra?.id || null,
+          diarioId: diario?.id || null
+        },
+        '',
+        window.location.href
+      );
     }
   };
 
