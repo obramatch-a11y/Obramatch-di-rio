@@ -79,7 +79,7 @@ export default function InstallButton({ className = '', variant = 'dashboard', o
       <button
         id="pwa-install-button-login"
         onClick={handleInstallClick}
-        className={`w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 active:scale-[0.98] text-slate-950 font-extrabold py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/15 text-sm ${className}`}
+        className={`w-full bg-[#FF6F00] hover:bg-[#e86500] text-white font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all   text-sm ${className}`}
       >
         <Smartphone className="w-5 h-5" />
         Instalar Aplicativo
@@ -91,7 +91,7 @@ export default function InstallButton({ className = '', variant = 'dashboard', o
     <button
       id="pwa-install-button-dashboard"
       onClick={handleInstallClick}
-      className={`w-full sm:w-auto bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs ${className}`}
+      className={`w-full sm:w-auto bg-[#FF6F00] hover:bg-[#e86500] active:scale-95 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs ${className}`}
     >
       <Download className="w-4 h-4" />
       Instalar Aplicativo

@@ -127,7 +127,7 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm"
+        className="absolute inset-0 bg-white"
       />
 
       {/* Main Container */}
@@ -135,18 +135,18 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-4xl h-[85vh] bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl z-10 flex flex-col md:flex-row"
+        className="relative w-full max-w-4xl h-[85vh] bg-white border border-[#D1D1D1] rounded-xl overflow-hidden z-10 flex flex-col md:flex-row"
       >
         {/* Sidebar: Agents List */}
-        <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-slate-800/80 bg-slate-950/40 flex flex-col h-1/3 md:h-full shrink-0">
-          <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
-            <h3 className="text-sm font-extrabold text-white font-sans tracking-tight flex items-center gap-2">
-              <Bot className="w-4 h-4 text-amber-400" />
+        <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-[#D1D1D1] bg-white flex flex-col h-1/3 md:h-full shrink-0">
+          <div className="p-4 border-b border-[#D1D1D1] flex items-center justify-between">
+            <h3 className="text-sm font-extrabold text-[#111111] font-sans tracking-tight flex items-center gap-2">
+              <Bot className="w-4 h-4 text-[#FF6F00]" />
               Agentes Match
             </h3>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer md:hidden"
+              className="p-1 hover:bg-[#ECECEC] rounded-lg text-neutral-600 hover:text-[#111111] transition-all cursor-pointer md:hidden"
             >
               <X className="w-4 h-4" />
             </button>
@@ -159,16 +159,16 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
                 <button
                   key={agent.id}
                   onClick={() => handleSelectAgent(agent)}
-                  className={`w-full text-left p-3 rounded-2xl transition-all flex items-start gap-3 cursor-pointer group ${
+                  className={`w-full text-left p-3 rounded-xl transition-all flex items-start gap-3 cursor-pointer group ${
                     isSelected
-                      ? 'bg-amber-500/15 border border-amber-500/30 text-white'
-                      : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                      ? 'bg-[#FF6F00]/10 border border-[#FF6F00] text-[#111111]'
+                      : 'border border-transparent text-neutral-600 hover:text-[#111111] hover:bg-[#F4F4F4]'
                   }`}
                 >
                   <div className={`p-2 rounded-xl border shrink-0 transition-colors ${
                     isSelected
-                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                      : 'bg-slate-900 border-slate-800 text-slate-500 group-hover:text-slate-300'
+                      ? 'bg-[#FF6F00]/10 border-[#FF6F00] text-[#FF6F00]'
+                      : 'bg-white border-[#D1D1D1] text-neutral-500 group-hover:text-[#222222]'
                   }`}>
                     <Bot className="w-4 h-4" />
                   </div>
@@ -176,22 +176,22 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
                     <div className="flex items-center gap-1.5 justify-between">
                       <h4 className="text-xs font-bold truncate">{agent.name}</h4>
                       {isSelected && (
-                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0" />
+                        <span className="w-1.5 h-1.5 bg-[#FFB347] rounded-full shrink-0" />
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-500 truncate mt-0.5">{agent.specialty}</p>
+                    <p className="text-[10px] text-neutral-500 truncate mt-0.5">{agent.specialty}</p>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          <div className="p-3 border-t border-slate-800/80 bg-slate-950/60 shrink-0">
+          <div className="p-3 border-t border-[#D1D1D1] bg-white shrink-0">
             <a
               href="https://agentes.obramatch.com.br/"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
+              className="w-full py-2.5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
               <Bot className="w-3.5 h-3.5" />
               Acessar Agentes Match
@@ -200,31 +200,31 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col h-2/3 md:h-full bg-slate-900">
+        <div className="flex-1 flex flex-col h-2/3 md:h-full bg-white">
           {/* Top Panel */}
-          <div className="p-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div className="p-4 border-b border-[#D1D1D1] flex items-center justify-between shrink-0">
             {selectedAgent ? (
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl">
+                <div className="p-2 bg-[#FF6F00]/10 border border-[#FF6F00] text-[#FF6F00] rounded-xl">
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold text-white">{selectedAgent.name}</h3>
-                  <p className="text-[10px] text-slate-500">{selectedAgent.specialty}</p>
+                  <h3 className="text-xs font-bold text-[#111111]">{selectedAgent.name}</h3>
+                  <p className="text-[10px] text-neutral-500">{selectedAgent.specialty}</p>
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <div className="p-2 bg-slate-950/40 rounded-xl text-slate-500">
+                <div className="p-2 bg-white rounded-xl text-neutral-500">
                   <Bot className="w-5 h-5" />
                 </div>
-                <h3 className="text-xs font-bold text-slate-400">Selecione um Agente Especialista</h3>
+                <h3 className="text-xs font-bold text-neutral-600">Selecione um Agente Especialista</h3>
               </div>
             )}
 
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-white transition-all cursor-pointer hidden md:block"
+              className="p-1.5 hover:bg-[#ECECEC] rounded-xl text-neutral-600 hover:text-[#111111] transition-all cursor-pointer hidden md:block"
             >
               <X className="w-5 h-5" />
             </button>
@@ -244,19 +244,19 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
                     >
                       <div className={`p-2 rounded-xl shrink-0 h-max border ${
                         msg.sender === 'user'
-                          ? 'bg-slate-950 border-slate-800 text-slate-300'
-                          : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                          ? 'bg-[#F4F4F4] border-[#D1D1D1] text-[#222222]'
+                          : 'bg-[#FF6F00]/10 border-[#FF6F00] text-[#FF6F00]'
                       }`}>
                         {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                       </div>
 
-                      <div className={`p-4 rounded-2xl shadow-lg border ${
+                      <div className={`p-4 rounded-xl  border ${
                         msg.sender === 'user'
-                          ? 'bg-slate-850/80 border-slate-800 text-slate-200 rounded-tr-none'
-                          : 'bg-slate-950/60 border-slate-900 text-slate-200 rounded-tl-none'
+                          ? 'bg-[#F4F4F4] border-[#D1D1D1] text-[#111111] rounded-tr-none'
+                          : 'bg-white border-[#D1D1D1] text-[#111111] rounded-tl-none'
                       }`}>
                         <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                        <span className="text-[9px] text-slate-600 block text-right mt-1.5 font-semibold font-mono">{msg.time}</span>
+                        <span className="text-[9px] text-neutral-500 block text-right mt-1.5 font-semibold font-mono">{msg.time}</span>
                       </div>
                     </motion.div>
                   ))}
@@ -264,13 +264,13 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
 
                 {isTyping && (
                   <div className="flex gap-3 max-w-[80%] mr-auto items-center">
-                    <div className="p-2 rounded-xl shrink-0 bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                    <div className="p-2 rounded-xl shrink-0 bg-[#FF6F00]/10 border border-[#FF6F00] text-[#FF6F00]">
                       <Bot className="w-4 h-4" />
                     </div>
-                    <div className="p-3 bg-slate-950/40 border border-slate-900 rounded-2xl rounded-tl-none flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" />
-                      <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                      <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <div className="p-3 bg-white border border-[#D1D1D1] rounded-xl rounded-tl-none flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce [animation-delay:0.4s]" />
                     </div>
                   </div>
                 )}
@@ -278,11 +278,11 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
               </>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-12">
-                <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/10 mb-6">
-                  <Bot className="w-8 h-8 text-slate-950 stroke-[2]" />
+                <div className="w-16 h-16 bg-[#FF6F00] rounded-xl flex items-center justify-center mb-6">
+                  <Bot className="w-8 h-8 text-white stroke-[2]" />
                 </div>
-                <h3 className="text-lg font-black text-white">Suporte Técnico Especializado AI</h3>
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                <h3 className="text-lg font-black text-[#111111]">Suporte Técnico Especializado AI</h3>
+                <p className="text-xs text-neutral-600 mt-2 leading-relaxed">
                   Precisa de suporte com normas, engenharia, patologias ou orçamentos? Selecione um dos Agentes Match à esquerda para abrir o chat técnico.
                 </p>
 
@@ -290,7 +290,7 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
                   href="https://agentes.obramatch.com.br/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 w-full py-2.5 bg-slate-950 hover:bg-slate-850 border border-slate-800 text-amber-400 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="mt-4 w-full py-2.5 bg-[#F4F4F4] hover:bg-[#F4F4F4] border border-[#D1D1D1] text-[#FF6F00] font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <Bot className="w-4 h-4" />
                   <span>Acessar Portal de Agentes Oficial</span>
@@ -302,10 +302,10 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
                     <button
                       key={agent.id}
                       onClick={() => handleSelectAgent(agent)}
-                      className="p-3 bg-slate-950/40 hover:bg-slate-950 hover:border-slate-800 border border-slate-900 rounded-xl transition-all text-xs text-slate-300 font-semibold flex items-center justify-between cursor-pointer group"
+                      className="p-3 bg-white hover:bg-[#ECECEC] hover:border-[#D1D1D1] border border-[#D1D1D1] rounded-xl transition-all text-xs text-[#222222] font-semibold flex items-center justify-between cursor-pointer group"
                     >
                       <span className="truncate">{agent.name}</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all" />
+                      <ArrowRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-[#FF6F00] group-hover:translate-x-0.5 transition-all" />
                     </button>
                   ))}
                 </div>
@@ -315,31 +315,31 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
 
           {/* Quick Questions (Visible when agent selected) */}
           {selectedAgent && (
-            <div className="px-4 py-2 border-t border-slate-850 bg-slate-950/10 overflow-x-auto whitespace-nowrap gap-2 flex items-center shrink-0">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
-                <HelpCircle className="w-3 h-3 text-slate-600" /> Perguntas Rápidas:
+            <div className="px-4 py-2 border-t border-[#D1D1D1] bg-white overflow-x-auto whitespace-nowrap gap-2 flex items-center shrink-0">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
+                <HelpCircle className="w-3 h-3 text-neutral-500" /> Perguntas Rápidas:
               </span>
               {selectedAgent.id === 'normas' && (
                 <>
-                  <button onClick={() => handleQuickQuestion('O que diz a NBR 15575 sobre vida útil?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">NBR 15575 Vida Útil</button>
-                  <button onClick={() => handleQuickQuestion('Qual é a rampa máxima na NBR 9050?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">NBR 9050 Rampas</button>
+                  <button onClick={() => handleQuickQuestion('O que diz a NBR 15575 sobre vida útil?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">NBR 15575 Vida Útil</button>
+                  <button onClick={() => handleQuickQuestion('Qual é a rampa máxima na NBR 9050?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">NBR 9050 Rampas</button>
                 </>
               )}
               {selectedAgent.id === 'estruturas' && (
                 <>
-                  <button onClick={() => handleQuickQuestion('Qual é o cobrimento de concreto para lajes?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">Cobrimento de Lajes</button>
-                  <button onClick={() => handleQuickQuestion('Quantos dias para desforma de pilares?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">Desforma de Pilares</button>
+                  <button onClick={() => handleQuickQuestion('Qual é o cobrimento de concreto para lajes?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">Cobrimento de Lajes</button>
+                  <button onClick={() => handleQuickQuestion('Quantos dias para desforma de pilares?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">Desforma de Pilares</button>
                 </>
               )}
               {selectedAgent.id === 'patologias' && (
                 <>
-                  <button onClick={() => handleQuickQuestion('Como tratar umidade ascendente no baldrame?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">Umidade no Baldrame</button>
-                  <button onClick={() => handleQuickQuestion('O que causa fissura a 45 graus na parede?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">Trincas 45 Graus</button>
+                  <button onClick={() => handleQuickQuestion('Como tratar umidade ascendente no baldrame?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">Umidade no Baldrame</button>
+                  <button onClick={() => handleQuickQuestion('O que causa fissura a 45 graus na parede?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">Trincas 45 Graus</button>
                 </>
               )}
               {selectedAgent.id === 'orcamentos' && (
                 <>
-                  <button onClick={() => handleQuickQuestion('Como calcular taxa de BDI na planilha?')} className="text-[10px] px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-800 transition-all font-semibold cursor-pointer">Calcular Taxa BDI</button>
+                  <button onClick={() => handleQuickQuestion('Como calcular taxa de BDI na planilha?')} className="text-[10px] px-3 py-1.5 bg-white hover:bg-[#ECECEC] text-[#222222] rounded-lg border border-[#D1D1D1] transition-all font-semibold cursor-pointer">Calcular Taxa BDI</button>
                 </>
               )}
             </div>
@@ -347,19 +347,19 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
 
           {/* Form Input */}
           {selectedAgent && (
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-800/80 bg-slate-950/20 flex gap-2 items-center shrink-0">
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-[#D1D1D1] bg-white flex gap-2 items-center shrink-0">
               <input
                 type="text"
                 disabled={isTyping}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder={`Pergunte ao especialista ${selectedAgent.name}...`}
-                className="flex-1 bg-slate-950/60 border border-slate-800 focus:border-amber-500/50 rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder-slate-600 outline-none transition-all"
+                className="flex-1 bg-white border border-[#D1D1D1] focus:border-[#FF6F00] rounded-xl px-4 py-3 text-xs sm:text-sm text-[#111111] placeholder-neutral-400 outline-none transition-all"
               />
               <button
                 type="submit"
                 disabled={!userInput.trim() || isTyping}
-                className="p-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 rounded-2xl transition-all cursor-pointer shadow-lg shadow-amber-500/10 shrink-0"
+                className="p-3 bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white rounded-xl transition-all cursor-pointer shrink-0"
               >
                 <Send className="w-4 h-4 stroke-[2.5]" />
               </button>

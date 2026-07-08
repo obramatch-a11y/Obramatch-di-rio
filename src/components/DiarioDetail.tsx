@@ -103,16 +103,16 @@ export default function DiarioDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-16 relative">
+    <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-16 relative">
       
       {/* SCREEN UI CONTROLS (HIDDEN DURING PRINT) */}
       <div className="print:hidden flex flex-col w-full flex-1">
         {/* Navbar */}
-        <header className="border-b border-slate-900 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+        <header className="nb-topbar sticky top-0 z-40">
           <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between w-full">
             <button
               onClick={() => setView('obra-dashboard', selectedObra)}
-              className="flex items-center gap-2 text-slate-400 hover:text-white font-semibold transition-all cursor-pointer text-sm"
+              className="flex items-center gap-2 text-blue-100 hover:text-[#FFB347] font-semibold transition-all cursor-pointer text-sm"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Painel da Obra</span>
@@ -121,14 +121,14 @@ export default function DiarioDetail() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setView('diario-form', selectedObra, selectedDiario)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-xl transition-all cursor-pointer"
+                className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-[#F4F4F4] rounded-xl transition-all cursor-pointer"
                 title="Editar Diário"
               >
                 <Edit className="w-5 h-5" />
               </button>
               <button
                 onClick={handleDelete}
-                className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-900 rounded-xl transition-all cursor-pointer"
+                className="p-2 text-blue-100 hover:text-red-600 hover:bg-[#F4F4F4] rounded-xl transition-all cursor-pointer"
                 title="Excluir Diário"
               >
                 <Trash2 className="w-5 h-5" />
@@ -142,10 +142,10 @@ export default function DiarioDetail() {
           {/* Action Header Card */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              <span className="text-xs font-bold text-[#FF6F00] uppercase tracking-wider">
                 Relatório de Evolução{selectedDiario.numeroRdo ? ` · RDO Nº ${String(selectedDiario.numeroRdo).padStart(3, '0')}` : ''}
               </span>
-              <h2 className="text-2xl font-black text-white mt-1">
+              <h2 className="text-2xl font-black text-[#111111] mt-1">
                 Diário de Obra — {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
               </h2>
               {selectedDiario.hashIntegridade && (
@@ -153,8 +153,8 @@ export default function DiarioDetail() {
                   onClick={verificarIntegridade}
                   className={`mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold cursor-pointer transition-all border ${
                     verificacao === 'alterado'
-                      ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                      ? 'bg-red-50 border-red-500 text-red-600'
+                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/20'
                   }`}
                   title="Recalcula o código de integridade e compara com o registrado"
                 >
@@ -170,14 +170,14 @@ export default function DiarioDetail() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={handlePrint}
-                className="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 text-xs"
+                className="flex-1 sm:flex-initial bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
               >
                 <Printer className="w-4 h-4 stroke-[2.5]" />
                 Gerar PDF / Imprimir
               </button>
               <button
                 onClick={handleShare}
-                className="flex-1 sm:flex-initial bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
+                className="flex-1 sm:flex-initial bg-white hover:bg-[#ECECEC] border border-[#D1D1D1] text-[#111111] font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
               >
                 <Share2 className="w-4 h-4" />
                 {copied ? 'Copiado!' : 'Compartilhar'}
@@ -190,15 +190,15 @@ export default function DiarioDetail() {
             <div className="md:col-span-2 space-y-6">
               
               {/* Report Body */}
-              <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 sm:p-8 space-y-6">
+              <div className="nb-card p-6 sm:p-8 space-y-6">
                 
                 {/* Atividades Executadas */}
                 <div>
-                  <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-amber-500" />
+                  <h3 className="text-xs font-bold text-[#FF6F00] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-[#FF6F00]" />
                     Atividades Executadas
                   </h3>
-                  <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap bg-slate-950/40 border border-slate-900/50 rounded-2xl p-4">
+                  <p className="text-[#111111] text-sm leading-relaxed whitespace-pre-wrap bg-white border border-[#D1D1D1] rounded-xl p-4">
                     {selectedDiario.atividades}
                   </p>
                 </div>
@@ -207,16 +207,16 @@ export default function DiarioDetail() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {selectedDiario.equipe && (
                     <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Equipe Presente</h4>
-                      <p className="text-slate-300 text-xs bg-slate-950/20 border border-slate-900/50 rounded-2xl p-3 leading-relaxed whitespace-pre-wrap">
+                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-2">Equipe Presente</h4>
+                      <p className="text-[#222222] text-xs bg-white border border-[#D1D1D1] rounded-xl p-3 leading-relaxed whitespace-pre-wrap">
                         {selectedDiario.equipe}
                       </p>
                     </div>
                   )}
                   {selectedDiario.materiais && (
                     <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Materiais Recebidos</h4>
-                      <p className="text-slate-300 text-xs bg-slate-950/20 border border-slate-900/50 rounded-2xl p-3 leading-relaxed whitespace-pre-wrap">
+                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-2">Materiais Recebidos</h4>
+                      <p className="text-[#222222] text-xs bg-white border border-[#D1D1D1] rounded-xl p-3 leading-relaxed whitespace-pre-wrap">
                         {selectedDiario.materiais}
                       </p>
                     </div>
@@ -225,10 +225,10 @@ export default function DiarioDetail() {
 
                 {/* Occurrences & General Notes */}
                 {(selectedDiario.ocorrencias || selectedDiario.observacoes) && (
-                  <div className="space-y-4 pt-4 border-t border-slate-900/50">
+                  <div className="space-y-4 pt-4 border-t border-[#D1D1D1]">
                     {selectedDiario.ocorrencias && (
-                      <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-                        <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                      <div className="p-4 bg-[#FF6F00]/10 border border-[#FF6F00] rounded-xl">
+                        <h4 className="text-xs font-bold text-[#FF6F00] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                           <Info className="w-4 h-4" />
                           Ocorrências Registradas
                         </h4>
@@ -239,8 +239,8 @@ export default function DiarioDetail() {
                     )}
                     {selectedDiario.observacoes && (
                       <div>
-                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Observações Gerais</h4>
-                        <p className="text-slate-300 text-xs leading-relaxed whitespace-pre-wrap bg-slate-950/20 p-3 rounded-2xl">
+                        <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-2">Observações Gerais</h4>
+                        <p className="text-[#222222] text-xs leading-relaxed whitespace-pre-wrap bg-white p-3 rounded-xl">
                           {selectedDiario.observacoes}
                         </p>
                       </div>
@@ -251,24 +251,24 @@ export default function DiarioDetail() {
 
               {/* Photos Gallery */}
               {dPhotos.length > 0 && (
-                <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-6">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                    <Camera className="w-4 h-4 text-amber-500" />
+                <div className="bg-white border border-[#D1D1D1] rounded-xl p-6">
+                  <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-[#FF6F00]" />
                     Fotografias de Registro ({dPhotos.length})
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {dPhotos.map((photo) => (
-                      <div key={photo.id} className="bg-slate-950 border border-slate-900 rounded-2xl overflow-hidden p-2.5">
-                        <div className="aspect-video w-full overflow-hidden rounded-xl bg-slate-900">
+                      <div key={photo.id} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-2.5">
+                        <div className="aspect-video w-full overflow-hidden rounded-xl bg-white">
                           <img src={photo.url} alt={photo.legenda} className="w-full h-full object-cover" />
                         </div>
                         {photo.legenda && (
-                          <p className="text-xs text-slate-300 italic mt-2.5 px-1">{photo.legenda}</p>
+                          <p className="text-xs text-[#222222] italic mt-2.5 px-1">{photo.legenda}</p>
                         )}
-                        <div className="flex justify-between items-center text-[10px] text-slate-500 mt-2 px-1 font-semibold">
+                        <div className="flex justify-between items-center text-[10px] text-neutral-500 mt-2 px-1 font-semibold">
                           <span>Hora: {photo.horario}</span>
                           {photo.gps && (
-                            <span className="text-amber-500 font-mono">📍 GPS Sincronizado</span>
+                            <span className="text-[#FF6F00] font-mono">📍 GPS Sincronizado</span>
                           )}
                         </div>
                       </div>
@@ -282,32 +282,32 @@ export default function DiarioDetail() {
             <div className="space-y-6">
               
               {/* Weather & Location Summary */}
-              <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 space-y-4">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Detalhes do Registro</h3>
+              <div className="bg-white border border-[#D1D1D1] rounded-xl p-6 space-y-4">
+                <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Detalhes do Registro</h3>
                 
-                <div className="flex items-center justify-between p-3 bg-slate-950/40 rounded-2xl border border-slate-900/50">
-                  <span className="text-xs text-slate-400">Condições do Clima</span>
-                  <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D1D1]">
+                  <span className="text-xs text-neutral-600">Condições do Clima</span>
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#FF6F00]">
                     <ClimaIcon className="w-4 h-4" />
                     {selectedDiario.clima || 'Ensolarado'}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-slate-950/40 rounded-2xl border border-slate-900/50">
-                  <span className="text-xs text-slate-400">Horário Local</span>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white">
-                    <Clock className="w-4 h-4 text-slate-500" />
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D1D1]">
+                  <span className="text-xs text-neutral-600">Horário Local</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#111111]">
+                    <Clock className="w-4 h-4 text-neutral-500" />
                     {selectedDiario.horario}
                   </div>
                 </div>
 
                 {selectedDiario.gps && (
-                  <div className="p-3 bg-slate-950/40 rounded-2xl border border-slate-900/50 space-y-1">
-                    <span className="text-xs text-slate-400 block">Localização GPS</span>
-                    <span className="text-[11px] font-mono font-bold text-slate-300 block">
+                  <div className="p-3 bg-white rounded-xl border border-[#D1D1D1] space-y-1">
+                    <span className="text-xs text-neutral-600 block">Localização GPS</span>
+                    <span className="text-[11px] font-mono font-bold text-[#222222] block">
                       Lat: {selectedDiario.gps.latitude.toFixed(6)}
                     </span>
-                    <span className="text-[11px] font-mono font-bold text-slate-300 block">
+                    <span className="text-[11px] font-mono font-bold text-[#222222] block">
                       Long: {selectedDiario.gps.longitude.toFixed(6)}
                     </span>
                   </div>
@@ -316,16 +316,16 @@ export default function DiarioDetail() {
 
               {/* Signature display */}
               {selectedDiario.assinatura && (
-                <div className="bg-slate-900/30 border border-slate-900 rounded-3xl p-6 flex flex-col items-center">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 self-start">Assinatura Técnica</h3>
-                  <div className="bg-slate-900 border border-slate-850 rounded-2xl p-3 w-full max-w-xs flex justify-center">
+                <div className="bg-white border border-[#D1D1D1] rounded-xl p-6 flex flex-col items-center">
+                  <h3 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-4 self-start">Assinatura Técnica</h3>
+                  <div className="bg-white border border-[#D1D1D1] rounded-xl p-3 w-full max-w-xs flex justify-center">
                     <img 
                       src={selectedDiario.assinatura} 
                       alt="Assinatura" 
                       className="max-h-24 object-contain invert hue-rotate-180 brightness-150" 
                     />
                   </div>
-                  <span className="text-[11px] font-semibold text-slate-500 mt-3 block">
+                  <span className="text-[11px] font-semibold text-neutral-500 mt-3 block">
                     {selectedObra.responsavelTecnico}
                   </span>
                 </div>
@@ -334,7 +334,7 @@ export default function DiarioDetail() {
           </div>
 
           {/* Custom Promotional section required by step 3 & 7 */}
-          <div className="mt-8 pt-8 border-t border-slate-900/50 space-y-6" id="diario-detail-ecosystem-footer">
+          <div className="mt-8 pt-8 border-t border-[#D1D1D1] space-y-6" id="diario-detail-ecosystem-footer">
             <ObraMatchSoftPromo variant="footer" className="mt-0" />
           </div>
         </main>
@@ -345,42 +345,42 @@ export default function DiarioDetail() {
       <div className="hidden print:block bg-white text-black p-8 font-serif leading-relaxed text-sm w-full min-h-screen">
         
         {/* Header Block */}
-        <div className="border-b-4 border-slate-800 pb-4 mb-6 flex justify-between items-start">
+        <div className="border-b-4 border-[#D1D1D1] pb-4 mb-6 flex justify-between items-start">
           <div>
-            <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">ECOSSISTEMA OBRAMATCH</span>
-            <h1 className="text-2xl font-black text-slate-900 font-sans tracking-tight mt-1">
+            <span className="text-xs font-bold tracking-widest text-neutral-500 uppercase">ECOSSISTEMA OBRAMATCH</span>
+            <h1 className="text-2xl font-black text-[#111111] font-sans tracking-tight mt-1">
               RELATÓRIO DIÁRIO DE OBRA{selectedDiario.numeroRdo ? ` — RDO Nº ${String(selectedDiario.numeroRdo).padStart(3, '0')}` : ''}
             </h1>
-            <p className="text-xs text-slate-500 italic mt-1">ObraMatch Diário · Relatório Técnico Diário de Execução</p>
+            <p className="text-xs text-neutral-500 italic mt-1">ObraMatch Diário · Relatório Técnico Diário de Execução</p>
           </div>
           <div className="text-right">
-            <div className="text-lg font-extrabold text-slate-900 font-mono">
+            <div className="text-lg font-extrabold text-[#111111] font-mono">
               {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
             </div>
-            <div className="text-xs text-slate-500 font-sans mt-0.5">Emissão: {new Date().toLocaleString('pt-BR')}</div>
+            <div className="text-xs text-neutral-500 font-sans mt-0.5">Emissão: {new Date().toLocaleString('pt-BR')}</div>
           </div>
         </div>
 
         {/* Technical Metadata Table */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6 p-4 bg-slate-100 rounded-xl font-sans text-xs border border-slate-200">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6 p-4 bg-[#F4F4F4] rounded-xl font-sans text-xs border border-[#D1D1D1]">
           <div>
-            <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">OBRA:</span>
-            <span className="text-slate-900 font-bold text-sm">{selectedObra.nome}</span>
+            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">OBRA:</span>
+            <span className="text-[#111111] font-bold text-sm">{selectedObra.nome}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">CLIENTE:</span>
-            <span className="text-slate-900 font-bold text-sm">{selectedObra.cliente}</span>
+            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">CLIENTE:</span>
+            <span className="text-[#111111] font-bold text-sm">{selectedObra.cliente}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">RESPONSÁVEL TÉCNICO:</span>
-            <span className="text-slate-900 font-semibold">{selectedObra.responsavelTecnico}</span>
+            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">RESPONSÁVEL TÉCNICO:</span>
+            <span className="text-[#111111] font-semibold">{selectedObra.responsavelTecnico}</span>
           </div>
           <div>
-            <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">CLIMA / CONDIÇÕES:</span>
-            <span className="text-slate-900 font-semibold">
+            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">CLIMA / CONDIÇÕES:</span>
+            <span className="text-[#111111] font-semibold">
               {selectedDiario.clima || 'Ensolarado'}
               {selectedDiario.climaOficial && (
-                <span className="block text-[10px] text-slate-600 font-normal mt-0.5">
+                <span className="block text-[10px] text-neutral-500 font-normal mt-0.5">
                   {selectedDiario.climaOficial.tempMin}°C a {selectedDiario.climaOficial.tempMax}°C · Precipitação: {selectedDiario.climaOficial.chuvaMm}mm · Fonte oficial: Open-Meteo
                 </span>
               )}
@@ -388,24 +388,24 @@ export default function DiarioDetail() {
           </div>
           {selectedObra.endereco && (
             <div className="col-span-2">
-              <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">LOCALIZAÇÃO:</span>
-              <span className="text-slate-900 font-semibold">{selectedObra.endereco}</span>
+              <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">LOCALIZAÇÃO:</span>
+              <span className="text-[#111111] font-semibold">{selectedObra.endereco}</span>
             </div>
           )}
           {selectedDiario.gps && (
             <div className="col-span-2">
-              <span className="text-slate-500 font-bold block uppercase tracking-wider text-[10px]">COORDENADAS GPS (REPORT):</span>
-              <span className="text-slate-900 font-mono">📍 {selectedDiario.gps.latitude.toFixed(6)}, {selectedDiario.gps.longitude.toFixed(6)}</span>
+              <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">COORDENADAS GPS (REPORT):</span>
+              <span className="text-[#111111] font-mono">📍 {selectedDiario.gps.latitude.toFixed(6)}, {selectedDiario.gps.longitude.toFixed(6)}</span>
             </div>
           )}
         </div>
 
         {/* Content Section: Atividades */}
         <div className="mb-6 font-sans">
-          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-3">
+          <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-3">
             1. ATIVIDADES EXECUTADAS DO DIA
           </h3>
-          <p className="text-slate-900 text-sm whitespace-pre-wrap leading-relaxed">
+          <p className="text-[#111111] text-sm whitespace-pre-wrap leading-relaxed">
             {selectedDiario.atividades}
           </p>
         </div>
@@ -414,20 +414,20 @@ export default function DiarioDetail() {
         <div className="grid grid-cols-2 gap-6 mb-6 font-sans text-xs">
           {selectedDiario.equipe && (
             <div>
-              <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-2">
+              <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
                 2. EQUIPE PRESENTE
               </h3>
-              <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
                 {selectedDiario.equipe}
               </p>
             </div>
           )}
           {selectedDiario.materiais && (
             <div>
-              <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-2">
+              <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
                 3. MATERIAIS RECEBIDOS
               </h3>
-              <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
                 {selectedDiario.materiais}
               </p>
             </div>
@@ -437,7 +437,7 @@ export default function DiarioDetail() {
         {/* Content Section: Ocorrências */}
         {selectedDiario.ocorrencias && (
           <div className="mb-6 font-sans text-xs">
-            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-2">
+            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
               4. OCORRÊNCIAS / IMPREVISTOS
             </h3>
             <p className="text-red-800 font-bold whitespace-pre-wrap leading-relaxed">
@@ -449,10 +449,10 @@ export default function DiarioDetail() {
         {/* Content Section: Observações */}
         {selectedDiario.observacoes && (
           <div className="mb-6 font-sans text-xs">
-            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-2">
+            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
               5. OBSERVAÇÕES COMPLEMENTARES
             </h3>
-            <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
+            <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
               {selectedDiario.observacoes}
             </p>
           </div>
@@ -461,19 +461,19 @@ export default function DiarioDetail() {
         {/* Photos grid */}
         {dPhotos.length > 0 && (
           <div className="mb-8 font-sans page-break-before">
-            <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-4">
+            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-4">
               6. REGISTRO FOTOGRÁFICO
             </h3>
             <div className="grid grid-cols-2 gap-6">
               {dPhotos.map((photo) => (
-                <div key={photo.id} className="border border-slate-200 rounded-xl p-3 bg-slate-50">
+                <div key={photo.id} className="border border-[#D1D1D1] rounded-xl p-3 bg-[#F4F4F4]">
                   <div className="aspect-video w-full overflow-hidden rounded-lg mb-2">
                     <img src={photo.url} alt="Evidência" className="w-full h-full object-cover" />
                   </div>
                   {photo.legenda && (
-                    <p className="text-[11px] text-slate-700 italic font-semibold">{photo.legenda}</p>
+                    <p className="text-[11px] text-[#222222] italic font-semibold">{photo.legenda}</p>
                   )}
-                  <div className="flex justify-between items-center text-[10px] text-slate-400 mt-1.5 font-mono">
+                  <div className="flex justify-between items-center text-[10px] text-neutral-600 mt-1.5 font-mono">
                     <span>Hora: {photo.horario}</span>
                     {photo.gps && (
                       <span>GPS: {photo.gps.latitude.toFixed(5)}, {photo.gps.longitude.toFixed(5)}</span>
@@ -487,7 +487,7 @@ export default function DiarioDetail() {
 
         {/* Signatures footer block */}
         <div className="mt-12 pt-6 font-sans">
-          <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider border-b border-slate-300 pb-1 mb-8">
+          <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-8">
             7. ASSINATURAS
           </h3>
           <div className="grid grid-cols-2 gap-12">
@@ -499,38 +499,38 @@ export default function DiarioDetail() {
               ) : (
                 <div className="h-20" />
               )}
-              <div className="w-full border-t border-slate-900 my-1"></div>
-              <p className="text-xs font-bold text-slate-900 uppercase text-center">{selectedObra.responsavelTecnico}</p>
-              <p className="text-[10px] text-slate-500">Responsável Técnico (CREA/CAU)</p>
+              <div className="w-full border-t border-[#D1D1D1] my-1"></div>
+              <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.responsavelTecnico}</p>
+              <p className="text-[10px] text-neutral-500">Responsável Técnico (CREA/CAU)</p>
             </div>
             <div className="flex flex-col items-center">
               <div className="h-20" />
-              <div className="w-full border-t border-slate-900 my-1"></div>
-              <p className="text-xs font-bold text-slate-900 uppercase text-center">{selectedObra.cliente}</p>
-              <p className="text-[10px] text-slate-500">Cliente / Contratante — Ciência do registro</p>
+              <div className="w-full border-t border-[#D1D1D1] my-1"></div>
+              <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.cliente}</p>
+              <p className="text-[10px] text-neutral-500">Cliente / Contratante — Ciência do registro</p>
             </div>
           </div>
         </div>
 
         {/* Generation stamp in footer */}
-        <div className="mt-16 text-center font-sans border-t border-slate-200 pt-4 flex flex-col items-center gap-1">
+        <div className="mt-16 text-center font-sans border-t border-[#D1D1D1] pt-4 flex flex-col items-center gap-1">
           {selectedDiario.hashIntegridade && (
-            <p className="text-[9px] text-slate-600 font-mono mb-1">
+            <p className="text-[9px] text-neutral-500 font-mono mb-1">
               🔒 Código de integridade (SHA-256): {selectedDiario.hashIntegridade}
             </p>
           )}
           {(selectedDiario.gps || selectedDiario.origem) && (
-            <p className="text-[9px] text-slate-500 font-mono mb-1">
+            <p className="text-[9px] text-neutral-500 font-mono mb-1">
               {selectedDiario.gps ? `GPS: ${selectedDiario.gps.latitude.toFixed(6)}, ${selectedDiario.gps.longitude.toFixed(6)}` : ''}
               {selectedDiario.gps && selectedDiario.origem ? ' · ' : ''}
               {selectedDiario.origem === 'telegram' ? 'Registrado via Telegram com confirmação do responsável' : selectedDiario.origem === 'app' ? 'Registrado via aplicativo' : ''}
             </p>
           )}
-          <p className="text-[10px] text-slate-500 font-bold">
+          <p className="text-[10px] text-neutral-500 font-bold">
             Documento gerado pelo ObraMatch Diário — diario.obramatch.com.br
           </p>
-          <p className="text-[9px] text-slate-400 max-w-xl leading-relaxed">
-            ObraMatch: Encontre profissionais avaliados para sua obra com mais segurança. Economize tempo, tenha histórico de obras visível e faça contato direto sem intermediários. Acesse o site oficial em <a href="https://obramatch.com.br/" target="_blank" rel="noopener noreferrer" className="font-semibold text-slate-600 hover:underline">obramatch.com.br</a>
+          <p className="text-[9px] text-neutral-600 max-w-xl leading-relaxed">
+            ObraMatch: Encontre profissionais avaliados para sua obra com mais segurança. Economize tempo, tenha histórico de obras visível e faça contato direto sem intermediários. Acesse o site oficial em <a href="https://obramatch.com.br/" target="_blank" rel="noopener noreferrer" className="font-semibold text-neutral-500 hover:underline">obramatch.com.br</a>
           </p>
         </div>
       </div>

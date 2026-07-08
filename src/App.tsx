@@ -18,17 +18,17 @@ function AppContent() {
   const { user, loading, currentView, showAgentesModal, closeAgentesModal, selectedAgentId } = useApp();
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#F4F4F4] flex flex-col">
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-            className="p-3 bg-amber-500 rounded-2xl mb-4 shadow-xl shadow-amber-500/10"
+            className="p-3 bg-[#FF6F00] rounded-xl mb-4"
           >
-            <HardHat className="w-8 h-8 text-slate-950 stroke-[2.5]" />
+            <HardHat className="w-8 h-8 text-white stroke-[2.5]" />
           </motion.div>
-          <p className="text-slate-400 text-xs font-semibold tracking-wider uppercase animate-pulse">
+          <p className="text-neutral-600 text-xs font-semibold tracking-wider uppercase animate-pulse">
             Carregando ObraMatch...
           </p>
         </div>

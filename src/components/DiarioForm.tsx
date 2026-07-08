@@ -36,10 +36,10 @@ import type { ClimaOficialInfo } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
 
 const CLIMA_OPTIONS = [
-  { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  { value: 'Nublado', label: 'Nublado', icon: Cloud, color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
-  { value: 'Chuvoso', label: 'Chuvoso', icon: CloudRain, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  { value: 'Instável', label: 'Instável', icon: CloudLightning, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+  { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-[#FF6F00] bg-[#FF6F00]/10 border-[#FF6F00]' },
+  { value: 'Nublado', label: 'Nublado', icon: Cloud, color: 'text-neutral-600 bg-[#F4F4F4] border-[#D1D1D1]' },
+  { value: 'Chuvoso', label: 'Chuvoso', icon: CloudRain, color: 'text-[#2E6DEB] bg-[#2E6DEB]/10 border-[#2E6DEB]' },
+  { value: 'Instável', label: 'Instável', icon: CloudLightning, color: 'text-[#0A3D91] bg-[#0A3D91]/10 border-[#0A3D91]' },
 ];
 
 export default function DiarioForm() {
@@ -426,13 +426,13 @@ export default function DiarioForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-16">
+    <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-16">
       {/* Top Navbar */}
-      <header className="border-b border-slate-900 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+      <header className="nb-topbar sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between w-full">
           <button
             onClick={() => setView('obra-dashboard', selectedObra)}
-            className="flex items-center gap-2 text-slate-400 hover:text-white font-semibold transition-all cursor-pointer text-sm"
+            className="flex items-center gap-2 text-blue-100 hover:text-[#FFB347] font-semibold transition-all cursor-pointer text-sm"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Voltar para Obra</span>
@@ -445,7 +445,7 @@ export default function DiarioForm() {
           <button
             onClick={handleSaveReport}
             disabled={!atividades}
-            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs"
+            className="bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs"
           >
             <Save className="w-4 h-4" />
             Salvar
@@ -455,26 +455,26 @@ export default function DiarioForm() {
 
       {/* Form Area */}
       <main className="max-w-4xl mx-auto px-4 w-full pt-8 flex-1">
-        <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 sm:p-8 space-y-6">
+        <div className="nb-card p-6 sm:p-8 space-y-6">
 
           {/* Section: Ditar diário com IA */}
           {!isEditing && (
-            <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="bg-[#F4F4F4] border-2 border-black border-l-4 border-l-[#FF6F00] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex-1">
-                <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
+                <h4 className="text-xs font-black text-[#FF6F00] uppercase tracking-widest flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
                   Ditar diário
                 </h4>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-neutral-600 mt-1">
                   Fale o que aconteceu na obra e a IA preenche os campos do RDO para você revisar.
                 </p>
-                {erroIa && <p className="text-xs text-red-400 mt-1.5 font-semibold">{erroIa}</p>}
+                {erroIa && <p className="text-xs text-red-600 mt-1.5 font-semibold">{erroIa}</p>}
                 {camposIa && !erroIa && (
-                  <p className="text-xs text-emerald-400 mt-1.5 font-semibold">✓ Campos preenchidos pela IA — revise antes de salvar.</p>
+                  <p className="text-xs text-emerald-600 mt-1.5 font-semibold">✓ Campos preenchidos pela IA — revise antes de salvar.</p>
                 )}
               </div>
               {processandoIa ? (
-                <div className="py-3 px-5 bg-slate-950 border border-slate-800 text-amber-400 font-bold rounded-2xl flex items-center gap-2 text-xs">
+                <div className="py-3 px-5 bg-[#F4F4F4] border border-[#D1D1D1] text-[#FF6F00] font-bold rounded-xl flex items-center gap-2 text-xs">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Estruturando RDO...
                 </div>
@@ -482,7 +482,7 @@ export default function DiarioForm() {
                 <button
                   type="button"
                   onClick={pararGravacao}
-                  className="py-3 px-5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs animate-pulse"
+                  className="py-3 px-5 bg-red-500 hover:bg-red-600 text-[#111111] font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-all text-xs animate-pulse"
                 >
                   <Square className="w-4 h-4 fill-current" />
                   Parar e processar
@@ -491,7 +491,7 @@ export default function DiarioForm() {
                 <button
                   type="button"
                   onClick={iniciarGravacao}
-                  className="py-3 px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-2xl flex items-center gap-2 cursor-pointer transition-all text-xs shadow-lg shadow-amber-500/10"
+                  className="py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-all text-xs"
                 >
                   <Mic className="w-4 h-4" />
                   Gravar áudio
@@ -501,36 +501,36 @@ export default function DiarioForm() {
           )}
 
           {/* Section: Metadata (Data, Hora, Clima, GPS) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-slate-900">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-[#D1D1D1]">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                     Data do Registro
                   </label>
                   <input
                     type="date"
                     value={data}
                     onChange={(e) => setData(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white outline-none transition-all text-sm font-semibold"
+                    className="w-full px-4 py-3 nb-input   text-sm font-semibold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                     Horário
                   </label>
                   <input
                     type="time"
                     value={horario}
                     onChange={(e) => setHorario(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white outline-none transition-all text-sm font-semibold"
+                    className="w-full px-4 py-3 nb-input   text-sm font-semibold"
                   />
                 </div>
               </div>
 
               {/* GPS Tracker */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                   Coordenadas GPS
                 </label>
                 <div className="flex items-center gap-2">
@@ -538,18 +538,18 @@ export default function DiarioForm() {
                     type="button"
                     onClick={handleRequestGps}
                     disabled={requestingGps}
-                    className="py-3 px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 font-semibold rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
+                    className="py-3 px-4 bg-[#F4F4F4] hover:bg-[#F4F4F4] border border-[#D1D1D1] text-[#222222] font-semibold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs"
                   >
-                    <MapPin className="w-4 h-4 text-amber-500" />
+                    <MapPin className="w-4 h-4 text-[#FF6F00]" />
                     {requestingGps ? 'Buscando GPS...' : 'Atualizar Localização'}
                   </button>
-                  <div className="flex-1 px-4 py-3 bg-slate-950/30 rounded-2xl border border-slate-900 text-xs font-mono text-slate-400">
+                  <div className="flex-1 px-4 py-3 bg-white rounded-xl border border-[#D1D1D1] text-xs font-mono text-neutral-600">
                     {gpsStatus === 'success' && gps ? (
                       <span>📍 {gps.latitude.toFixed(6)}, {gps.longitude.toFixed(6)}</span>
                     ) : gpsStatus === 'denied' ? (
-                      <span className="text-red-400 font-semibold">Sem permissão de GPS</span>
+                      <span className="text-red-600 font-semibold">Sem permissão de GPS</span>
                     ) : gpsStatus === 'error' ? (
-                      <span className="text-amber-500">Erro de sinal GPS</span>
+                      <span className="text-[#FF6F00]">Erro de sinal GPS</span>
                     ) : (
                       <span>Não capturado</span>
                     )}
@@ -561,13 +561,13 @@ export default function DiarioForm() {
             {/* Clima Selection */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                   Condições do Clima
                 </label>
                 {buscandoClima ? (
-                  <span className="text-[10px] text-slate-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Consultando fonte oficial...</span>
+                  <span className="text-[10px] text-neutral-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Consultando fonte oficial...</span>
                 ) : climaOficial ? (
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" />
                     Fonte oficial · {climaOficial.tempMin}–{climaOficial.tempMax}°C · {climaOficial.chuvaMm}mm
                   </span>
@@ -582,10 +582,10 @@ export default function DiarioForm() {
                       key={item.value}
                       type="button"
                       onClick={() => selecionarClimaManual(item.value)}
-                      className={`flex items-center gap-2.5 p-3.5 border rounded-2xl font-semibold cursor-pointer text-xs transition-all ${
+                      className={`flex items-center gap-2.5 p-3.5 border rounded-xl font-semibold cursor-pointer text-xs transition-all ${
                         isSelected 
-                          ? 'border-amber-400 text-amber-400 bg-amber-500/10' 
-                          : 'border-slate-800 text-slate-400 hover:text-slate-200 bg-slate-950/20'
+                          ? 'border-[#FF6F00] text-[#FF6F00] bg-[#FF6F00]/10' 
+                          : 'border-[#D1D1D1] text-neutral-600 hover:text-[#111111] bg-white'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -601,14 +601,14 @@ export default function DiarioForm() {
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                   Atividades Executadas (Progresso do Dia) *
                 </label>
                 <button
                   type="button"
                   onClick={handleMelhorarTexto}
                   disabled={!atividades.trim() || melhorandoTexto}
-                  className="flex items-center gap-1 text-[10px] font-bold text-amber-400 hover:text-amber-300 disabled:opacity-40 cursor-pointer transition-all"
+                  className="flex items-center gap-1 text-[10px] font-bold text-[#FF6F00] hover:text-[#FF6F00] disabled:opacity-40 cursor-pointer transition-all"
                 >
                   {melhorandoTexto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                   Melhorar texto
@@ -620,13 +620,13 @@ export default function DiarioForm() {
                 value={atividades}
                 onChange={(e) => setAtividades(e.target.value)}
                 placeholder="Ex: Concretagem de vigas concluída. Alvenaria do 2º pavimento iniciada."
-                className="w-full px-4 py-3.5 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm leading-relaxed"
+                className="w-full px-4 py-3.5 nb-input  placeholder-neutral-400  text-sm leading-relaxed"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                   Equipe e Mão de Obra Presente
                 </label>
                 <textarea
@@ -634,12 +634,12 @@ export default function DiarioForm() {
                   value={equipe}
                   onChange={(e) => setEquipe(e.target.value)}
                   placeholder="Ex: 2 Pedreiros, 4 Serventes, 1 Mestre de Obras."
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm resize-none"
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                   Materiais Recebidos ou Entregues
                 </label>
                 <textarea
@@ -647,14 +647,14 @@ export default function DiarioForm() {
                   value={materiais}
                   onChange={(e) => setMateriais(e.target.value)}
                   placeholder="Ex: 50 sacos de cimento CP-II, 2m³ de areia grossa."
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm resize-none"
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                   Ocorrências / Imprevistos / Acidentes
                 </label>
                 <textarea
@@ -662,12 +662,12 @@ export default function DiarioForm() {
                   value={ocorrencias}
                   onChange={(e) => setOcorrencias(e.target.value)}
                   placeholder="Ex: Chuva intensa no período da tarde paralisou trabalhos por 2 horas."
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm resize-none"
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
                   Observações Gerais
                 </label>
                 <textarea
@@ -675,27 +675,27 @@ export default function DiarioForm() {
                   value={observacoes}
                   onChange={(e) => setObservacoes(e.target.value)}
                   placeholder="Informações adicionais relevantes para o diário..."
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 focus:border-amber-500/50 rounded-2xl text-white placeholder-slate-600 outline-none transition-all text-sm resize-none"
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Section: Photographs */}
-          <div className="pt-6 border-t border-slate-900 space-y-4">
+          <div className="pt-6 border-t border-[#D1D1D1] space-y-4">
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <Camera className="w-4 h-4 text-amber-500" />
+              <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
+                <Camera className="w-4 h-4 text-[#FF6F00]" />
                 Fotografias de Registro
               </h4>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 Capture fotos diretamente pela câmera ou faça upload da galeria do seu celular/computador.
               </p>
             </div>
 
             {/* Upload Zone */}
             <div className="flex items-center gap-4">
-              <label className="py-3 px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 text-xs">
+              <label className="py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs">
                 <Camera className="w-4 h-4 stroke-[2.5]" />
                 Capturar ou Anexar Fotos
                 <input
@@ -712,16 +712,16 @@ export default function DiarioForm() {
             {uploadedPhotos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                 {uploadedPhotos.map((photo, index) => (
-                  <div key={index} className="bg-slate-950 border border-slate-850 rounded-2xl overflow-hidden p-3 relative flex flex-col justify-between">
+                  <div key={index} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
                     <button
                       type="button"
                       onClick={() => removePhoto(index)}
-                      className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
+                      className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-[#111111] rounded-full transition-all cursor-pointer z-10"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                     
-                    <div className="aspect-video w-full overflow-hidden rounded-xl bg-slate-900 relative">
+                    <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
                       <img src={photo.url} alt="Uploaded" className="w-full h-full object-cover" />
                     </div>
 
@@ -730,7 +730,7 @@ export default function DiarioForm() {
                       placeholder="Legenda da foto..."
                       value={photo.legenda}
                       onChange={(e) => updatePhotoLegend(index, e.target.value)}
-                      className="w-full mt-3 px-3 py-1.5 bg-slate-900 border border-slate-800 focus:border-amber-500/30 rounded-xl text-white placeholder-slate-600 outline-none transition-all text-xs"
+                      className="w-full mt-3 px-3 py-1.5 nb-input  placeholder-neutral-400  text-xs"
                     />
                   </div>
                 ))}
@@ -739,18 +739,18 @@ export default function DiarioForm() {
           </div>
 
           {/* Section: Assinatura Opcional */}
-          <div className="pt-6 border-t border-slate-900 space-y-4">
+          <div className="pt-6 border-t border-[#D1D1D1] space-y-4">
             <div>
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-500" />
+              <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#FF6F00]" />
                 Assinatura do Responsável Técnico
               </h4>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-neutral-500 mt-1">
                 Utilize seu dedo ou mouse na área abaixo para assinar este relatório diário.
               </p>
             </div>
 
-            <div className="bg-slate-950 border border-slate-850 rounded-2xl p-4 flex flex-col items-center max-w-md mx-auto relative overflow-hidden">
+            <div className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl p-4 flex flex-col items-center max-w-md mx-auto relative overflow-hidden">
               <canvas
                 ref={canvasRef}
                 width={380}
@@ -762,14 +762,14 @@ export default function DiarioForm() {
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="bg-slate-100 border border-slate-300 rounded-xl cursor-crosshair max-w-full touch-none"
+                className="bg-white border-2 border-black rounded-xl cursor-crosshair max-w-full touch-none"
               />
-              <div className="flex justify-between items-center w-full mt-3 text-xs text-slate-400">
+              <div className="flex justify-between items-center w-full mt-3 text-xs text-neutral-600">
                 <span>{hasSignature ? '✓ Assinado' : 'Toque acima para assinar'}</span>
                 <button
                   type="button"
                   onClick={clearCanvas}
-                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-900 rounded-xl text-red-400 hover:text-red-300 font-semibold cursor-pointer transition-all text-[11px]"
+                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#F4F4F4] rounded-xl text-red-600 hover:text-red-700 font-semibold cursor-pointer transition-all text-[11px]"
                 >
                   <Eraser className="w-3.5 h-3.5" />
                   Limpar Assinatura
@@ -779,12 +779,12 @@ export default function DiarioForm() {
           </div>
 
           {/* Bottom Save Button - Ensures there is a Save button right before the support block */}
-          <div className="pt-6 border-t border-slate-900 flex justify-end">
+          <div className="pt-6 border-t border-[#D1D1D1] flex justify-end">
             <button
               type="button"
               onClick={handleSaveReport}
               disabled={!atividades}
-              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3.5 px-8 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-amber-500/10 hover:shadow-amber-500/25 text-sm"
+              className="w-full sm:w-auto bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
             >
               <Save className="w-5 h-5" />
               <span>Salvar Diário de Obra</span>
@@ -795,10 +795,10 @@ export default function DiarioForm() {
       </main>
 
       {saveError && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-4xl mx-auto bg-red-950/95 border border-red-500/40 text-red-200 rounded-2xl px-4 py-3 text-sm font-semibold shadow-xl backdrop-blur flex items-start gap-2">
+        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-4xl mx-auto bg-red-950/95 border border-red-500 text-red-200 rounded-xl px-4 py-3 text-sm font-semibold flex items-start gap-2">
           <span className="mt-0.5">⚠️</span>
           <span className="flex-1">{saveError}</span>
-          <button onClick={() => setSaveError(null)} className="text-red-300 hover:text-white font-bold px-1 cursor-pointer">✕</button>
+          <button onClick={() => setSaveError(null)} className="text-red-700 hover:text-[#111111] font-bold px-1 cursor-pointer">✕</button>
         </div>
       )}
 
@@ -812,7 +812,7 @@ export default function DiarioForm() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-slate-950/90 backdrop-blur-md"
+                className="absolute inset-0 bg-white -md"
               />
 
               {/* Modal Body */}
@@ -820,101 +820,36 @@ export default function DiarioForm() {
                 initial={{ opacity: 0, scale: 0.95, y: 15 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 max-h-[90vh] overflow-y-auto"
+                className="relative w-full max-w-2xl bg-white border border-[#D1D1D1] rounded-xl p-6 sm:p-8 z-10 max-h-[90vh] overflow-y-auto"
               >
                 <div className="text-center mb-6">
-                  <div className="mx-auto w-16 h-16 bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-xl shadow-emerald-500/10">
+                  <div className="mx-auto w-16 h-16 bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-emerald-500/10">
                     <Check className="w-8 h-8 stroke-[2.5]" />
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-black text-white font-sans">
+                  <h3 className="text-xl sm:text-2xl font-black text-[#111111] font-sans">
                     Diário Registrado com Sucesso!
                   </h3>
-                  <p className="text-slate-400 text-xs mt-1">
+                  <p className="text-neutral-600 text-xs mt-1">
                     O relatório foi consolidado e armazenado na nuvem de forma segura.
                   </p>
                 </div>
 
-                {recommendations && (
-                  <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-5 mb-6 space-y-4">
-                    <div className="flex items-center gap-2 border-b border-slate-900 pb-3">
-                      <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-                      <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest">
-                        Recomendações para a Próxima Etapa
-                      </h4>
-                    </div>
-
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Identificamos que sua obra está na fase de <span className="font-bold text-amber-400">{recommendations.stageName}</span>. Veja estas sugestões úteis do ecossistema ObraMatch:
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                      
-                      {/* Blog Post */}
-                      <div className="bg-slate-900/50 border border-slate-850 rounded-xl p-4 flex flex-col justify-between group">
-                        <div className="space-y-1.5">
-                          <span className="text-[9px] font-extrabold text-blue-400 uppercase tracking-wider block">
-                            Blog Recomendado
-                          </span>
-                          <h5 className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
-                            {recommendations.article.title}
-                          </h5>
-                          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                            {recommendations.article.summary}
-                          </p>
-                        </div>
-                        <a
-                          href={recommendations.article.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-amber-400 hover:text-amber-300 mt-3 flex items-center gap-1 cursor-pointer transition-colors"
-                        >
-                          <span>Ler no Blog</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-
-                      {/* Specialist Agent */}
-                      <div className="bg-slate-900/50 border border-slate-850 rounded-xl p-4 flex flex-col justify-between group">
-                        <div className="space-y-1.5">
-                          <span className="text-[9px] font-extrabold text-purple-400 uppercase tracking-wider block">
-                            Suporte de Especialista
-                          </span>
-                          <h5 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
-                            {recommendations.agent.name}
-                          </h5>
-                          <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
-                            {recommendations.agent.description}
-                          </p>
-                        </div>
-                        <a
-                          href="https://agentes.obramatch.com.br/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-bold text-amber-400 hover:text-amber-300 mt-3 flex items-center gap-1 cursor-pointer transition-colors text-left"
-                        >
-                          <span>Acessar Agente</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-
-                    </div>
-                  </div>
-                )}
+                
 
                 {/* Single, discrete promotion after save */}
                 <ObraMatchSoftPromo variant="diario" className="my-4" />
 
                 {/* Navigation Actions */}
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-800">
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-[#D1D1D1]">
                   <button
                     onClick={() => setView('obra-dashboard', selectedObra)}
-                    className="w-full sm:flex-1 py-3 px-4 border border-slate-800 hover:bg-slate-850 text-slate-300 hover:text-white font-semibold rounded-xl transition-all cursor-pointer text-xs"
+                    className="w-full sm:flex-1 py-3 px-4 border border-[#D1D1D1] hover:bg-[#F4F4F4] text-[#222222] hover:text-[#111111] font-semibold rounded-xl transition-all cursor-pointer text-xs"
                   >
                     Voltar para Obra
                   </button>
                   <button
                     onClick={() => setView('diario-detail', selectedObra, savedReport)}
-                    className="w-full sm:flex-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-3 px-4 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/10"
+                    className="w-full sm:flex-1 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3 px-4 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
                   >
                     <FileText className="w-4 h-4" />
                     Ver Detalhes & PDF

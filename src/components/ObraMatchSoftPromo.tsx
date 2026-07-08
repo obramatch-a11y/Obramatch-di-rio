@@ -1,139 +1,105 @@
-import React from 'react';
-import { Globe, BookOpen, Bot, ExternalLink, ArrowUpRight } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Globe, BookOpen, Bot, ArrowUpRight } from 'lucide-react';
 
 interface ObraMatchSoftPromoProps {
   variant?: 'login' | 'dashboard' | 'obra' | 'diario' | 'footer';
   className?: string;
 }
 
+type Promo = {
+  brand: 'obramatch' | 'agentes' | 'portal';
+  icon: React.ReactNode;
+  title: string;
+  line: string;
+  cta: string;
+  href: string;
+  accent: 'orange' | 'blue';
+};
+
+const PROMOS: Record<string, Promo> = {
+  obramatchLogin: {
+    brand: 'obramatch',
+    icon: <Globe className="w-4 h-4" />,
+    title: 'ObraMatch',
+    line: 'O marketplace que conecta clientes a profissionais de obra em todo o Brasil.',
+    cta: 'Conhecer',
+    href: 'https://obramatch.com.br/',
+    accent: 'blue',
+  },
+  perfilPublico: {
+    brand: 'obramatch',
+    icon: <Globe className="w-4 h-4" />,
+    title: 'Apareça para clientes no ObraMatch',
+    line: 'Seu perfil público mostra sua experiência para quem procura profissionais.',
+    cta: 'Ver perfil',
+    href: 'https://obramatch.com.br/',
+    accent: 'blue',
+  },
+  portal: {
+    brand: 'portal',
+    icon: <BookOpen className="w-4 h-4" />,
+    title: 'Portal Construção',
+    line: 'Conteúdo técnico para cada etapa da sua obra, direto do blog.',
+    cta: 'Ler artigo',
+    href: 'https://obramatchof.blogspot.com/',
+    accent: 'blue',
+  },
+  agentes: {
+    brand: 'agentes',
+    icon: <Bot className="w-4 h-4" />,
+    title: 'Agentes Match',
+    line: 'IA para engenheiros: memórias de cálculo, orçamentos SINAPI, consultas NBR.',
+    cta: 'Testar',
+    href: 'https://agentes.obramatch.com.br/',
+    accent: 'orange',
+  },
+};
+
+/**
+ * Bloco promocional único e contextual.
+ * Regra: nunca mais de um por tela; rotação por contexto.
+ */
 export default function ObraMatchSoftPromo({
   variant = 'dashboard',
-  className = ''
+  className = '',
 }: ObraMatchSoftPromoProps) {
-
-  // Footer/Relatório - Ultra-compact, subtle links list
-  if (variant === 'footer') {
-    return (
-      <div 
-        className={`pt-6 border-t border-slate-900/60 text-center space-y-3 ${className}`}
-        id="obramatch-soft-promo-footer"
-      >
-        <p className="text-[11px] font-semibold text-slate-400">
-          Consulte conteúdos e especialistas do ecossistema ObraMatch para sua obra.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-5 text-xs">
-          <a
-            href="https://obramatch.com.br/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-400 hover:text-amber-300 transition-colors font-semibold flex items-center gap-0.5"
-          >
-            ObraMatch <ArrowUpRight className="w-3 h-3 text-slate-500" />
-          </a>
-          <span className="text-slate-800">•</span>
-          <a
-            href="https://obramatchof.blogspot.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-400 hover:text-amber-300 transition-colors font-semibold flex items-center gap-0.5"
-          >
-            Blog ObraMatch <ArrowUpRight className="w-3 h-3 text-slate-500" />
-          </a>
-          <span className="text-slate-800">•</span>
-          <a
-            href="https://agentes.obramatch.com.br/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-400 hover:text-amber-300 transition-colors font-semibold flex items-center gap-0.5"
-          >
-            Agentes Match <ArrowUpRight className="w-3 h-3 text-slate-500" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Determine variant-specific text
-  let headingText = "Mais recursos ObraMatch";
-  let descriptionText = "Encontre profissionais, leia conteúdos técnicos e acesse apoio especializado quando precisar.";
-  
-  if (variant === 'login') {
-    headingText = "Ecossistema ObraMatch";
-    descriptionText = "Encontre profissionais e consulte especialistas para apoiar a sua obra com total segurança.";
-  } else if (variant === 'diario') {
-    headingText = "Apoio Técnico Adicional";
-    descriptionText = "Precisa de orientação técnica para descrever o dia? Consulte nossos recursos especializados.";
-  } else if (variant === 'obra') {
-    headingText = "Continue sua obra com mais segurança";
-    descriptionText = "Consulte conteúdos e especialistas de engenharia e obras do ecossistema ObraMatch.";
-  }
+  const promo = useMemo<Promo>(() => {
+    if (variant === 'login') return PROMOS.obramatchLogin;
+    if (variant === 'dashboard') return PROMOS.perfilPublico;
+    if (variant === 'diario' || variant === 'footer') return PROMOS.agentes;
+    // Dentro da obra: alterna Portal Construção / Agentes Match (nunca os dois)
+    const alt = new Date().getDate() % 2 === 0 ? PROMOS.portal : PROMOS.agentes;
+    return alt;
+  }, [variant]);
 
   return (
-    <div 
-      className={`bg-slate-900 border border-slate-850 rounded-2xl p-5 shadow-lg space-y-4 ${className}`}
+    <a
+      href={promo.href}
+      target="_blank"
+      rel="noopener noreferrer"
       id={`obramatch-soft-promo-${variant}`}
+      className={`nb-promo ${promo.accent === 'blue' ? 'nb-promo-blue' : ''} flex items-center gap-3 p-3 group ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-3">
-        <div>
-          <h4 className="text-xs font-black text-white tracking-wide uppercase flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
-            <span>{headingText}</span>
-          </h4>
-          <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-            {descriptionText}
-          </p>
-        </div>
+      <div
+        className={`w-8 h-8 rounded-lg border-2 border-black flex items-center justify-center shrink-0 ${
+          promo.accent === 'blue' ? 'bg-[#0A3D91] text-white' : 'bg-[#FF6F00] text-white'
+        }`}
+      >
+        {promo.icon}
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        {/* Link 1: Plataforma */}
-        <a
-          href="https://obramatch.com.br/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-950 border border-slate-850 p-2.5 rounded-xl transition-all group cursor-pointer"
-        >
-          <div className="w-7 h-7 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg flex items-center justify-center shrink-0">
-            <Globe className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-white group-hover:text-amber-400 transition-colors truncate">ObraMatch</p>
-            <p className="text-[9px] text-slate-500 truncate">Contrate profissionais</p>
-          </div>
-        </a>
-
-        {/* Link 2: Blog */}
-        <a
-          href="https://obramatchof.blogspot.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-950 border border-slate-850 p-2.5 rounded-xl transition-all group cursor-pointer"
-        >
-          <div className="w-7 h-7 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg flex items-center justify-center shrink-0">
-            <BookOpen className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-white group-hover:text-blue-400 transition-colors truncate">Blog ObraMatch</p>
-            <p className="text-[9px] text-slate-500 truncate">Conteúdos técnicos</p>
-          </div>
-        </a>
-
-        {/* Link 3: Agentes */}
-        <a
-          href="https://agentes.obramatch.com.br/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-950 border border-slate-850 p-2.5 rounded-xl transition-all group cursor-pointer"
-        >
-          <div className="w-7 h-7 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg flex items-center justify-center shrink-0">
-            <Bot className="w-3.5 h-3.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold text-white group-hover:text-purple-400 transition-colors truncate">Agentes Match</p>
-            <p className="text-[9px] text-slate-500 truncate">Suporte e inteligência</p>
-          </div>
-        </a>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-display font-extrabold text-[#111] leading-tight truncate">
+          {promo.title}
+        </p>
+        <p className="text-[11px] text-neutral-600 leading-snug line-clamp-2">{promo.line}</p>
       </div>
-    </div>
+      <span
+        className={`text-[11px] font-display font-extrabold shrink-0 flex items-center gap-0.5 ${
+          promo.accent === 'blue' ? 'text-[#0A3D91]' : 'text-[#FF6F00]'
+        }`}
+      >
+        {promo.cta} <ArrowUpRight className="w-3 h-3" />
+      </span>
+    </a>
   );
 }

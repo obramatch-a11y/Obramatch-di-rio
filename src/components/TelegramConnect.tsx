@@ -52,20 +52,20 @@ export default function TelegramConnect() {
   };
 
   return (
-    <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-4 flex items-center gap-3">
+    <div className="bg-white border border-[#D1D1D1] rounded-xl p-4 flex items-center gap-3">
       <div className="p-2.5 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-xl shrink-0">
         <Send className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-white">Diário pelo Telegram</h4>
-        <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+        <h4 className="text-sm font-bold text-[#111111]">Diário pelo Telegram</h4>
+        <p className="text-xs text-neutral-600 mt-0.5 leading-relaxed">
           {conectado
             ? 'Conta conectada. Mande um áudio no bot e o RDO é gerado sozinho.'
             : 'Mande um áudio no Telegram e a IA registra o RDO por você.'}
         </p>
       </div>
       {conectado ? (
-        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold shrink-0">
+        <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full text-xs font-bold shrink-0">
           <CheckCircle2 className="w-3.5 h-3.5" />
           Conectado
         </span>
@@ -73,7 +73,7 @@ export default function TelegramConnect() {
         <button
           onClick={conectar}
           disabled={gerando || conectado === null}
-          className="py-2.5 px-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs shrink-0"
+          className="py-2.5 px-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-[#111111] font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs shrink-0"
         >
           {gerando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           Conectar
