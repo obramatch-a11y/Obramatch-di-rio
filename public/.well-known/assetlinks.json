@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "dev.workers.obramatch.diariomatch.twa",
+        "sha256_cert_fingerprints": ["4F:91:CB:40:B6:B2:2D:AC:22:9C:93:5B:A9:9F:86:B5:29:48:24:7B:7E:5E:21:F1:7E:E4:7A:DE:AE:0E:44:24"]
+      }
+    }]
