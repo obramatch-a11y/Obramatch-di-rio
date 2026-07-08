@@ -232,7 +232,7 @@ export default function DiarioDetail() {
                           <Info className="w-4 h-4" />
                           Ocorrências Registradas
                         </h4>
-                        <p className="text-amber-200 text-xs leading-relaxed whitespace-pre-wrap">
+                        <p className="text-[#7a3d00] text-xs leading-relaxed whitespace-pre-wrap">
                           {selectedDiario.ocorrencias}
                         </p>
                       </div>
