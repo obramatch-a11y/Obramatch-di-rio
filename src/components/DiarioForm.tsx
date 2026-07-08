@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import SignaturePad, { SignaturePadRef } from './SignaturePad';
 import { buscarClima } from '../lib/clima';
 import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
 import type { ClimaOficialInfo } from '../types';
@@ -46,6 +47,9 @@ export default function DiarioForm() {
   const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal } = useApp();
 
   const isEditing = !!editingDiario;
+
+  // Signature pad ref
+  const signaturePadRef = useRef<SignaturePadRef>(null);
 
   // Success modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -82,11 +86,6 @@ export default function DiarioForm() {
   const [uploadedPhotos, setUploadedPhotos] = useState<{ url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Signature Canvas
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [hasSignature, setHasSignature] = useState(false);
-
   // Load defaults or edit values
   useEffect(() => {
     if (isEditing && editingDiario) {
@@ -100,26 +99,6 @@ export default function DiarioForm() {
       setObservacoes(editingDiario.observacoes || '');
       setGps(editingDiario.gps || null);
       if (editingDiario.gps) setGpsStatus('success');
-      
-      // Load signature if present
-      if (editingDiario.assinatura) {
-        setHasSignature(true);
-        // We'll draw the image back on the canvas once mounted
-        setTimeout(() => {
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              const img = new Image();
-              img.src = editingDiario.assinatura!;
-              img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-              };
-            }
-          }
-        }, 300);
-      }
     } else {
       // Automatic values
       const now = new Date();
@@ -316,74 +295,12 @@ export default function DiarioForm() {
     setUploadedPhotos(prev => prev.map((photo, i) => i === index ? { ...photo, legenda: val } : photo));
   };
 
-  // Canvas Drawing Logic
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    setIsDrawing(true);
-    const rect = canvas.getBoundingClientRect();
-    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#0f172a'; // Tinta escura: visível no PDF impresso (fundo branco)
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = ('touches' in e) ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = ('touches' in e) ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    setHasSignature(true);
-  };
-
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const clearCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasSignature(false);
-  };
-
   // Submit report
   const handleSaveReport = async () => {
     if (!atividades) return;
 
-    // Capture signature if drawn (exporta com fundo branco para o PDF)
-    let signatureUrl = '';
-    if (hasSignature && canvasRef.current) {
-      const origem = canvasRef.current;
-      const exportCanvas = document.createElement('canvas');
-      exportCanvas.width = origem.width;
-      exportCanvas.height = origem.height;
-      const ectx = exportCanvas.getContext('2d');
-      if (ectx) {
-        ectx.fillStyle = '#ffffff';
-        ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-        ectx.drawImage(origem, 0, 0);
-        signatureUrl = exportCanvas.toDataURL('image/png');
-      }
-    }
+    // Capture signature from SignaturePad component
+    const signatureUrl = signaturePadRef.current?.getSignatureUrl() || '';
 
     const reportData = {
       data,
@@ -738,45 +655,11 @@ export default function DiarioForm() {
             )}
           </div>
 
-          {/* Section: Assinatura Opcional */}
-          <div className="pt-6 border-t border-[#D1D1D1] space-y-4">
-            <div>
-              <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#FF6F00]" />
-                Assinatura do Responsável Técnico
-              </h4>
-              <p className="text-xs text-neutral-500 mt-1">
-                Utilize seu dedo ou mouse na área abaixo para assinar este relatório diário.
-              </p>
-            </div>
-
-            <div className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl p-4 flex flex-col items-center max-w-md mx-auto relative overflow-hidden">
-              <canvas
-                ref={canvasRef}
-                width={380}
-                height={150}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={stopDrawing}
-                className="bg-white border-2 border-black rounded-xl cursor-crosshair max-w-full touch-none"
-              />
-              <div className="flex justify-between items-center w-full mt-3 text-xs text-neutral-600">
-                <span>{hasSignature ? '✓ Assinado' : 'Toque acima para assinar'}</span>
-                <button
-                  type="button"
-                  onClick={clearCanvas}
-                  className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-[#F4F4F4] rounded-xl text-red-600 hover:text-red-700 font-semibold cursor-pointer transition-all text-[11px]"
-                >
-                  <Eraser className="w-3.5 h-3.5" />
-                  Limpar Assinatura
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Signature Pad Component */}
+          <SignaturePad 
+            ref={signaturePadRef}
+            initialSignature={isEditing && editingDiario?.assinatura ? editingDiario.assinatura : undefined}
+          />
 
           {/* Bottom Save Button - Ensures there is a Save button right before the support block */}
           <div className="pt-6 border-t border-[#D1D1D1] flex justify-end">
