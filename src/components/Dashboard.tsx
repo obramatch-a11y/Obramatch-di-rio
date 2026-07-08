@@ -54,16 +54,6 @@ const ECOSYSTEM_SLIDES = [
     color: 'border-[#FF6F00] bg-[#FF6F00]/10 text-[#FF6F00]'
   },
   {
-    type: 'pro',
-    title: 'Profissional em Destaque',
-    tagline: 'Marcos Roberto Santos • 5.0 ★',
-    description: 'Mestre de obras especializado em fundações residenciais e leitura de sondagem SPT.',
-    actionLabel: 'Conhecer Site Oficial',
-    link: 'https://obramatch.com.br/',
-    icon: Star,
-    color: 'border-emerald-500/20 bg-emerald-500/5 text-emerald-600'
-  },
-  {
     type: 'news',
     title: 'Novidades do Ecossistema',
     tagline: 'Laudos de Patologias',
@@ -307,7 +297,6 @@ export default function Dashboard() {
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-semibold text-white">{user?.email?.split('@')[0] || 'Usuário'}</span>
               <span className="text-xs text-blue-200">{user?.email}</span>
-              <span className="text-[10px] text-[#FFB347] font-mono">conta: {user?.uid?.slice(0, 10) || '—'}</span>
             </div>
             <button 
               onClick={handleSignOut}

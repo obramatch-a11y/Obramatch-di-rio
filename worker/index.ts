@@ -28,24 +28,6 @@ export default {
     if (pathname.startsWith('/api/')) {
       const ctx = { request, env };
       try {
-        // Diagnóstico temporário: mostra APENAS se cada variável existe e o
-        // tamanho do TELEGRAM_SECRET (para achar espaço/typo). Nenhum valor
-        // secreto é exposto. Remover depois que estiver tudo funcionando.
-        if (pathname === '/api/diag') {
-          const e = env as unknown as Record<string, string | undefined>;
-          return json(200, {
-            TELEGRAM_SECRET_presente: !!e.TELEGRAM_SECRET,
-            TELEGRAM_SECRET_tamanho: e.TELEGRAM_SECRET ? e.TELEGRAM_SECRET.length : 0,
-            TELEGRAM_SECRET_esperado_tamanho: 27,
-            TELEGRAM_BOT_TOKEN_presente: !!e.TELEGRAM_BOT_TOKEN,
-            GEMINI_API_KEY_presente: !!e.GEMINI_API_KEY,
-            FIREBASE_SERVICE_ACCOUNT_presente: !!e.FIREBASE_SERVICE_ACCOUNT,
-            FIREBASE_WEB_API_KEY_presente: !!e.FIREBASE_WEB_API_KEY,
-            FIREBASE_DB_ID_presente: !!e.FIREBASE_DB_ID,
-            SUPABASE_URL_presente: !!e.SUPABASE_URL,
-            SUPABASE_SERVICE_KEY_presente: !!e.SUPABASE_SERVICE_KEY,
-          });
-        }
         if (pathname === '/api/ia' && request.method === 'POST') return await iaPost(ctx);
         if (pathname === '/api/telegram' && request.method === 'POST') return await telegramPost(ctx);
         if (pathname === '/api/setup-webhook' && request.method === 'GET') return await setupWebhookGet(ctx);
