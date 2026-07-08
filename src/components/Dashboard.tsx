@@ -89,6 +89,17 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  // Close modal on ESC key
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showAddModal) {
+        setShowAddModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showAddModal]);
+
   // Form states
   const [nome, setNome] = useState('');
   const [gpsObra, setGpsObra] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -301,6 +312,7 @@ export default function Dashboard() {
             <button 
               onClick={handleSignOut}
               className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-white/10 rounded-xl transition-all cursor-pointer"
+              aria-label="Sair da conta"
               title="Sair"
             >
               <LogOut className="w-5 h-5" />
@@ -364,6 +376,7 @@ export default function Dashboard() {
               <button
                 onClick={() => setShowSyncSuccess(false)}
                 className="p-1.5 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-lg transition-all cursor-pointer relative z-10"
+                aria-label="Fechar notificação"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -546,14 +559,18 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="relative w-full max-w-lg bg-white border border-[#D1D1D1] rounded-xl p-6 z-10 overflow-y-auto max-h-[90vh]"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="modal-nova-obra-title"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-extrabold tracking-tight text-[#111111] font-sans">
+                <h3 id="modal-nova-obra-title" className="text-xl font-extrabold tracking-tight text-[#111111] font-sans">
                   Cadastrar Nova Obra
                 </h3>
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="p-1.5 hover:bg-[#ECECEC] rounded-xl text-neutral-600 hover:text-[#111111] transition-all cursor-pointer"
+                  aria-label="Fechar modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -561,10 +578,11 @@ export default function Dashboard() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+                  <label htmlFor="obra-nome" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
                     Nome da Obra *
                   </label>
                   <input
+                    id="obra-nome"
                     type="text"
                     required
                     value={nome}
@@ -576,10 +594,11 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+                    <label htmlFor="obra-cliente" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
                       Cliente *
                     </label>
                     <input
+                      id="obra-cliente"
                       type="text"
                       required
                       value={cliente}
@@ -589,10 +608,11 @@ export default function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+                    <label htmlFor="obra-responsavel" className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
                       Responsável Técnico *
                     </label>
                     <input
+                      id="obra-responsavel"
                       type="text"
                       required
                       value={responsavelTecnico}
