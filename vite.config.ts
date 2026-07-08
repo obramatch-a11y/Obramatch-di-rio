@@ -46,8 +46,8 @@ export default defineConfig(() => {
             }
           ],
           start_url: '/',
-          background_color: '#020617',
-          theme_color: '#f59e0b',
+          background_color: '#FFFFFF',
+          theme_color: '#0A3D91',
           display: 'standalone',
           display_override: ['standalone', 'minimal-ui'],
           orientation: 'portrait',
