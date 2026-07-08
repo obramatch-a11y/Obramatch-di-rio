@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidade — ObraMatch Diário</title>
+  <meta name="robots" content="index,follow" />
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#FFFFFF; color:#111111; margin:0; padding:0; }
+    header { background:#0A3D91; color:#FFFFFF; padding:24px 20px; border-bottom:4px solid #FF6F00; }
+    header h1 { margin:0; font-size:1.5rem; }
+    header p { margin:4px 0 0; opacity:.85; font-size:.9rem; }
+    main { max-width:760px; margin:0 auto; padding:24px 20px 64px; line-height:1.7; }
+    h2 { color:#0A3D91; border-left:6px solid #FF6F00; padding-left:10px; font-size:1.15rem; margin-top:32px; }
+    a { color:#0A3D91; font-weight:600; }
+    ul { padding-left:22px; }
+    .box { border:3px solid #111111; box-shadow:6px 6px 0 #FF6F00; padding:16px; margin:24px 0; background:#F8F9FB; }
+    footer { text-align:center; font-size:.85rem; color:#555; padding:24px; border-top:2px solid #EEE; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Política de Privacidade</h1>
+    <p>ObraMatch Diário — registro diário de execução de obras</p>
+  </header>
+  <main>
+    <p><strong>Última atualização:</strong> 08 de julho de 2026.</p>
+
+    <h2>1. Quem somos</h2>
+    <p>O aplicativo <strong>ObraMatch Diário</strong> é operado pela ObraMatch (<a href="https://obramatch.com.br">obramatch.com.br</a>), plataforma brasileira de serviços para o setor de construção civil. Responsável pelo tratamento de dados: [PREENCHER: razão social/CNPJ]. Contato: <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a>.</p>
+
+    <h2>2. Dados que coletamos</h2>
+    <ul>
+      <li><strong>E-mail e senha de acesso</strong>, para autenticação, por meio do serviço Google Firebase Authentication. A senha é criptografada e não é visível para nós.</li>
+      <li><strong>Nome ou identificação</strong> informados no cadastro.</li>
+      <li><strong>Dados das obras e relatórios diários (RDOs)</strong>: descrições, atividades, efetivo, equipamentos e ocorrências registradas pelo usuário, armazenados no banco de dados Cloud Firestore (Google).</li>
+      <li><strong>Fotos das obras</strong> enviadas pelo usuário, armazenadas no serviço Supabase Storage.</li>
+      <li><strong>Localização GPS aproximada (opcional)</strong>, usada exclusivamente para preencher automaticamente as condições climáticas do relatório, por meio do serviço Open-Meteo. O usuário pode negar a permissão de localização e preencher o clima manualmente.</li>
+      <li><strong>Áudios e fotos enviados voluntariamente pelo bot do Telegram</strong>, processados por inteligência artificial (Google Gemini) exclusivamente para preencher o relatório diário do próprio usuário.</li>
+      <li><strong>Assinaturas digitais</strong> desenhadas no aplicativo para validação dos relatórios.</li>
+    </ul>
+
+    <h2>3. Para que usamos os dados</h2>
+    <p>Os dados são usados exclusivamente para o funcionamento do aplicativo: criar, armazenar e gerar em PDF os relatórios diários de obra do próprio usuário. Cada relatório recebe um código de integridade (hash SHA-256) para comprovar que não foi alterado após a emissão.</p>
+
+    <h2>4. Com quem compartilhamos</h2>
+    <p>Não vendemos dados pessoais. Não exibimos anúncios. Não usamos rastreadores de publicidade. Os dados são compartilhados apenas com os provedores de infraestrutura estritamente necessários ao funcionamento do serviço: Google Firebase (autenticação e banco de dados), Supabase (armazenamento de fotos), Cloudflare (hospedagem), Open-Meteo (clima, quando o usuário permite localização), Telegram e Google Gemini (apenas quando o usuário utiliza o bot do Telegram).</p>
+
+    <h2>5. Armazenamento e segurança</h2>
+    <p>Todos os dados trafegam por conexão segura (HTTPS). O acesso aos dados é restrito à conta do próprio usuário. Os relatórios recebem hash de integridade SHA-256.</p>
+
+    <h2>6. Seus direitos (LGPD)</h2>
+    <p>Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você pode solicitar a qualquer momento o acesso, a correção ou a exclusão dos seus dados. Para excluir sua conta e todos os dados associados, siga as instruções da página <a href="/excluir-conta">Exclusão de conta e dados</a>.</p>
+
+    <h2>7. Retenção dos dados</h2>
+    <p>Os dados são mantidos enquanto a conta do usuário existir. Após a solicitação de exclusão, os dados são removidos, ressalvados registros mínimos cuja guarda seja exigida por lei, pelo prazo legal.</p>
+
+    <h2>8. Menores de idade</h2>
+    <p>O ObraMatch Diário é uma ferramenta de uso profissional destinada a maiores de 18 anos. Não coletamos intencionalmente dados de menores.</p>
+
+    <h2>9. Alterações desta política</h2>
+    <p>Esta política pode ser atualizada periodicamente. A data da última atualização consta no topo desta página. Alterações relevantes serão comunicadas no aplicativo.</p>
+
+    <h2>10. Contato</h2>
+    <div class="box">
+      <p>Dúvidas sobre privacidade e proteção de dados: <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a></p>
+    </div>
+
+    <p>Veja também: <a href="/termos-de-uso">Termos de Uso</a> · <a href="/excluir-conta">Exclusão de conta e dados</a></p>
+  </main>
+  <footer>ObraMatch — obramatch.com.br · Contato: suporte@obramatch.com.br</footer>
+</body>
+</html>
