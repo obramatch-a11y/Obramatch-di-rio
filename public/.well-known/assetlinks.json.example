@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "SUBSTITUIR_PELO_PACKAGE_NAME_GERADO_PELO_PWABUILDER",
+      "sha256_cert_fingerprints": [
+        "SUBSTITUIR_PELO_SHA256_FINGERPRINT_FORNECIDO_PELO_PWABUILDER"
+      ]
+    }
+  }
+]

@@ -19,18 +19,15 @@ export default defineConfig(() => {
           short_name: 'ObraMatch',
           name: 'ObraMatch Diário',
           description: 'Aplicativo de registro diário de execução de obras',
+          lang: 'pt-BR',
+          dir: 'ltr',
+          categories: ['business', 'productivity', 'utilities'],
           icons: [
             {
               src: '/icon-192.png',
               type: 'image/png',
               sizes: '192x192',
               purpose: 'any'
-            },
-            {
-              src: '/icon-192.png',
-              type: 'image/png',
-              sizes: '192x192',
-              purpose: 'maskable'
             },
             {
               src: '/icon-512.png',
@@ -52,11 +49,13 @@ export default defineConfig(() => {
           display_override: ['standalone', 'minimal-ui'],
           orientation: 'portrait',
           scope: '/',
-          prefer_related_applications: false
+          prefer_related_applications: false,
+          launch_handler: { client_mode: 'navigate-existing' }
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
           navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/\.well-known\//],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true
