@@ -105,8 +105,12 @@ async function mostrarPrevia(env: Env, chatId: number, pend: Record<string, any>
 
 async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void> {
   const pendDoc = await fsGet(env, `rdo_pendentes/${chatId}`);
-  if (!pendDoc || !pendDoc.data.obraId || !pendDoc.data.atividades) {
+  if (!pendDoc || (!pendDoc.data.atividades && !pendDoc.data.ocorrencias && !pendDoc.data.observacoes)) {
     await enviarMensagem(env, chatId, 'Não há registro pendente. Mande um áudio contando o dia da obra. 🎙');
+    return;
+  }
+  if (!pendDoc.data.obraId) {
+    await enviarMensagem(env, chatId, 'Falta escolher a obra deste registro. Mande o relato de novo e selecione a obra. 🏗');
     return;
   }
   const pend = pendDoc.data;
@@ -141,7 +145,7 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
   const agoraISO = new Date().toISOString();
   const diarioId = await fsAdd(env, `obras/${pend.obraId}/diarios`, {
     obraId: pend.obraId,
-    ownerId: uid,
+    ownerId: pend.uid || uid,
     numeroRdo,
     data: dataISO,
     horario,
@@ -162,7 +166,7 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
 
   for (const foto of pend.fotos || []) {
     await fsAdd(env, `obras/${pend.obraId}/diarios/${diarioId}/fotos`, {
-      diarioId, obraId: pend.obraId, ownerId: uid,
+      diarioId, obraId: pend.obraId, ownerId: pend.uid || uid,
       url: foto.url, legenda: foto.legenda || '',
       data: dataISO, horario, gps, createdAt: agoraISO,
     });
