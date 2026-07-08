@@ -177,16 +177,10 @@ export default function Dashboard() {
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    const interval = setInterval(() => {
-      checkWindowPWAProperties();
-      checkStandalone();
-    }, 1500);
-
     return () => {
       window.removeEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      clearInterval(interval);
     };
   }, []);
 
