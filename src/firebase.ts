@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { OperationType, FirestoreErrorInfo } from './types';
 import firebaseConfigJson from '../firebase-applet-config.json';
 
@@ -19,11 +19,11 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Cache em MEMÓRIA (não em disco). Assim o app nunca mostra obras/diários
-// "fantasma" que já foram apagados no servidor: cada abertura reflete o
-// estado real do banco. Os dados continuam vindo em tempo real via onSnapshot.
+// Cache PERSISTENTE em disco (IndexedDB). Permite trabalhar offline: diários,
+// fotos e obras são salvos localmente e sincronizam quando a conexão volta.
+// Multi-tab manager evita conflitos entre abas abertas.
 export const db = initializeFirestore(app, {
-  localCache: memoryLocalCache()
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);
