@@ -26,7 +26,8 @@ import {
   Bot,
   BookOpen,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
@@ -615,11 +616,22 @@ export default function DiarioForm() {
               </p>
             </div>
 
-            {/* Upload Zone */}
-            <div className="flex items-center gap-4">
+            {/* Upload Zone: câmera direta + galeria */}
+            <div className="flex flex-wrap items-center gap-3">
               <label className="py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs">
                 <Camera className="w-4 h-4 stroke-[2.5]" />
-                Capturar ou Anexar Fotos
+                Tirar Foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageFile}
+                  className="hidden"
+                />
+              </label>
+              <label className="py-3 px-5 bg-white border-2 border-[#111111] hover:bg-[#F4F4F4] text-[#111111] font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs">
+                <ImageIcon className="w-4 h-4 stroke-[2.5]" />
+                Galeria
                 <input
                   type="file"
                   multiple
