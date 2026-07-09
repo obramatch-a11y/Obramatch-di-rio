@@ -129,6 +129,35 @@ export const onRequestGet = async (ctx: { request: Request; env: Env }): Promise
     r['8_gemini'] = 'FALHOU: ' + String(e?.message || e).slice(0, 180);
   }
 
+  // 4b) O Groq responde com esta chave? (IA principal; Gemini é a reserva)
+  r['8b_GROQ_API_KEY'] = env.GROQ_API_KEY
+    ? `presente (começa com "${env.GROQ_API_KEY.slice(0, 4)}", ${env.GROQ_API_KEY.length} caracteres)`
+    : 'faltando (app usará somente o Gemini)';
+  if (env.GROQ_API_KEY) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          max_tokens: 5,
+          messages: [{ role: 'user', content: 'Responda apenas: ok' }],
+        }),
+      });
+      if (res.ok) {
+        r['8c_groq'] = 'OK — a IA principal (Groq) respondeu';
+      } else {
+        const detalhe = (await res.text()).slice(0, 250);
+        r['8c_groq'] = `FALHOU: HTTP ${res.status} — ${detalhe} (o app cairá no Gemini)`;
+      }
+    } catch (e: any) {
+      r['8c_groq'] = 'FALHOU: ' + String(e?.message || e).slice(0, 180) + ' (o app cairá no Gemini)';
+    }
+  }
+
   // 5) A chave web valida sessões de login? (token falso: 400 = chave ok)
   try {
     const res = await fetch(

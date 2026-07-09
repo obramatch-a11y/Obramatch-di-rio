@@ -3,6 +3,7 @@
 
 export interface Env {
   GEMINI_API_KEY: string;
+  GROQ_API_KEY?: string;            // Chave da API Groq (Whisper + Llama)
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_SECRET: string;
   FIREBASE_SERVICE_ACCOUNT: string; // JSON completo da credencial de serviço

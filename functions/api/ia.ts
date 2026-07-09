@@ -4,7 +4,7 @@
 
 import { Env } from '../_lib/google';
 import { fsGet, fsSet } from '../_lib/firestore';
-import { estruturarRdo, melhorarTextoRdo } from '../_lib/gemini';
+import { estruturarRdo, melhorarTextoRdo } from '../_lib/groq';
 
 const LIMITE_DIARIO = 20;
 

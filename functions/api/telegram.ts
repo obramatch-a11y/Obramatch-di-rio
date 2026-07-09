@@ -4,7 +4,7 @@
 
 import { Env } from '../_lib/google';
 import { fsGet, fsSet, fsAdd, fsDelete, fsQuery } from '../_lib/firestore';
-import { estruturarRdo, RdoEstruturado } from '../_lib/gemini';
+import { estruturarRdo, RdoEstruturado } from '../_lib/groq';
 import {
   enviarMensagem,
   enviarAcao,
