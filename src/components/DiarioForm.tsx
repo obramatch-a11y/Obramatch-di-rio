@@ -55,6 +55,7 @@ export default function DiarioForm() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedReport, setSavedReport] = useState<any>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Form Fields
   const [data, setData] = useState('');
@@ -298,6 +299,8 @@ export default function DiarioForm() {
   // Submit report
   const handleSaveReport = async () => {
     if (!atividades) return;
+    if (isSaving) return; // BLINDAGEM: ignora cliques repetidos enquanto salva (evita RDOs duplicados)
+    setIsSaving(true);
 
     // Capture signature from SignaturePad component
     const signatureUrl = signaturePadRef.current?.getSignatureUrl() || '';
@@ -313,7 +316,7 @@ export default function DiarioForm() {
       ocorrencias,
       observacoes,
       gps,
-      assinatura: signatureUrl || undefined,
+      assinatura: signatureUrl || '',
     };
 
     setSaveError(null);
@@ -339,6 +342,8 @@ export default function DiarioForm() {
       } else {
         setSaveError('Não foi possível salvar o diário. Detalhe técnico: ' + detalhe.slice(0, 160));
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -361,11 +366,11 @@ export default function DiarioForm() {
 
           <button
             onClick={handleSaveReport}
-            disabled={!atividades}
+            disabled={!atividades || isSaving}
             className="bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs"
           >
             <Save className="w-4 h-4" />
-            Salvar
+            {isSaving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </header>
@@ -666,11 +671,11 @@ export default function DiarioForm() {
             <button
               type="button"
               onClick={handleSaveReport}
-              disabled={!atividades}
+              disabled={!atividades || isSaving}
               className="w-full sm:w-auto bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
             >
               <Save className="w-5 h-5" />
-              <span>Salvar Diário de Obra</span>
+              <span>{isSaving ? 'Salvando...' : 'Salvar Diário de Obra'}</span>
             </button>
           </div>
 

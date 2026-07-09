@@ -6,6 +6,7 @@ import {
   where, 
   onSnapshot, 
   addDoc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   doc, 
@@ -378,8 +379,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         gps: diarioData.gps || null,
       });
 
-      // Add the diary document
-      const docRef = await addDoc(collection(db, diariosPath), {
+      // Add the diary document.
+      // OFFLINE: com o cache persistente, a gravação local é imediata, mas a
+      // promessa só resolve quando o servidor confirma. Sem internet, esperar
+      // travaria o "Salvar" para sempre. Então: cria a referência, dispara a
+      // gravação e só ESPERA a confirmação quando há conexão. Offline, o RDO
+      // fica salvo no aparelho e sincroniza sozinho quando a internet voltar.
+      const docRef = doc(collection(db, diariosPath));
+      const gravacaoDiario = setDoc(docRef, {
         ...diarioData,
         numeroRdo,
         hashIntegridade,
@@ -389,6 +396,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+      if (navigator.onLine) {
+        await gravacaoDiario;
+      } else {
+        gravacaoDiario.catch((e) => console.error('Sincronização pendente do diário:', e));
+      }
 
       const diaryId = docRef.id;
 
@@ -397,7 +409,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       for (let i = 0; i < base64Photos.length; i++) {
         const photo = base64Photos[i];
         const url = await uploadFoto(photo.url, `${selectedObra.id}/${diaryId}/foto-${Date.now()}-${i}`);
-        await addDoc(collection(db, photosPath), {
+        const gravacaoFoto = addDoc(collection(db, photosPath), {
           diarioId: diaryId,
           obraId: selectedObra.id,
           url,
@@ -408,6 +420,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ownerId: user.uid,
           createdAt: serverTimestamp(),
         });
+        if (navigator.onLine) {
+          await gravacaoFoto;
+        } else {
+          gravacaoFoto.catch((e) => console.error('Sincronização pendente de foto:', e));
+        }
       }
 
       return diaryId;
@@ -442,11 +459,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         gps: combinado.gps || null,
       });
 
-      await updateDoc(doc(db, 'obras', selectedObra.id, 'diarios', id), {
+      const gravacaoEdicao = updateDoc(doc(db, 'obras', selectedObra.id, 'diarios', id), {
         ...diarioData,
         hashIntegridade,
         updatedAt: serverTimestamp(),
       });
+      if (navigator.onLine) {
+        await gravacaoEdicao;
+      } else {
+        gravacaoEdicao.catch((e) => console.error('Sincronização pendente da edição:', e));
+      }
 
       // If new photos were provided, add them as well
       if (base64Photos && base64Photos.length > 0) {
@@ -454,7 +476,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         for (let i = 0; i < base64Photos.length; i++) {
           const photo = base64Photos[i];
           const url = await uploadFoto(photo.url, `${selectedObra.id}/${id}/foto-${Date.now()}-${i}`);
-          await addDoc(collection(db, photosPath), {
+          const gravacaoFotoEdicao = addDoc(collection(db, photosPath), {
             diarioId: id,
             obraId: selectedObra.id,
             url,
@@ -465,6 +487,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ownerId: user.uid,
             createdAt: serverTimestamp(),
           });
+          if (navigator.onLine) {
+            await gravacaoFotoEdicao;
+          } else {
+            gravacaoFotoEdicao.catch((e) => console.error('Sincronização pendente de foto:', e));
+          }
         }
       }
     } catch (error) {
