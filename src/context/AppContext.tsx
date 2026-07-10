@@ -22,6 +22,7 @@ import { calcularHashRdo } from '../lib/hash';
 interface AppContextType {
   user: User | null;
   loading: boolean;
+  carregandoObras: boolean;
   obras: Obra[];
   diarios: Diario[];
   fotos: Foto[];
@@ -50,6 +51,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [obras, setObras] = useState<Obra[]>([]);
+  const [carregandoObras, setCarregandoObras] = useState(true);
   const [diarios, setDiarios] = useState<Diario[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
@@ -93,6 +95,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setLoading(false);
       if (!currentUser) {
         setObras([]);
+        setCarregandoObras(true);
         setDiarios([]);
         setFotos([]);
         setCurrentView('dashboard');
@@ -148,6 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Sync Obras from Firestore when authenticated
   useEffect(() => {
     if (!user) return;
+    setCarregandoObras(true);
 
     const obrasPath = 'obras';
     const q = query(collection(db, obrasPath), where('ownerId', '==', user.uid));
@@ -171,8 +175,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       obrasList.sort((a, b) => quando(b) - quando(a));
       setObras(obrasList);
+      setCarregandoObras(false);
     }, (error) => {
       console.error('Erro ao ouvir obras:', error);
+      setCarregandoObras(false);
       handleFirestoreError(error, OperationType.LIST, obrasPath);
     });
 
@@ -317,10 +323,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const path = `obras/${id}`;
     try {
       // 1. Buscar todos os diários da obra
-      const diariosSnap = await getDocs(collection(db, 'obras', id, 'diarios'));
+      const diariosSnap = await getDocs(query(collection(db, 'obras', id, 'diarios'), where('ownerId', '==', user.uid)));
       for (const d of diariosSnap.docs) {
         // 2. Buscar e deletar fotos de cada diário
-        const fotosSnap = await getDocs(collection(db, 'obras', id, 'diarios', d.id, 'fotos'));
+        const fotosSnap = await getDocs(query(collection(db, 'obras', id, 'diarios', d.id, 'fotos'), where('ownerId', '==', user.uid)));
         for (const f of fotosSnap.docs) {
           await deleteDoc(doc(db, 'obras', id, 'diarios', d.id, 'fotos', f.id));
         }
@@ -519,6 +525,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
     try {
+      const fotosSnap = await getDocs(query(collection(db, 'obras', selectedObra.id, 'diarios', id, 'fotos'), where('ownerId', '==', user.uid)));
+      for (const f of fotosSnap.docs) {
+        await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', id, 'fotos', f.id));
+      }
       await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', id));
       if (selectedDiario?.id === id) {
         setSelectedDiario(null);
@@ -543,6 +553,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider value={{
       user,
       loading,
+      carregandoObras,
       obras,
       diarios,
       fotos,

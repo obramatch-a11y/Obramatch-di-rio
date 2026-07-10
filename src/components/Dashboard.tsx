@@ -67,7 +67,7 @@ const ECOSYSTEM_SLIDES = [
 ];
 
 export default function Dashboard() {
-  const { obras, createObra, setView, online, user, openAgentesModal } = useApp();
+  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -430,7 +430,12 @@ export default function Dashboard() {
             </div>
 
             {/* Obras Grid */}
-            {filteredObras.length === 0 ? (
+            {carregandoObras ? (
+              <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
+                <div className="w-10 h-10 border-4 border-[#D1D1D1] border-t-[#FF6F00] rounded-full animate-spin mb-4" aria-hidden="true"></div>
+                <p className="text-neutral-500 text-sm font-semibold">Carregando suas obras...</p>
+              </div>
+            ) : filteredObras.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
                 <FileSpreadsheet className="w-16 h-16 text-[#222222] stroke-[1.5] mb-4" />
                 <h3 className="text-lg font-bold text-[#222222]">Nenhuma obra cadastrada</h3>
