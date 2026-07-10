@@ -11,7 +11,8 @@ import {
   deleteDoc, 
   doc, 
   serverTimestamp,
-  runTransaction
+  runTransaction,
+  getDocs
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError } from '../firebase';
 import { Obra, Diario, Foto, OperationType } from '../types';
@@ -40,6 +41,7 @@ interface AppContextType {
   createDiario: (diario: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>, base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]) => Promise<string>;
   updateDiario: (id: string, diario: Partial<Diario>, base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]) => Promise<void>;
   deleteDiario: (id: string) => Promise<void>;
+  deleteFoto: (diarioId: string, fotoId: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -314,7 +316,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) throw new Error('Usuário não autenticado');
     const path = `obras/${id}`;
     try {
+      // 1. Buscar todos os diários da obra
+      const diariosSnap = await getDocs(collection(db, 'obras', id, 'diarios'));
+      for (const d of diariosSnap.docs) {
+        // 2. Buscar e deletar fotos de cada diário
+        const fotosSnap = await getDocs(collection(db, 'obras', id, 'diarios', d.id, 'fotos'));
+        for (const f of fotosSnap.docs) {
+          await deleteDoc(doc(db, 'obras', id, 'diarios', d.id, 'fotos', f.id));
+        }
+        // 3. Deletar o diário
+        await deleteDoc(doc(db, 'obras', id, 'diarios', d.id));
+      }
+      // 4. Por fim, deletar a obra
       await deleteDoc(doc(db, 'obras', id));
+      
       if (selectedObra?.id === id) {
         setSelectedObra(null);
         setCurrentView('dashboard');
@@ -514,6 +529,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteFoto = async (diarioId: string, fotoId: string): Promise<void> => {
+    if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    const path = `obras/${selectedObra.id}/diarios/${diarioId}/fotos/${fotoId}`;
+    try {
+      await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', diarioId, 'fotos', fotoId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       user,
@@ -536,7 +561,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteObra,
       createDiario,
       updateDiario,
-      deleteDiario
+      deleteDiario,
+      deleteFoto
     }}>
       {children}
     </AppContext.Provider>

@@ -45,9 +45,10 @@ const CLIMA_OPTIONS = [
 ];
 
 export default function DiarioForm() {
-  const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal } = useApp();
+  const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal, fotos, deleteFoto } = useApp();
 
   const isEditing = !!editingDiario;
+  const fotosExistentes = isEditing && editingDiario ? fotos.filter(f => f.diarioId === editingDiario.id) : [];
 
   // Signature pad ref
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -67,6 +68,7 @@ export default function DiarioForm() {
   const [materiais, setMateriais] = useState('');
   const [ocorrencias, setOcorrencias] = useState('');
   const [observacoes, setObservacoes] = useState('');
+  const [condicaoTrabalho, setCondicaoTrabalho] = useState<'Praticável' | 'Parcialmente praticável' | 'Impraticável'>('Praticável');
   
   // Clima oficial (Open-Meteo) e IA
   const [climaOficial, setClimaOficial] = useState<ClimaOficialInfo | null>(null);
@@ -99,6 +101,7 @@ export default function DiarioForm() {
       setMateriais(editingDiario.materiais || '');
       setOcorrencias(editingDiario.ocorrencias || '');
       setObservacoes(editingDiario.observacoes || '');
+      setCondicaoTrabalho(editingDiario.condicaoTrabalho || 'Praticável');
       setGps(editingDiario.gps || null);
       if (editingDiario.gps) setGpsStatus('success');
     } else {
@@ -318,6 +321,7 @@ export default function DiarioForm() {
       observacoes,
       gps,
       assinatura: signatureUrl || '',
+      condicaoTrabalho,
     };
 
     setSaveError(null);
@@ -405,7 +409,7 @@ export default function DiarioForm() {
                 <button
                   type="button"
                   onClick={pararGravacao}
-                  className="py-3 px-5 bg-red-500 hover:bg-red-600 text-[#111111] font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-all text-xs animate-pulse"
+                  className="py-3 px-5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-all text-xs animate-pulse"
                 >
                   <Square className="w-4 h-4 fill-current" />
                   Parar e processar
@@ -482,40 +486,68 @@ export default function DiarioForm() {
             </div>
 
             {/* Clima Selection */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                  Condições do Clima
-                </label>
-                {buscandoClima ? (
-                  <span className="text-[10px] text-neutral-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Consultando fonte oficial...</span>
-                ) : climaOficial ? (
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" />
-                    Fonte oficial · {climaOficial.tempMin}–{climaOficial.tempMax}°C · {climaOficial.chuvaMm}mm
-                  </span>
-                ) : null}
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                    Condições do Clima
+                  </label>
+                  {buscandoClima ? (
+                    <span className="text-[10px] text-neutral-500 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />Consultando fonte oficial...</span>
+                  ) : climaOficial ? (
+                    <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      Fonte oficial · {climaOficial.tempMin}–{climaOficial.tempMax}°C · {climaOficial.chuvaMm}mm
+                    </span>
+                  ) : null}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {CLIMA_OPTIONS.map((item) => {
+                    const Icon = item.icon;
+                    const isSelected = clima === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => selecionarClimaManual(item.value)}
+                        className={`flex items-center gap-2.5 p-3.5 border rounded-xl font-semibold cursor-pointer text-xs transition-all ${
+                          isSelected 
+                            ? 'border-[#FF6F00] text-[#FF6F00] bg-[#FF6F00]/10' 
+                            : 'border-[#D1D1D1] text-neutral-600 hover:text-[#111111] bg-white'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {CLIMA_OPTIONS.map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = clima === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => selecionarClimaManual(item.value)}
-                      className={`flex items-center gap-2.5 p-3.5 border rounded-xl font-semibold cursor-pointer text-xs transition-all ${
-                        isSelected 
-                          ? 'border-[#FF6F00] text-[#FF6F00] bg-[#FF6F00]/10' 
-                          : 'border-[#D1D1D1] text-neutral-600 hover:text-[#111111] bg-white'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+
+              {/* Condição de Trabalho Selection */}
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  CONDIÇÃO DE TRABALHO
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['Praticável', 'Parcialmente praticável', 'Impraticável'] as const).map((valor) => {
+                    const isSelected = condicaoTrabalho === valor;
+                    return (
+                      <button
+                        key={valor}
+                        type="button"
+                        onClick={() => setCondicaoTrabalho(valor)}
+                        className={`p-2.5 border rounded-xl font-semibold cursor-pointer text-xs text-center transition-all ${
+                          isSelected 
+                            ? 'border-[#FF6F00] text-[#FF6F00] bg-[#FF6F00]/10' 
+                            : 'border-[#D1D1D1] text-neutral-600 hover:text-[#111111] bg-white'
+                        }`}
+                      >
+                        {valor}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -563,7 +595,7 @@ export default function DiarioForm() {
 
               <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                  Materiais Recebidos ou Entregues
+                  Materiais e Equipamentos (recebidos/utilizados)
                 </label>
                 <textarea
                   rows={2}
@@ -642,6 +674,38 @@ export default function DiarioForm() {
               </label>
             </div>
 
+            {/* Fotos já salvas (Modo Edição) */}
+            {isEditing && fotosExistentes.length > 0 && (
+              <div className="space-y-2 pt-2 pb-4">
+                <h5 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Fotos já salvas</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {fotosExistentes.map((foto) => (
+                    <div key={foto.id} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Excluir esta foto do diário?')) {
+                            deleteFoto(editingDiario.id, foto.id);
+                          }
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      
+                      <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
+                        <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
+                      </div>
+
+                      {foto.legenda && (
+                        <p className="text-xs text-[#222222] italic mt-2.5 px-1">{foto.legenda}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Photo Preview Grid */}
             {uploadedPhotos.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
@@ -695,10 +759,10 @@ export default function DiarioForm() {
       </main>
 
       {saveError && (
-        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-4xl mx-auto bg-red-950/95 border border-red-500 text-red-200 rounded-xl px-4 py-3 text-sm font-semibold flex items-start gap-2">
+        <div className="fixed bottom-4 left-4 right-4 z-50 max-w-4xl mx-auto bg-white border-2 border-red-500 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold flex items-start gap-2">
           <span className="mt-0.5">⚠️</span>
           <span className="flex-1">{saveError}</span>
-          <button onClick={() => setSaveError(null)} className="text-red-700 hover:text-[#111111] font-bold px-1 cursor-pointer">✕</button>
+          <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-700 font-bold px-1 cursor-pointer">✕</button>
         </div>
       )}
 
@@ -712,7 +776,7 @@ export default function DiarioForm() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-white -md"
+                className="absolute inset-0 bg-black/40"
               />
 
               {/* Modal Body */}
@@ -730,7 +794,9 @@ export default function DiarioForm() {
                     Diário Registrado com Sucesso!
                   </h3>
                   <p className="text-neutral-600 text-xs mt-1">
-                    O relatório foi consolidado e armazenado na nuvem de forma segura.
+                    {navigator.onLine 
+                      ? "O relatório foi consolidado e armazenado na nuvem de forma segura."
+                      : "O relatório foi salvo no seu aparelho e será sincronizado com a nuvem automaticamente quando a internet voltar."}
                   </p>
                 </div>
 

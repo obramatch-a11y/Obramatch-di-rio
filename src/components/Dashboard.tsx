@@ -253,7 +253,7 @@ export default function Dashboard() {
               <h1 className="text-xl font-extrabold tracking-tight text-white font-sans">
                 Obra<span className="text-[#FFB347]">Match</span>
               </h1>
-              <p className="text-xs text-blue-100 font-medium">Diário de Obra</p>
+              <p className="text-xs text-blue-100 font-medium">Diário</p>
             </div>
           </div>
 
@@ -328,7 +328,7 @@ export default function Dashboard() {
                     Conexão Restaurada!
                   </h4>
                   <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Sua conexão com a internet foi restabelecida. Seus dados estão sincronizados e seguros na nuvem do ObraMatch.
+                    Sua conexão com a internet foi restabelecida. Seus dados estão sincronizados e seguros na nuvem do ObraMatch Diário.
                   </p>
                 </div>
               </div>
@@ -435,16 +435,21 @@ export default function Dashboard() {
                 <FileSpreadsheet className="w-16 h-16 text-[#222222] stroke-[1.5] mb-4" />
                 <h3 className="text-lg font-bold text-[#222222]">Nenhuma obra cadastrada</h3>
                 <p className="text-neutral-500 text-sm mt-1 max-w-sm">
-                  {searchTerm ? 'Nenhuma obra corresponde aos termos pesquisados.' : 'Comece cadastrando sua primeira obra clicando no botão "Nova Obra".'}
+                  {searchTerm ? 'Nenhuma obra corresponde aos termos pesquisados.' : 'Comece cadastrando sua primeira obra tocando no botão "Nova Obra".'}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredObras.map((obra) => {
                   // Format last update or set placeholder
-                  const lastUpdated = obra.updatedAt 
-                    ? new Date(obra.updatedAt.seconds * 1000).toLocaleDateString('pt-BR') 
-                    : 'Não disponível';
+                  const formatarData = (v: any): string => {
+                    if (!v) return 'Não disponível';
+                    if (typeof v === 'object' && typeof v.seconds === 'number') return new Date(v.seconds * 1000).toLocaleDateString('pt-BR');
+                    if (typeof v === 'string') { const d = new Date(v); return isNaN(d.getTime()) ? 'Não disponível' : d.toLocaleDateString('pt-BR'); }
+                    if (typeof v?.toDate === 'function') { try { return v.toDate().toLocaleDateString('pt-BR'); } catch { return 'Não disponível'; } }
+                    return 'Não disponível';
+                  };
+                  const lastUpdated = formatarData(obra.updatedAt);
 
                   return (
                     <motion.div
@@ -476,7 +481,7 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center gap-2 text-xs text-neutral-500">
                             <Calendar className="w-3.5 h-3.5" />
-                            <span>Início: {new Date(obra.dataInicio).toLocaleDateString('pt-BR')}</span>
+                            <span>Início: {(() => { const d = new Date(obra.dataInicio + 'T12:00:00'); return isNaN(d.getTime()) ? (obra.dataInicio || 'Não informado') : d.toLocaleDateString('pt-BR'); })()}</span>
                           </div>
                         </div>
                       </div>

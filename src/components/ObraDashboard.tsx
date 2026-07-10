@@ -44,6 +44,7 @@ export default function ObraDashboard() {
   const [activeTab, setActiveTab] = useState<'diarios' | 'fotos' | 'timeline'>('diarios');
   const [showEditObraModal, setShowEditObraModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Edit states
   const [nome, setNome] = useState(selectedObra?.nome || '');
@@ -82,10 +83,12 @@ export default function ObraDashboard() {
   };
 
   const handleDeleteObra = async () => {
+    setDeleting(true);
     try {
       await deleteObra(selectedObra.id);
     } catch (err) {
       console.error(err);
+      setDeleting(false);
     }
   };
 
@@ -258,7 +261,7 @@ export default function ObraDashboard() {
                 : 'hover:bg-[#F4F4F4]'
             }`}
           >
-            Linha do Tempo (Timeline)
+            Linha do Tempo
           </button>
         </div>
 
@@ -355,7 +358,7 @@ export default function ObraDashboard() {
                           alt={foto.legenda || 'Foto da obra'} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
-                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-white -md rounded-lg text-[10px] text-[#222222] font-bold border border-[#D1D1D1]">
+                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-white rounded-lg text-[10px] text-[#222222] font-bold border border-[#D1D1D1]">
                           {new Date(foto.data + 'T12:00:00').toLocaleDateString('pt-BR')}
                         </div>
                       </div>
@@ -406,7 +409,7 @@ export default function ObraDashboard() {
                           {new Date(diario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
                         </div>
                         <span className="text-[10px] text-neutral-500 font-mono font-bold">
-                          REGISTRO #{diarios.length - index}
+                          {diario.numeroRdo ? `RDO Nº ${String(diario.numeroRdo).padStart(3, '0')}` : `REGISTRO #${diarios.length - index}`}
                         </span>
                       </div>
 
@@ -456,7 +459,7 @@ export default function ObraDashboard() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowEditObraModal(false)}
-              className="absolute inset-0 bg-white"
+              className="absolute inset-0 bg-black/40"
             />
 
             {/* Content Card */}
@@ -606,9 +609,10 @@ export default function ObraDashboard() {
                     <button
                       type="button"
                       onClick={handleDeleteObra}
-                      className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-[#111111] font-bold rounded-xl transition-all cursor-pointer text-sm shadow-red-500/10"
+                      disabled={deleting}
+                      className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-all cursor-pointer text-sm shadow-red-500/10"
                     >
-                      Confirmar Exclusão
+                      {deleting ? 'Excluindo...' : 'Confirmar Exclusão'}
                     </button>
                   </div>
                 </div>

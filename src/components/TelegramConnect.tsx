@@ -73,7 +73,7 @@ export default function TelegramConnect() {
         <button
           onClick={conectar}
           disabled={gerando || conectado === null}
-          className="py-2.5 px-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-[#111111] font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs shrink-0"
+          className="py-2.5 px-4 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs shrink-0"
         >
           {gerando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           Conectar

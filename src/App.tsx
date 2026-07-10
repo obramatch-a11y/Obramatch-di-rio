@@ -29,7 +29,7 @@ function AppContent() {
             <HardHat className="w-8 h-8 text-white stroke-[2.5]" />
           </motion.div>
           <p className="text-neutral-600 text-xs font-semibold tracking-wider uppercase animate-pulse">
-            Carregando ObraMatch...
+            Carregando ObraMatch Diário...
           </p>
         </div>
       ) : !user ? (

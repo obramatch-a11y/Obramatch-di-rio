@@ -63,6 +63,17 @@ export default function DiarioDetail() {
   const dPhotos = fotos.filter(f => f.diarioId === selectedDiario.id);
   const ClimaIcon = CLIMA_ICONS[selectedDiario.clima || 'Ensolarado'] || Sun;
 
+  const secoes = [
+    'atividades',
+    selectedDiario.equipe && 'equipe',
+    selectedDiario.materiais && 'materiais',
+    selectedDiario.ocorrencias && 'ocorrencias',
+    selectedDiario.observacoes && 'observacoes',
+    dPhotos.length > 0 && 'fotos',
+    'assinaturas'
+  ].filter(Boolean) as string[];
+  const num = (s: string) => secoes.indexOf(s) + 1;
+
   const handleDelete = async () => {
     if (window.confirm('Tem certeza que deseja excluir permanentemente este diário de obra?')) {
       try {
@@ -78,14 +89,13 @@ export default function DiarioDetail() {
   };
 
   const handleShare = async () => {
-    const shareText = `Diário de Obra - ${selectedObra.nome}\nData: ${new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}\nAtividades: ${selectedDiario.atividades}\nRT: ${selectedObra.responsavelTecnico}`;
+    const shareText = `ObraMatch Diário — ${selectedObra.nome}\nData: ${new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}\nAtividades: ${selectedDiario.atividades}\nRT: ${selectedObra.responsavelTecnico}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Diário - ${selectedObra.nome}`,
+          title: `ObraMatch Diário — ${selectedObra.nome}`,
           text: shareText,
-          url: window.location.href
         });
       } catch (err) {
         console.warn('Share error:', err);
@@ -215,7 +225,7 @@ export default function DiarioDetail() {
                   )}
                   {selectedDiario.materiais && (
                     <div>
-                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-2">Materiais Recebidos</h4>
+                      <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-2">Materiais e Equipamentos (recebidos/utilizados)</h4>
                       <p className="text-[#222222] text-xs bg-white border border-[#D1D1D1] rounded-xl p-3 leading-relaxed whitespace-pre-wrap">
                         {selectedDiario.materiais}
                       </p>
@@ -293,6 +303,15 @@ export default function DiarioDetail() {
                   </div>
                 </div>
 
+                {(selectedDiario as any).condicaoTrabalho && (
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D1D1]">
+                    <span className="text-xs text-neutral-600">Condição de Trabalho</span>
+                    <span className="text-xs font-bold text-[#111111]">
+                      {(selectedDiario as any).condicaoTrabalho}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D1D1]">
                   <span className="text-xs text-neutral-600">Horário Local</span>
                   <div className="flex items-center gap-1.5 text-xs font-bold text-[#111111]">
@@ -322,7 +341,7 @@ export default function DiarioDetail() {
                     <img 
                       src={selectedDiario.assinatura} 
                       alt="Assinatura" 
-                      className="max-h-24 object-contain invert hue-rotate-180 brightness-150" 
+                      className="max-h-24 object-contain" 
                     />
                   </div>
                   <span className="text-[11px] font-semibold text-neutral-500 mt-3 block">
@@ -384,6 +403,11 @@ export default function DiarioDetail() {
                   {selectedDiario.climaOficial.tempMin}°C a {selectedDiario.climaOficial.tempMax}°C · Precipitação: {selectedDiario.climaOficial.chuvaMm}mm · Fonte oficial: Open-Meteo
                 </span>
               )}
+              {selectedDiario.condicaoTrabalho && (
+                <span className="block text-[10px] font-bold mt-0.5">
+                  Condição de trabalho: {selectedDiario.condicaoTrabalho}
+                </span>
+              )}
             </span>
           </div>
           {selectedObra.endereco && (
@@ -403,7 +427,7 @@ export default function DiarioDetail() {
         {/* Content Section: Atividades */}
         <div className="mb-6 font-sans">
           <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-3">
-            1. ATIVIDADES EXECUTADAS DO DIA
+            {num('atividades')}. ATIVIDADES EXECUTADAS DO DIA
           </h3>
           <p className="text-[#111111] text-sm whitespace-pre-wrap leading-relaxed">
             {selectedDiario.atividades}
@@ -415,7 +439,7 @@ export default function DiarioDetail() {
           {selectedDiario.equipe && (
             <div>
               <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-                2. EQUIPE PRESENTE
+                {num('equipe')}. EQUIPE PRESENTE
               </h3>
               <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
                 {selectedDiario.equipe}
@@ -425,7 +449,7 @@ export default function DiarioDetail() {
           {selectedDiario.materiais && (
             <div>
               <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-                3. MATERIAIS RECEBIDOS
+                {num('materiais')}. MATERIAIS E EQUIPAMENTOS
               </h3>
               <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
                 {selectedDiario.materiais}
@@ -438,7 +462,7 @@ export default function DiarioDetail() {
         {selectedDiario.ocorrencias && (
           <div className="mb-6 font-sans text-xs">
             <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-              4. OCORRÊNCIAS / IMPREVISTOS
+              {num('ocorrencias')}. OCORRÊNCIAS / IMPREVISTOS
             </h3>
             <p className="text-red-800 font-bold whitespace-pre-wrap leading-relaxed">
               ⚠️ {selectedDiario.ocorrencias}
@@ -450,7 +474,7 @@ export default function DiarioDetail() {
         {selectedDiario.observacoes && (
           <div className="mb-6 font-sans text-xs">
             <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-              5. OBSERVAÇÕES COMPLEMENTARES
+              {num('observacoes')}. OBSERVAÇÕES COMPLEMENTARES
             </h3>
             <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
               {selectedDiario.observacoes}
@@ -460,13 +484,13 @@ export default function DiarioDetail() {
 
         {/* Photos grid */}
         {dPhotos.length > 0 && (
-          <div className="mb-8 font-sans page-break-before">
+          <div className={"mb-8 font-sans" + (dPhotos.length > 2 ? " page-break-before" : "")}>
             <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-4">
-              6. REGISTRO FOTOGRÁFICO
+              {num('fotos')}. REGISTRO FOTOGRÁFICO
             </h3>
             <div className="grid grid-cols-2 gap-6">
               {dPhotos.map((photo) => (
-                <div key={photo.id} className="border border-[#D1D1D1] rounded-xl p-3 bg-[#F4F4F4]">
+                <div key={photo.id} className="border border-[#D1D1D1] rounded-xl p-3 bg-[#F4F4F4] avoid-break">
                   <div className="aspect-video w-full overflow-hidden rounded-lg mb-2">
                     <img src={photo.url} alt="Evidência" className="w-full h-full object-cover" />
                   </div>
@@ -486,12 +510,12 @@ export default function DiarioDetail() {
         )}
 
         {/* Signatures footer block */}
-        <div className="mt-12 pt-6 font-sans">
+        <div className="mt-12 pt-6 font-sans avoid-break">
           <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-8">
-            7. ASSINATURAS
+            {num('assinaturas')}. ASSINATURAS
           </h3>
           <div className="grid grid-cols-2 gap-12">
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center avoid-break">
               {selectedDiario.assinatura ? (
                 <div className="mb-2 flex justify-center h-20 items-end">
                   <img src={selectedDiario.assinatura} alt="Assinatura do Responsável Técnico" className="max-h-20 object-contain" />
@@ -503,7 +527,7 @@ export default function DiarioDetail() {
               <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.responsavelTecnico}</p>
               <p className="text-[10px] text-neutral-500">Responsável Técnico (CREA/CAU)</p>
             </div>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center avoid-break">
               <div className="h-20" />
               <div className="w-full border-t border-[#D1D1D1] my-1"></div>
               <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.cliente}</p>
@@ -527,10 +551,7 @@ export default function DiarioDetail() {
             </p>
           )}
           <p className="text-[10px] text-neutral-500 font-bold">
-            Documento gerado pelo ObraMatch Diário — diario.obramatch.com.br
-          </p>
-          <p className="text-[9px] text-neutral-600 max-w-xl leading-relaxed">
-            ObraMatch: Encontre profissionais avaliados para sua obra com mais segurança. Economize tempo, tenha histórico de obras visível e faça contato direto sem intermediários. Acesse o site oficial em <a href="https://obramatch.com.br/" target="_blank" rel="noopener noreferrer" className="font-semibold text-neutral-500 hover:underline">obramatch.com.br</a>
+            Documento gerado pelo ObraMatch Diário — obramatch.com.br
           </p>
         </div>
       </div>

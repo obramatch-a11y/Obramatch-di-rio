@@ -150,6 +150,19 @@ h1, h2, h3, .font-display {
   .print\:block { display: block !important; }
   .page-break-before { page-break-before: always; }
   * { box-shadow: none !important; text-shadow: none !important; }
+  /* Evitar quebra de página dentro de blocos de conteúdo */
+  h3, h4, p, div.grid { page-break-inside: avoid; }
+  .avoid-break { break-inside: avoid; page-break-inside: avoid; }
+  /* Numeração de página no rodapé */
+  @page {
+    margin: 12mm 10mm 16mm 10mm;
+    @bottom-center {
+      content: "Página " counter(page) " de " counter(pages);
+      font-size: 8px;
+      color: #888;
+      font-family: "Inter", sans-serif;
+    }
+  }
 }
 
 /* Botões de marca ganham automaticamente o tratamento neo-brutal */

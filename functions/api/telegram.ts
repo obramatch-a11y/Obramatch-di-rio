@@ -180,7 +180,7 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
     chatId,
     `✅ <b>RDO Nº ${String(numeroRdo).padStart(3, '0')} registrado com sucesso!</b>\n` +
     `🔒 Código de integridade: <code>${hashIntegridade.slice(0, 12)}…</code>\n\n` +
-    `Veja o relatório completo e gere o PDF no app:\nhttps://diario.obramatch.com.br`
+    `📲 O registro já foi enviado para o app ObraMatch Diário. Abra o app para ver o relatório completo e gerar o PDF.`
   );
 }
 
@@ -227,7 +227,7 @@ async function processarRelato(
 
   const obras = await obrasDoUsuario(env, uidFinal);
   if (obras.length === 0) {
-    await enviarMensagem(env, chatId, 'Você ainda não tem obra cadastrada. Crie a primeira no app:\nhttps://diario.obramatch.com.br');
+    await enviarMensagem(env, chatId, 'Você ainda não tem obra cadastrada. Abra o app ObraMatch Diário e crie a primeira. 🏗');
     return;
   }
 
@@ -280,7 +280,7 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
         const pend = await fsGet(env, `rdo_pendentes/${chatId}`);
         const obras = await obrasDoUsuario(env, uidEscolhido);
         if (obras.length === 0) {
-          await enviarMensagem(env, chatId, 'Essa conta ainda não tem obra cadastrada. Crie a primeira no app:\\nhttps://diario.obramatch.com.br');
+          await enviarMensagem(env, chatId, 'Essa conta ainda não tem obra cadastrada. Abra o app ObraMatch Diário e crie a primeira. 🏗');
           return new Response('ok');
         }
         if (obras.length === 1) {
@@ -320,8 +320,8 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
       const codigo = texto.split(' ')[1]?.trim().toUpperCase();
       if (!codigo) {
         await enviarMensagem(env, chatId,
-          '👷 <b>Diário Match</b> — seu diário de obra por áudio.\n\n' +
-          'Para conectar sua conta: abra o app https://diario.obramatch.com.br, toque em <b>Conectar</b> no cartão do Telegram e volte aqui.');
+          '👷 <b>ObraMatch Diário</b> — seu diário de obra por áudio.\n\n' +
+          'Para conectar sua conta: abra o app <b>ObraMatch Diário</b>, toque em <b>Conectar</b> no cartão do Telegram e volte aqui.');
         return new Response('ok');
       }
       const rows = await fsQuery(env, 'usuarios', 'telegramLinkCode', codigo, 1);
@@ -343,17 +343,17 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
 
     if (texto.startsWith('/ajuda')) {
       await enviarMensagem(env, chatId,
-        '🎙 <b>Como usar o Diário Match</b>\n\n' +
+        '🎙 <b>Como usar o ObraMatch Diário</b>\n\n' +
         '1. Mande um <b>áudio</b> (ou texto) contando o dia: serviços feitos, equipe, materiais e imprevistos.\n' +
         '2. Se quiser, mande <b>fotos</b> antes de confirmar.\n' +
         '3. Eu monto o RDO com clima oficial e você só confirma. ✅\n\n' +
-        'O relatório em PDF fica no app: https://diario.obramatch.com.br');
+        'O relatório completo e o PDF ficam no app ObraMatch Diário. 📲');
       return new Response('ok');
     }
 
     const usuario = await usuarioDoChat(env, chatId);
     if (!usuario) {
-      await enviarMensagem(env, chatId, 'Sua conta ainda não está conectada. Abra https://diario.obramatch.com.br e toque em <b>Conectar</b> no cartão do Telegram.');
+      await enviarMensagem(env, chatId, 'Sua conta ainda não está conectada. Abra o app <b>ObraMatch Diário</b> e toque em <b>Conectar</b> no cartão do Telegram.');
       return new Response('ok');
     }
 

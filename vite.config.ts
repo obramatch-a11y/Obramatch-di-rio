@@ -16,7 +16,7 @@ export default defineConfig(() => {
         manifestFilename: 'manifest.json',
         manifest: {
           id: '/',
-          short_name: 'ObraMatch',
+          short_name: 'ObraMatch Diário',
           name: 'ObraMatch Diário',
           description: 'Aplicativo de registro diário de execução de obras',
           lang: 'pt-BR',

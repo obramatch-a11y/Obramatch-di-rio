@@ -43,6 +43,7 @@ export interface Diario {
   observacoes: string;
   assinatura?: string; // Base64 signature image
   gps?: GPSLocation | null;
+  condicaoTrabalho?: 'Praticável' | 'Parcialmente praticável' | 'Impraticável';
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
