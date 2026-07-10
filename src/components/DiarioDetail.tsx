@@ -4,6 +4,7 @@ import { calcularHashRdo } from '../lib/hash';
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
 import { motion } from 'motion/react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import RdoPrintBlock from './RdoPrintBlock';
 import { 
   ArrowLeft, 
   Printer, 
@@ -63,16 +64,7 @@ export default function DiarioDetail() {
   const dPhotos = fotos.filter(f => f.diarioId === selectedDiario.id);
   const ClimaIcon = CLIMA_ICONS[selectedDiario.clima || 'Ensolarado'] || Sun;
 
-  const secoes = [
-    'atividades',
-    selectedDiario.equipe && 'equipe',
-    selectedDiario.materiais && 'materiais',
-    selectedDiario.ocorrencias && 'ocorrencias',
-    selectedDiario.observacoes && 'observacoes',
-    dPhotos.length > 0 && 'fotos',
-    'assinaturas'
-  ].filter(Boolean) as string[];
-  const num = (s: string) => secoes.indexOf(s) + 1;
+
 
   const handleDelete = async () => {
     if (window.confirm('Tem certeza que deseja excluir permanentemente este diário de obra?')) {
@@ -360,200 +352,9 @@ export default function DiarioDetail() {
 
       </div>
 
-      {/* PRINT-ONLY TECHNICAL REPORT (CLEAN PORTUGUESE TECHNICAL LAYOUT OTIMIZADO PARA PDF) */}
-      <div className="hidden print:block bg-white text-black p-8 font-serif leading-relaxed text-sm w-full min-h-screen">
-        
-        {/* Header Block */}
-        <div className="border-b-4 border-[#D1D1D1] pb-4 mb-6 flex justify-between items-start">
-          <div>
-            <span className="text-xs font-bold tracking-widest text-neutral-500 uppercase">ECOSSISTEMA OBRAMATCH</span>
-            <h1 className="text-2xl font-black text-[#111111] font-sans tracking-tight mt-1">
-              RELATÓRIO DIÁRIO DE OBRA{selectedDiario.numeroRdo ? ` — RDO Nº ${String(selectedDiario.numeroRdo).padStart(3, '0')}` : ''}
-            </h1>
-            <p className="text-xs text-neutral-500 italic mt-1">ObraMatch Diário · Relatório Técnico Diário de Execução</p>
-          </div>
-          <div className="text-right">
-            <div className="text-lg font-extrabold text-[#111111] font-mono">
-              {new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-            </div>
-            <div className="text-xs text-neutral-500 font-sans mt-0.5">Emissão: {new Date().toLocaleString('pt-BR')}</div>
-          </div>
-        </div>
-
-        {/* Technical Metadata Table */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6 p-4 bg-[#F4F4F4] rounded-xl font-sans text-xs border border-[#D1D1D1]">
-          <div>
-            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">OBRA:</span>
-            <span className="text-[#111111] font-bold text-sm">{selectedObra.nome}</span>
-          </div>
-          <div>
-            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">CLIENTE:</span>
-            <span className="text-[#111111] font-bold text-sm">{selectedObra.cliente}</span>
-          </div>
-          <div>
-            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">RESPONSÁVEL TÉCNICO:</span>
-            <span className="text-[#111111] font-semibold">{selectedObra.responsavelTecnico}</span>
-          </div>
-          <div>
-            <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">CLIMA / CONDIÇÕES:</span>
-            <span className="text-[#111111] font-semibold">
-              {selectedDiario.clima || 'Ensolarado'}
-              {selectedDiario.climaOficial && (
-                <span className="block text-[10px] text-neutral-500 font-normal mt-0.5">
-                  {selectedDiario.climaOficial.tempMin}°C a {selectedDiario.climaOficial.tempMax}°C · Precipitação: {selectedDiario.climaOficial.chuvaMm}mm · Fonte oficial: Open-Meteo
-                </span>
-              )}
-              {selectedDiario.condicaoTrabalho && (
-                <span className="block text-[10px] font-bold mt-0.5">
-                  Condição de trabalho: {selectedDiario.condicaoTrabalho}
-                </span>
-              )}
-            </span>
-          </div>
-          {selectedObra.endereco && (
-            <div className="col-span-2">
-              <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">LOCALIZAÇÃO:</span>
-              <span className="text-[#111111] font-semibold">{selectedObra.endereco}</span>
-            </div>
-          )}
-          {selectedDiario.gps && (
-            <div className="col-span-2">
-              <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">COORDENADAS GPS (REPORT):</span>
-              <span className="text-[#111111] font-mono">📍 {selectedDiario.gps.latitude.toFixed(6)}, {selectedDiario.gps.longitude.toFixed(6)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Content Section: Atividades */}
-        <div className="mb-6 font-sans">
-          <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-3">
-            {num('atividades')}. ATIVIDADES EXECUTADAS DO DIA
-          </h3>
-          <p className="text-[#111111] text-sm whitespace-pre-wrap leading-relaxed">
-            {selectedDiario.atividades}
-          </p>
-        </div>
-
-        {/* Content Section: Equipe & Materiais */}
-        <div className="grid grid-cols-2 gap-6 mb-6 font-sans text-xs">
-          {selectedDiario.equipe && (
-            <div>
-              <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-                {num('equipe')}. EQUIPE PRESENTE
-              </h3>
-              <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
-                {selectedDiario.equipe}
-              </p>
-            </div>
-          )}
-          {selectedDiario.materiais && (
-            <div>
-              <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-                {num('materiais')}. MATERIAIS E EQUIPAMENTOS
-              </h3>
-              <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
-                {selectedDiario.materiais}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Content Section: Ocorrências */}
-        {selectedDiario.ocorrencias && (
-          <div className="mb-6 font-sans text-xs">
-            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-              {num('ocorrencias')}. OCORRÊNCIAS / IMPREVISTOS
-            </h3>
-            <p className="text-red-800 font-bold whitespace-pre-wrap leading-relaxed">
-              ⚠️ {selectedDiario.ocorrencias}
-            </p>
-          </div>
-        )}
-
-        {/* Content Section: Observações */}
-        {selectedDiario.observacoes && (
-          <div className="mb-6 font-sans text-xs">
-            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
-              {num('observacoes')}. OBSERVAÇÕES COMPLEMENTARES
-            </h3>
-            <p className="text-[#222222] whitespace-pre-wrap leading-relaxed">
-              {selectedDiario.observacoes}
-            </p>
-          </div>
-        )}
-
-        {/* Photos grid */}
-        {dPhotos.length > 0 && (
-          <div className={"mb-8 font-sans" + (dPhotos.length > 2 ? " page-break-before" : "")}>
-            <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-4">
-              {num('fotos')}. REGISTRO FOTOGRÁFICO
-            </h3>
-            <div className="grid grid-cols-2 gap-6">
-              {dPhotos.map((photo) => (
-                <div key={photo.id} className="border border-[#D1D1D1] rounded-xl p-3 bg-[#F4F4F4] avoid-break">
-                  <div className="aspect-video w-full overflow-hidden rounded-lg mb-2">
-                    <img src={photo.url} alt="Evidência" className="w-full h-full object-cover" />
-                  </div>
-                  {photo.legenda && (
-                    <p className="text-[11px] text-[#222222] italic font-semibold">{photo.legenda}</p>
-                  )}
-                  <div className="flex justify-between items-center text-[10px] text-neutral-600 mt-1.5 font-mono">
-                    <span>Hora: {photo.horario}</span>
-                    {photo.gps && (
-                      <span>GPS: {photo.gps.latitude.toFixed(5)}, {photo.gps.longitude.toFixed(5)}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Signatures footer block */}
-        <div className="mt-12 pt-6 font-sans avoid-break">
-          <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-8">
-            {num('assinaturas')}. ASSINATURAS
-          </h3>
-          <div className="grid grid-cols-2 gap-12">
-            <div className="flex flex-col items-center avoid-break">
-              {selectedDiario.assinatura ? (
-                <div className="mb-2 flex justify-center h-20 items-end">
-                  <img src={selectedDiario.assinatura} alt="Assinatura do Responsável Técnico" className="max-h-20 object-contain" />
-                </div>
-              ) : (
-                <div className="h-20" />
-              )}
-              <div className="w-full border-t border-[#D1D1D1] my-1"></div>
-              <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.responsavelTecnico}</p>
-              <p className="text-[10px] text-neutral-500">Responsável Técnico (CREA/CAU)</p>
-            </div>
-            <div className="flex flex-col items-center avoid-break">
-              <div className="h-20" />
-              <div className="w-full border-t border-[#D1D1D1] my-1"></div>
-              <p className="text-xs font-bold text-[#111111] uppercase text-center">{selectedObra.cliente}</p>
-              <p className="text-[10px] text-neutral-500">Cliente / Contratante — Ciência do registro</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Generation stamp in footer */}
-        <div className="mt-16 text-center font-sans border-t border-[#D1D1D1] pt-4 flex flex-col items-center gap-1">
-          {selectedDiario.hashIntegridade && (
-            <p className="text-[9px] text-neutral-500 font-mono mb-1">
-              🔒 Código de integridade (SHA-256): {selectedDiario.hashIntegridade}
-            </p>
-          )}
-          {(selectedDiario.gps || selectedDiario.origem) && (
-            <p className="text-[9px] text-neutral-500 font-mono mb-1">
-              {selectedDiario.gps ? `GPS: ${selectedDiario.gps.latitude.toFixed(6)}, ${selectedDiario.gps.longitude.toFixed(6)}` : ''}
-              {selectedDiario.gps && selectedDiario.origem ? ' · ' : ''}
-              {selectedDiario.origem === 'telegram' ? 'Registrado via Telegram com confirmação do responsável' : selectedDiario.origem === 'app' ? 'Registrado via aplicativo' : ''}
-            </p>
-          )}
-          <p className="text-[10px] text-neutral-500 font-bold">
-            Documento gerado pelo ObraMatch Diário — obramatch.com.br
-          </p>
-        </div>
+      {/* PRINT-ONLY TECHNICAL REPORT */}
+      <div className="hidden print:block min-h-screen">
+        <RdoPrintBlock obra={selectedObra} diario={selectedDiario} fotos={dPhotos} mostrarRodape={true} />
       </div>
 
     </div>
