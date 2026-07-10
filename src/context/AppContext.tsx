@@ -26,7 +26,7 @@ interface AppContextType {
   diarios: Diario[];
   fotos: Foto[];
   online: boolean;
-  currentView: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline';
+  currentView: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos';
   selectedObra: Obra | null;
   selectedDiario: Diario | null;
   editingDiario: Diario | null;
@@ -34,7 +34,7 @@ interface AppContextType {
   selectedAgentId: string | null;
   openAgentesModal: (agentId?: string | null) => void;
   closeAgentesModal: () => void;
-  setView: (view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline', obra?: Obra | null, diario?: Diario | null) => void;
+  setView: (view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos', obra?: Obra | null, diario?: Diario | null) => void;
   createObra: (obra: Omit<Obra, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateObra: (id: string, obra: Partial<Obra>) => Promise<void>;
   deleteObra: (id: string) => Promise<void>;
@@ -55,7 +55,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [online, setOnline] = useState(navigator.onLine);
 
   // Navigation and State
-  const [currentView, setCurrentView] = useState<'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos'>('dashboard');
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [selectedDiario, setSelectedDiario] = useState<Diario | null>(null);
   const [editingDiario, setEditingDiario] = useState<Diario | null>(null);
@@ -119,7 +119,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Restaurar a view anterior
-      const targetView = state.appView as 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline';
+      const targetView = state.appView as 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos';
       setCurrentView(targetView);
 
       // Se havia obra selecionada, restaurar (encontrar na lista local)
@@ -255,7 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, selectedObra, diarios.map(d => d.id).join(',')]);
 
   const setView = (
-    view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline', 
+    view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos', 
     obra: Obra | null = null, 
     diario: Diario | null = null
   ) => {

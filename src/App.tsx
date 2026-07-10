@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import ObraDashboard from './components/ObraDashboard';
 import DiarioForm from './components/DiarioForm';
 import DiarioDetail from './components/DiarioDetail';
+import ExportarRdos from './components/ExportarRdos';
 import AgentesMatchModal from './components/AgentesMatchModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { HardHat } from 'lucide-react';
@@ -49,6 +50,7 @@ function AppContent() {
               {currentView === 'obra-dashboard' && <ObraDashboard />}
               {currentView === 'diario-form' && <DiarioForm />}
               {currentView === 'diario-detail' && <DiarioDetail />}
+              {currentView === 'exportar-rdos' && <ExportarRdos />}
             </motion.div>
           </AnimatePresence>
 
