@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
 import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
@@ -52,16 +52,50 @@ export default function Login() {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError('E-mail ou senha incorretos.');
       } else if (err.code === 'auth/email-already-in-use') {
-        setError('Este e-mail já está sendo utilizado.');
+        setError('Este e-mail já está sendo utilizado. Toque em "Entre aqui" para acessar sua conta.');
       } else if (err.code === 'auth/invalid-email') {
-        setError('E-mail inválido.');
+        setError('E-mail inválido. Confira se digitou corretamente.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Senha muito fraca. Use pelo menos 6 caracteres.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.');
+      } else if (err.code === 'auth/operation-not-allowed') {
+        setError('Cadastro por e-mail e senha indisponível no momento. Use o botão "Entrar com Google".');
       } else if (err.code === 'auth/network-request-failed') {
-        setError('Erro de rede ou conexão rejeitada pelo Firebase. Garanta que o método E-mail/Senha esteja ativo no console.');
+        setError('Sem conexão com o servidor. Verifique sua internet e tente de novo.');
       } else {
         setError('Ocorreu um erro inesperado. Tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [resetEnviado, setResetEnviado] = useState(false);
+
+  const handleEsqueciSenha = async () => {
+    setError(null);
+    setResetEnviado(false);
+    if (!email) {
+      setError('Digite seu e-mail no campo acima e toque em "Esqueci minha senha" de novo.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setResetEnviado(true);
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/invalid-email') {
+        setError('E-mail inválido. Confira se digitou corretamente.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.');
+      } else {
+        // Por segurança o Firebase não confirma se o e-mail existe; mostramos sucesso genérico.
+        setResetEnviado(true);
       }
     } finally {
       setLoading(false);
@@ -98,6 +132,18 @@ export default function Login() {
             </motion.div>
           )}
 
+          {resetEnviado && !error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 p-3 bg-white border-2 border-black border-l-4 border-l-emerald-600 rounded-lg"
+            >
+              <span className="text-[#111] text-sm">
+                Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira sua caixa de entrada e o spam.
+              </span>
+            </motion.div>
+          )}
+
           <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
               <label htmlFor="login-email" className="block text-xs font-display font-extrabold text-[#111] uppercase tracking-wider mb-2">
@@ -108,6 +154,8 @@ export default function Login() {
                 <input
                   id="login-email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="exemplo@obramatch.com"
@@ -126,6 +174,7 @@ export default function Login() {
                 <input
                   id="login-senha"
                   type="password"
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Sua senha secreta"
@@ -144,6 +193,19 @@ export default function Login() {
               {loading ? 'Aguarde...' : isSignUp ? 'Criar conta' : 'Entrar'}
             </button>
           </form>
+
+          {!isSignUp && (
+            <div className="text-right mt-3">
+              <button
+                type="button"
+                onClick={handleEsqueciSenha}
+                disabled={loading}
+                className="text-[#0A3D91] hover:text-[#2E6DEB] text-xs font-display font-extrabold transition-colors cursor-pointer"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          )}
 
           <div className="relative my-7">
             <div className="absolute inset-0 flex items-center">
