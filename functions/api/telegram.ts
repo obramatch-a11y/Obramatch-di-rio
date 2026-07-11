@@ -15,6 +15,7 @@ import {
   uploadFotoSupabase,
   TecladoInline,
 } from '../_lib/telegram';
+import { lerEstadoUso, dentroDaFranquia, consumirFranquia, mensagemFranquia } from '../_lib/uso';
 
 const FUSO = 'America/Recife';
 
@@ -188,6 +189,18 @@ async function processarRelato(
   env: Env, chatId: number, uid: string,
   entrada: { texto?: string; audioBase64?: string; mimeType?: string }
 ): Promise<void> {
+  // Franquia de IA do plano do usuário (a IA só roda se houver saldo)
+  const estado = await lerEstadoUso(env, uid);
+  if (!dentroDaFranquia(estado, 'transc')) {
+    await enviarMensagem(env, chatId, `⏳ ${mensagemFranquia(estado, 'transc')}`);
+    return;
+  }
+  if (entrada.audioBase64 && entrada.audioBase64.length > estado.limites.audioMaxBase64) {
+    const minutos = estado.plano === 'pro' ? '5 minutos' : '1 minuto e meio';
+    await enviarMensagem(env, chatId, `🎙 Áudio muito longo para o seu plano. Grave até ${minutos}.`);
+    return;
+  }
+
   await enviarAcao(env, chatId);
   let rdo: RdoEstruturado;
   try {
@@ -201,6 +214,9 @@ async function processarRelato(
     await enviarMensagem(env, chatId, 'Não identifiquei informações de obra no relato. Tente contar o que foi feito hoje: serviços, equipe, materiais e imprevistos. 🎙');
     return;
   }
+
+  // Consome a franquia SOMENTE após a IA ter respondido com sucesso.
+  await consumirFranquia(env, uid, estado, 'transc');
 
   const pendAnterior = await fsGet(env, `rdo_pendentes/${chatId}`);
 
@@ -263,6 +279,17 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
   try { update = await request.json(); } catch { return new Response('ok'); }
 
   try {
+    // Idempotência: o Telegram reenvia updates em timeout; nunca processar 2x.
+    const updateId = Number(update?.update_id) || 0;
+    const chatIdBruto = update?.message?.chat?.id || update?.callback_query?.message?.chat?.id;
+    if (updateId && chatIdBruto) {
+      try {
+        const marca = await fsGet(env, `tg_updates/${chatIdBruto}`);
+        if (Number(marca?.data?.ultimoUpdateId) >= updateId) return new Response('ok');
+        await fsSet(env, `tg_updates/${chatIdBruto}`, { ultimoUpdateId: updateId, em: new Date().toISOString() });
+      } catch { /* melhor esforço */ }
+    }
+
     // ---------- Botões ----------
     if (update.callback_query) {
       const cb = update.callback_query;

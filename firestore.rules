@@ -7,9 +7,24 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Perfil do usuario (vinculo Telegram, controle de uso da IA)
+    // Plano do usuario: escrito SOMENTE pelo servidor (service account).
+    match /planos/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Consumo de IA: escrito SOMENTE pelo servidor; o dono pode ler o proprio.
+    match /uso_ia/{docId} {
+      allow read: if isSignedIn() && docId.matches('^' + request.auth.uid + '_.*$');
+      allow write: if false;
+    }
+
+    // Perfil do usuario (vinculo Telegram). O cliente NAO pode escrever
+    // campos de controle de uso/plano (iaUso legado, plano) -> anti-burla.
     match /usuarios/{uid} {
-      allow read, write: if isSignedIn() && request.auth.uid == uid;
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if isSignedIn() && request.auth.uid == uid
+        && !request.resource.data.keys().hasAny(['iaUso', 'plano']);
     }
 
     // Obras: cada usuario le e escreve apenas as proprias.
