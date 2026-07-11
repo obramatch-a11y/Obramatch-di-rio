@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Login from './components/Login';
-import Dashboard from './components/Dashboard';
-import ObraDashboard from './components/ObraDashboard';
-import DiarioForm from './components/DiarioForm';
-import DiarioDetail from './components/DiarioDetail';
-import ExportarRdos from './components/ExportarRdos';
-import AgentesMatchModal from './components/AgentesMatchModal';
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const ObraDashboard = lazy(() => import('./components/ObraDashboard'));
+const DiarioForm = lazy(() => import('./components/DiarioForm'));
+const DiarioDetail = lazy(() => import('./components/DiarioDetail'));
+const ExportarRdos = lazy(() => import('./components/ExportarRdos'));
+const AgentesMatchModal = lazy(() => import('./components/AgentesMatchModal'));
 import { motion, AnimatePresence } from 'motion/react';
 import { HardHat } from 'lucide-react';
 
@@ -36,6 +36,7 @@ function AppContent() {
       ) : !user ? (
         <Login />
       ) : (
+        <Suspense fallback={<div className="flex-1" />}>
         <div className="flex-1 flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
@@ -64,6 +65,7 @@ function AppContent() {
             )}
           </AnimatePresence>
         </div>
+        </Suspense>
       )}
     </div>
   );
