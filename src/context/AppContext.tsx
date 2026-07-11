@@ -211,9 +211,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setObras(obrasList);
       setCarregandoObras(false);
     }, (error) => {
-      console.error('Erro ao ouvir obras:', error);
+      console.error('Erro no listener (obras):', error);
       setCarregandoObras(false);
-      handleFirestoreError(error, OperationType.LIST, obrasPath);
     });
 
     return unsubscribe;
@@ -249,8 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setDiarios(diariosList);
     }, (error) => {
-      console.error('Erro ao ouvir diários:', error);
-      handleFirestoreError(error, OperationType.LIST, diariosPath);
+      console.error('Erro no listener (diários):', error);
     });
 
     // Subcollection query for all fotos in the diaries of this Obra
@@ -278,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const allFotos = Object.values(aggregatedPhotos).flat();
         setFotos(allFotos);
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, path);
+        console.error('Erro no listener (fotos):', error);
       });
       activeUnsubscribes.push(unsub);
     };

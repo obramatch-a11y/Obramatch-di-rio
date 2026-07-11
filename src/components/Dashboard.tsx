@@ -385,6 +385,7 @@ export default function Dashboard() {
                     onClick={() => setShowPwaBanner(false)}
                     className="p-2 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-xl transition-all cursor-pointer shrink-0 ml-auto"
                     title="Fechar"
+                    aria-label="Fechar"
                   >
                     <X className="w-4 h-4" />
                   </button>

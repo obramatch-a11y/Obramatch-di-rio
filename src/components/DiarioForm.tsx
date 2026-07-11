@@ -717,6 +717,7 @@ export default function DiarioForm() {
                           }
                         }}
                         className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
+                        aria-label="Excluir foto"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -742,6 +743,7 @@ export default function DiarioForm() {
                     <button
                       type="button"
                       onClick={() => removePhoto(index)}
+                      aria-label="Remover foto"
                       className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-[#111111] rounded-full transition-all cursor-pointer z-10"
                     >
                       <X className="w-3.5 h-3.5" />
