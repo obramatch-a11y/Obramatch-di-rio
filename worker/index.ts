@@ -10,8 +10,13 @@ import { onRequestGet as perfilPublicoGet } from '../functions/api/perfil-public
 import { onRequestGet as diagnosticoGet } from '../functions/api/diagnostico';
 import type { Env as ApiEnv } from '../functions/_lib/google';
 
+interface RateLimiter {
+  limit: (options: { key: string }) => Promise<{ success: boolean }>;
+}
+
 interface Env extends ApiEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> };
+  IA_LIMIT?: RateLimiter;
 }
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -28,7 +33,22 @@ export default {
     if (pathname.startsWith('/api/')) {
       const ctx = { request, env };
       try {
-        if (pathname === '/api/ia' && request.method === 'POST') return await iaPost(ctx);
+        if (pathname === '/api/ia' && request.method === 'POST') {
+          // Rate limit por IP (anti-abuso). Só bloqueia se o binding existir
+          // (em ambiente sem o binding, segue normal — a cota por plano no
+          // servidor continua sendo a proteção principal).
+          if (env.IA_LIMIT) {
+            const ip = request.headers.get('CF-Connecting-IP') || 'desconhecido';
+            const { success } = await env.IA_LIMIT.limit({ key: ip });
+            if (!success) {
+              return new Response(
+                JSON.stringify({ erro: 'Muitas solicitações em pouco tempo. Aguarde alguns segundos e tente novamente.' }),
+                { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': '60' } }
+              );
+            }
+          }
+          return await iaPost(ctx);
+        }
         if (pathname === '/api/telegram' && request.method === 'POST') return await telegramPost(ctx);
         if (pathname === '/api/setup-webhook' && request.method === 'GET') return await setupWebhookGet(ctx);
         if (pathname === '/api/perfil-publico' && request.method === 'GET') return await perfilPublicoGet(ctx);

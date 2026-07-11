@@ -16,6 +16,17 @@
     "SUPABASE_URL": "https://sbmqwvalqdhqsslioezk.supabase.co"
   },
 
+  // Rate limiting nativo do Worker (gratuito, não exige WAF Enterprise).
+  // Limita chamadas de IA por IP: até 20 requisições a cada 60 segundos.
+  // Aplicado dentro do Worker, por ponto de presença (consistência eventual).
+  "ratelimits": [
+    {
+      "name": "IA_LIMIT",
+      "namespace_id": "1001",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
+
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
