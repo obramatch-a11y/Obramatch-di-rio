@@ -8,6 +8,7 @@ export interface Obra {
   observacoes: string;
   gps?: GPSLocation | null;       // Localização da obra (base do clima oficial)
   proximoNumeroRdo?: number;      // Numeração sequencial dos RDOs
+  arquivada?: boolean;            // Obra arquivada não conta no limite do plano
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
@@ -87,3 +88,21 @@ export interface FirestoreErrorInfo {
     }[];
   }
 }
+
+export interface PlanoInfo {
+  plano: 'free' | 'pro';
+  validade?: string | null;
+}
+
+export interface UsoIaInfo {
+  transcMes: number;
+  melhoriaMes: number;
+  transcDia: number;
+  melhoriaDia: number;
+  dia?: string;
+}
+
+export const LIMITES_PLANO = {
+  free: { obrasAtivas: 2, fotosPorRelatorio: 5, transcMes: 30, melhoriaMes: 30, transcDia: 2, melhoriaDia: 2 },
+  pro:  { obrasAtivas: 10, fotosPorRelatorio: 20, transcMes: 300, melhoriaMes: 600, transcDia: 20, melhoriaDia: 60 },
+} as const;

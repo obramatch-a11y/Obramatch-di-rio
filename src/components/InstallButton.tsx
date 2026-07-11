@@ -90,7 +90,7 @@ export default function InstallButton({ className = '', variant = 'dashboard', o
           <div className="nb-card nb-shadow w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-3">
               <h3 className="text-base font-display font-black text-[#111]">Instalar no celular</h3>
-              <button onClick={() => setShowHelp(false)} className="p-1 text-neutral-500 hover:text-[#111] cursor-pointer">
+              <button onClick={() => setShowHelp(false)} aria-label="Fechar" className="p-1 text-neutral-500 hover:text-[#111] cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>

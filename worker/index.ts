@@ -40,7 +40,14 @@ export default {
       }
     }
 
-    // Todo o resto: site estático (SPA fallback configurado no wrangler.jsonc)
-    return env.ASSETS.fetch(request);
+    // Todo o resto: site estático com headers de segurança
+    const res = await env.ASSETS.fetch(request);
+    const headers = new Headers(res.headers);
+    headers.set('X-Content-Type-Options', 'nosniff');
+    headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    headers.set('X-Frame-Options', 'DENY');
+    headers.set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self)');
+    headers.set('Content-Security-Policy', "frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
   },
 };

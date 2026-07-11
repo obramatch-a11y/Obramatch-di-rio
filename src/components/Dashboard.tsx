@@ -32,6 +32,7 @@ import InstallButton from './InstallButton';
 import PerfilBadge from './PerfilBadge';
 import TelegramConnect from './TelegramConnect';
 import NovaObraModal from './NovaObraModal';
+import PlanoUsoCard from './PlanoUsoCard';
 
 const ECOSYSTEM_SLIDES = [
   {
@@ -67,7 +68,8 @@ const ECOSYSTEM_SLIDES = [
 ];
 
 export default function Dashboard() {
-  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras } = useApp();
+  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras, limiteObrasAtingido, arquivarObra } = useApp();
+  const [mostrarArquivadas, setMostrarArquivadas] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -235,7 +237,9 @@ export default function Dashboard() {
     }
   };
 
-  const filteredObras = obras.filter(obra => 
+  const obrasVisiveis = obras.filter((o) => (mostrarArquivadas ? o.arquivada : !o.arquivada));
+  const totalArquivadas = obras.filter((o) => o.arquivada).length;
+  const filteredObras = obrasVisiveis.filter(obra => 
     obra.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     obra.cliente.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -381,6 +385,7 @@ export default function Dashboard() {
                     onClick={() => setShowPwaBanner(false)}
                     className="p-2 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-xl transition-all cursor-pointer shrink-0 ml-auto"
                     title="Fechar"
+                    aria-label="Fechar"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -392,6 +397,7 @@ export default function Dashboard() {
 
         {/* Single-column Layout for Obras & ObraMatch Ecosystem underneath */}
         <div className="space-y-8">
+          <PlanoUsoCard />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <PerfilBadge />
             <TelegramConnect />
@@ -408,14 +414,30 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="nb-btn nb-btn-primary py-3 px-5 flex items-center justify-center gap-2 text-sm"
-              >
-                <Plus className="w-5 h-5" />
-                Nova Obra
-              </button>
+              <div className="flex flex-col items-stretch sm:items-end gap-1">
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="nb-btn nb-btn-primary py-3 px-5 flex items-center justify-center gap-2 text-sm"
+                >
+                  <Plus className="w-5 h-5" />
+                  Nova Obra
+                </button>
+                {limiteObrasAtingido && !mostrarArquivadas && (
+                  <p className="text-[10px] text-neutral-500 sm:text-right max-w-[240px]">
+                    Limite de obras ativas do plano atingido — arquive uma obra concluída para liberar espaço.
+                  </p>
+                )}
+              </div>
             </div>
+
+            {(totalArquivadas > 0 || mostrarArquivadas) && (
+              <button
+                onClick={() => setMostrarArquivadas((v) => !v)}
+                className="text-xs font-display font-extrabold text-[#0A3D91] cursor-pointer"
+              >
+                {mostrarArquivadas ? '← Voltar às obras ativas' : `Ver arquivadas (${totalArquivadas})`}
+              </button>
+            )}
 
             {/* Search Bar */}
             <div className="relative">
@@ -507,6 +529,15 @@ export default function Dashboard() {
           {/* Single, non-repetitive ObraMatch promo block below the main list as requested */}
           <ObraMatchSoftPromo variant="dashboard" className="mt-8" />
         </div>
+
+        <footer className="max-w-7xl mx-auto px-4 py-6 w-full text-center text-[10px] text-neutral-500 space-x-3">
+          <a href="/termos-de-uso.html" target="_blank" rel="noopener" className="underline">Termos</a>
+          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener" className="underline">Privacidade</a>
+          <a href="/politica-de-ia.html" target="_blank" rel="noopener" className="underline">IA</a>
+          <a href="/planos.html" target="_blank" rel="noopener" className="underline">Planos</a>
+          <a href="/sobre.html" target="_blank" rel="noopener" className="underline">Sobre</a>
+          <a href="/excluir-conta.html" target="_blank" rel="noopener" className="underline">Excluir conta</a>
+        </footer>
       </main>
 
       {/* Modal for New Obra */}

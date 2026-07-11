@@ -5,8 +5,7 @@
 import { Env } from '../_lib/google';
 import { fsGet, fsSet } from '../_lib/firestore';
 import { estruturarRdo, melhorarTextoRdo } from '../_lib/groq';
-
-const LIMITE_DIARIO = 20;
+import { lerEstadoUso, dentroDaFranquia, consumirFranquia, mensagemFranquia, TipoUsoIa } from '../_lib/uso';
 
 function resposta(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
@@ -35,28 +34,11 @@ async function validarIdToken(env: Env, token: string): Promise<string | null> {
   }
 }
 
-/** Controle do nível gratuito: máximo de chamadas por usuário por dia. */
-async function dentroDoLimite(env: Env, uid: string): Promise<boolean> {
-  const hoje = new Date().toISOString().split('T')[0];
-  const docPath = `usuarios/${uid}`;
-  let count = 0;
-  try {
-    const doc = await fsGet(env, docPath);
-    const uso = doc?.data?.iaUso;
-    if (uso && uso.data === hoje) count = Number(uso.count) || 0;
-  } catch {
-    // primeiro uso do dia
-  }
-  if (count >= LIMITE_DIARIO) return false;
-  await fsSet(env, docPath, { iaUso: { data: hoje, count: count + 1 } });
-  return true;
-}
-
 export const onRequestPost = async (ctx: { request: Request; env: Env }): Promise<Response> => {
   const { request, env } = ctx;
 
-  if (!env.GEMINI_API_KEY) {
-    return resposta(503, { erro: 'IA não configurada. Defina GEMINI_API_KEY nas variáveis da Cloudflare Pages.' });
+  if (!env.GROQ_API_KEY && !env.GEMINI_API_KEY) {
+    return resposta(503, { erro: 'IA não configurada no servidor.' });
   }
 
   // Autenticação
@@ -77,18 +59,32 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
   if (tipo !== 'estruturar' && tipo !== 'melhorar') {
     return resposta(400, { erro: "Campo 'tipo' deve ser 'estruturar' ou 'melhorar'." });
   }
-  if (body.audioBase64 && String(body.audioBase64).length > 14_000_000) {
-    return resposta(413, { erro: 'Áudio muito longo. Grave até ~5 minutos.' });
+
+  // Franquia por plano (servidor). Checa antes; consome SÓ após sucesso.
+  const tipoUso: TipoUsoIa = tipo === 'estruturar' ? 'transc' : 'melhoria';
+  let estado;
+  try {
+    estado = await lerEstadoUso(env, uid);
+  } catch (err: any) {
+    console.error('Erro ao ler estado de uso:', err?.message || err);
+    return resposta(502, { erro: 'Falha ao verificar sua franquia. Tente novamente.' });
   }
 
-  // Limite diário (nível gratuito do Gemini) — melhor esforço:
-  // se o Firestore falhar aqui, a IA continua funcionando mesmo assim.
-  try {
-    if (!(await dentroDoLimite(env, uid))) {
-      return resposta(429, { erro: 'Limite diário de uso da IA atingido.' });
-    }
-  } catch (err: any) {
-    console.error('Aviso: falha ao registrar limite diário:', err?.message || err);
+  if (!dentroDaFranquia(estado, tipoUso)) {
+    return resposta(429, { erro: mensagemFranquia(estado, tipoUso) });
+  }
+
+  if (body.audioBase64 && String(body.audioBase64).length > estado.limites.audioMaxBase64) {
+    const minutos = estado.plano === 'pro' ? '5 minutos' : '1 minuto e meio';
+    return resposta(413, { erro: `Áudio muito longo para o seu plano. Grave até ${minutos}.` });
+  }
+
+  if (body.audioBase64 && body.mimeType && !String(body.mimeType).startsWith('audio/')) {
+    return resposta(400, { erro: 'Formato de áudio inválido.' });
+  }
+
+  if (body.texto && String(body.texto).length > 20_000) {
+    return resposta(400, { erro: 'Texto muito longo.' });
   }
 
   try {
@@ -101,6 +97,7 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
         audioBase64: body.audioBase64,
         mimeType: body.mimeType,
       });
+      await consumirFranquia(env, uid, estado, 'transc');
       return resposta(200, rdo as any);
     }
 
@@ -109,6 +106,7 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
       return resposta(400, { erro: 'Envie o texto a ser melhorado.' });
     }
     const texto = await melhorarTextoRdo(env, String(body.texto));
+    await consumirFranquia(env, uid, estado, 'melhoria');
     return resposta(200, { texto });
   } catch (err: any) {
     console.error('Erro na IA:', err?.message || err);

@@ -33,6 +33,7 @@ export default function NovaObraModal({
   const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
   const [observacoes, setObservacoes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
 
   // Close modal on ESC key
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function NovaObraModal({
     if (!nome || !cliente || !responsavelTecnico) return;
 
     setIsLoading(true);
+    setErro(null);
     try {
       await onSubmit({
         nome,
@@ -84,6 +86,8 @@ export default function NovaObraModal({
       setDataInicio(new Date().toISOString().split('T')[0]);
       setObservacoes('');
       onClose();
+    } catch (err: any) {
+      setErro(err?.message || 'Não foi possível criar a obra. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -229,6 +233,10 @@ export default function NovaObraModal({
                   className="w-full px-4 py-3 nb-input focus:ring-1 focus:ring-[#FF6F00]/40  placeholder-neutral-400  text-sm resize-none"
                 />
               </div>
+
+              {erro && (
+                <p className="text-xs text-red-600 font-semibold">{erro}</p>
+              )}
 
               <div className="flex items-center gap-3 pt-4 border-t border-[#D1D1D1]">
                 <button

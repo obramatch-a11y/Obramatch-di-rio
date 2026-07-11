@@ -1,6 +1,0 @@
-{
-  "name": "ObraMatch Diário",
-  "description": "Diário de obras profissional do ecossistema ObraMatch. Registre a evolução da sua obra de forma simples, rápida e offline, com geração de relatórios técnicos em PDF.",
-  "requestFramePermissions": ["camera", "geolocation"],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

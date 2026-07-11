@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+  <title>Política de Privacidade — ObraMatch Diário</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Política de Privacidade — ObraMatch Diário</title>
   <meta name="robots" content="index,follow" />
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#FFFFFF; color:#111111; margin:0; padding:0; }
@@ -14,8 +14,12 @@
     h2 { color:#0A3D91; border-left:6px solid #FF6F00; padding-left:10px; font-size:1.15rem; margin-top:32px; }
     a { color:#0A3D91; font-weight:600; }
     ul { padding-left:22px; }
+    table { border-collapse:collapse; width:100%; margin:16px 0; font-size:.9rem; }
+    th, td { border:1px solid #D1D1D1; padding:8px 10px; text-align:left; vertical-align:top; }
+    th { background:#F4F4F4; }
     .box { border:3px solid #111111; box-shadow:6px 6px 0 #FF6F00; padding:16px; margin:24px 0; background:#F8F9FB; }
     footer { text-align:center; font-size:.85rem; color:#555; padding:24px; border-top:2px solid #EEE; }
+    footer a { margin:0 8px; }
   </style>
 </head>
 <body>
@@ -24,50 +28,59 @@
     <p>ObraMatch Diário — registro diário de execução de obras</p>
   </header>
   <main>
-    <p><strong>Última atualização:</strong> 08 de julho de 2026.</p>
+    <p><strong>Última atualização:</strong> 11 de julho de 2026.</p>
 
-    <h2>1. Quem somos</h2>
-    <p>O aplicativo <strong>ObraMatch Diário</strong> é operado pela ObraMatch (<a href="https://obramatch.com.br">obramatch.com.br</a>), plataforma brasileira de serviços para o setor de construção civil, atualmente operada por pessoa física responsável. Contato: <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a>.</p>
+    <h2>1. Controlador</h2>
+    <p>ObraMatch, Recife/PE. Encarregado (DPO) e contato para assuntos de dados: <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a>.</p>
 
-    <h2>2. Dados que coletamos</h2>
-    <ul>
-      <li><strong>E-mail e senha de acesso</strong>, para autenticação, por meio do serviço Google Firebase Authentication. A senha é criptografada e não é visível para nós.</li>
-      <li><strong>Nome ou identificação</strong> informados no cadastro.</li>
-      <li><strong>Dados das obras e relatórios diários (RDOs)</strong>: descrições, atividades, efetivo, equipamentos e ocorrências registradas pelo usuário, armazenados no banco de dados Cloud Firestore (Google).</li>
-      <li><strong>Fotos das obras</strong> enviadas pelo usuário, armazenadas no serviço Supabase Storage.</li>
-      <li><strong>Localização GPS aproximada (opcional)</strong>, usada exclusivamente para preencher automaticamente as condições climáticas do relatório, por meio do serviço Open-Meteo. O usuário pode negar a permissão de localização e preencher o clima manualmente.</li>
-      <li><strong>Áudios e fotos enviados voluntariamente pelo bot do Telegram</strong>, processados por inteligência artificial (Google Gemini) exclusivamente para preencher o relatório diário do próprio usuário.</li>
-      <li><strong>Assinaturas digitais</strong> desenhadas no aplicativo para validação dos relatórios.</li>
-    </ul>
+    <h2>2. Dados tratados e finalidades</h2>
+    <table>
+      <tr><th>Dado</th><th>Finalidade</th><th>Base legal (LGPD)</th></tr>
+      <tr><td>E-mail e credenciais (via Google Firebase Authentication; a senha é armazenada de forma criptografada pelo provedor e não é acessível a nós)</td><td>Autenticação e comunicação sobre a conta</td><td>Execução de contrato (art. 7º, V)</td></tr>
+      <tr><td>Dados das obras e RDOs (atividades, equipe, materiais, ocorrências, observações, assinaturas desenhadas)</td><td>Prestação do serviço de registro</td><td>Execução de contrato</td></tr>
+      <tr><td>Fotos enviadas pelo usuário</td><td>Anexar registros fotográficos ao RDO</td><td>Execução de contrato</td></tr>
+      <tr><td>Localização GPS (opcional)</td><td>Preencher automaticamente o clima oficial do dia e registrar a posição da obra/RDO</td><td>Consentimento (art. 7º, I)</td></tr>
+      <tr><td>Áudios enviados pelo app ou pelo bot do Telegram (opcional)</td><td>Transcrição e estruturação do RDO por IA</td><td>Execução de contrato / consentimento</td></tr>
+      <tr><td>Identificador do chat do Telegram (quando o usuário conecta o bot)</td><td>Vincular o bot à conta</td><td>Execução de contrato</td></tr>
+      <tr><td>Contadores de uso das funções de IA e plano contratado</td><td>Aplicar franquias, prevenir abuso e faturar</td><td>Execução de contrato / legítimo interesse (art. 7º, IX)</td></tr>
+    </table>
+    <p>Não coletamos dados para publicidade, não usamos cookies de rastreamento nem ferramentas de analytics de terceiros.</p>
 
-    <h2>3. Para que usamos os dados</h2>
-    <p>Os dados são usados exclusivamente para o funcionamento do aplicativo: criar, armazenar e gerar em PDF os relatórios diários de obra do próprio usuário. Cada relatório recebe um código de integridade (hash SHA-256) para comprovar que não foi alterado após a emissão.</p>
+    <h2>3. Operadores (suboperadores) de dados</h2>
+    <p>Compartilhamos dados apenas com os provedores estritamente necessários: <strong>Google Firebase</strong> (autenticação e banco Cloud Firestore), <strong>Cloudflare</strong> (hospedagem e processamento das requisições), <strong>Supabase</strong> (armazenamento de fotos), <strong>Groq, Inc.</strong> (transcrição de áudio e estruturação de texto por IA — provedor principal), <strong>Google Gemini</strong> (IA de reserva, usada quando o provedor principal está indisponível), <strong>Telegram</strong> (quando você conecta o bot) e <strong>Open-Meteo</strong> (consulta de clima por coordenadas). Esses provedores podem processar dados em servidores fora do Brasil; a transferência internacional ocorre com salvaguardas contratuais dos próprios provedores, nos termos dos arts. 33 e seguintes da LGPD.</p>
 
-    <h2>4. Com quem compartilhamos</h2>
-    <p>Não vendemos dados pessoais. Não exibimos anúncios. Não usamos rastreadores de publicidade. Os dados são compartilhados apenas com os provedores de infraestrutura estritamente necessários ao funcionamento do serviço: Google Firebase (autenticação e banco de dados), Supabase (armazenamento de fotos), Cloudflare (hospedagem), Open-Meteo (clima, quando o usuário permite localização), Telegram e Google Gemini (apenas quando o usuário utiliza o bot do Telegram).</p>
+    <h2>4. Conteúdo enviado à IA</h2>
+    <p>Os áudios e textos enviados às funções de IA são transmitidos aos provedores acima exclusivamente para gerar a transcrição/estruturação solicitada por você. Não utilizamos seu conteúdo para treinar modelos próprios. Consulte também a <a href="/politica-de-ia.html">Política de IA</a>.</p>
 
-    <h2>5. Armazenamento e segurança</h2>
-    <p>Todos os dados trafegam por conexão segura (HTTPS). O acesso aos dados é restrito à conta do próprio usuário. Os relatórios recebem hash de integridade SHA-256.</p>
+    <h2>5. Fotos e URLs públicas</h2>
+    <p>Para viabilizar o carregamento rápido nos relatórios, as fotos são armazenadas com endereços (URLs) tecnicamente acessíveis a quem possua o link exato. Os links não são listados publicamente nem indexados por nós. Não envie fotos que não possam constar de um relatório de obra.</p>
 
-    <h2>6. Seus direitos (LGPD)</h2>
-    <p>Nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), você pode solicitar a qualquer momento o acesso, a correção ou a exclusão dos seus dados. Para excluir sua conta e todos os dados associados, siga as instruções da página <a href="/excluir-conta">Exclusão de conta e dados</a>.</p>
+    <h2>6. Armazenamento local (offline)</h2>
+    <p>O aplicativo mantém cópia local dos seus dados no próprio aparelho (IndexedDB) para funcionamento offline. Esses dados ficam no seu dispositivo e são sincronizados quando há conexão. Ao sair da conta, o cache local é limpo.</p>
 
-    <h2>7. Retenção dos dados</h2>
-    <p>Os dados são mantidos enquanto a conta do usuário existir. Após a solicitação de exclusão, os dados são removidos, ressalvados registros mínimos cuja guarda seja exigida por lei, pelo prazo legal.</p>
+    <h2>7. Segurança</h2>
+    <p>Tráfego 100% em HTTPS; chaves de serviço mantidas apenas no servidor; acesso aos dados restrito à conta do próprio usuário por regras de autorização; código de integridade SHA-256 nos relatórios.</p>
 
-    <h2>8. Menores de idade</h2>
-    <p>O ObraMatch Diário é uma ferramenta de uso profissional destinada a maiores de 18 anos. Não coletamos intencionalmente dados de menores.</p>
+    <h2>8. Retenção e exclusão</h2>
+    <p>Os dados são mantidos enquanto a conta existir; a exclusão da conta remove obras, RDOs, fotos e vínculos, ressalvados registros mínimos exigidos por lei (ex.: registros de acesso por 6 meses, art. 15 do Marco Civil da Internet). Veja <a href="/excluir-conta.html">Exclusão de conta e dados</a>.</p>
 
-    <h2>9. Alterações desta política</h2>
-    <p>Esta política pode ser atualizada periodicamente. A data da última atualização consta no topo desta página. Alterações relevantes serão comunicadas no aplicativo.</p>
+    <h2>9. Seus direitos (arts. 18–20, LGPD)</h2>
+    <p>Confirmação de tratamento, acesso, correção, anonimização, portabilidade, eliminação, informação sobre compartilhamento e revogação de consentimento. Solicite por <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a>; respondemos nos prazos legais. Você também pode peticionar à ANPD.</p>
 
-    <h2>10. Contato</h2>
-    <div class="box">
-      <p>Dúvidas sobre privacidade e proteção de dados: <a href="mailto:suporte@obramatch.com.br">suporte@obramatch.com.br</a></p>
-    </div>
+    <h2>10. Menores</h2>
+    <p>Serviço profissional destinado a maiores de 18 anos. Não coletamos intencionalmente dados de menores; se identificado, o cadastro será removido.</p>
 
-    <p>Veja também: <a href="/termos-de-uso">Termos de Uso</a> · <a href="/excluir-conta">Exclusão de conta e dados</a></p>
+    <h2>11. Alterações</h2>
+    <p>Publicaremos novas versões nesta página com a data de atualização; mudanças relevantes serão avisadas no aplicativo.</p>
   </main>
-  <footer>ObraMatch — obramatch.com.br · Contato: suporte@obramatch.com.br</footer>
+  <footer>
+    <a href="/termos-de-uso.html">Termos</a> ·
+    <a href="/politica-de-privacidade.html">Privacidade</a> ·
+    <a href="/politica-de-ia.html">IA</a> ·
+    <a href="/planos.html">Planos</a> ·
+    <a href="/excluir-conta.html">Excluir conta</a> ·
+    <a href="/sobre.html">Sobre</a>
+    <p>© ObraMatch Diário · obramatch.com.br</p>
+  </footer>
 </body>
 </html>

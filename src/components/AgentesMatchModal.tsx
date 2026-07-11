@@ -147,6 +147,7 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
             <button
               onClick={onClose}
               className="p-1 hover:bg-[#ECECEC] rounded-lg text-neutral-600 hover:text-[#111111] transition-all cursor-pointer md:hidden"
+              aria-label="Fechar"
             >
               <X className="w-4 h-4" />
             </button>
@@ -224,6 +225,7 @@ export default function AgentesMatchModal({ isOpen, onClose, initialAgentId }: A
 
             <button
               onClick={onClose}
+              aria-label="Fechar"
               className="p-1.5 hover:bg-[#ECECEC] rounded-xl text-neutral-600 hover:text-[#111111] transition-all cursor-pointer hidden md:block"
             >
               <X className="w-5 h-5" />

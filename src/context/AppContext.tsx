@@ -12,10 +12,11 @@ import {
   doc, 
   serverTimestamp,
   runTransaction,
-  getDocs
+  getDocs,
+  getDoc
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError } from '../firebase';
-import { Obra, Diario, Foto, OperationType } from '../types';
+import { Obra, Diario, Foto, OperationType, PlanoInfo, UsoIaInfo, LIMITES_PLANO } from '../types';
 import { uploadFoto } from '../lib/storage';
 import { calcularHashRdo } from '../lib/hash';
 
@@ -43,6 +44,10 @@ interface AppContextType {
   updateDiario: (id: string, diario: Partial<Diario>, base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]) => Promise<void>;
   deleteDiario: (id: string) => Promise<void>;
   deleteFoto: (diarioId: string, fotoId: string) => Promise<void>;
+  plano: PlanoInfo;
+  usoIa: UsoIaInfo;
+  arquivarObra: (id: string, arquivar: boolean) => Promise<void>;
+  limiteObrasAtingido: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,6 +60,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [diarios, setDiarios] = useState<Diario[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
+  const [plano, setPlano] = useState<PlanoInfo>({ plano: 'free', validade: null });
+  const [usoIa, setUsoIa] = useState<UsoIaInfo>({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
 
   // Navigation and State
   const [currentView, setCurrentView] = useState<'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos'>('dashboard');
@@ -148,6 +155,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('popstate', handlePopState);
   }, [obras, diarios]);
 
+  // Plano e consumo de IA (documentos escritos só pelo servidor; aqui só leitura)
+  useEffect(() => {
+    if (!user) {
+      setPlano({ plano: 'free', validade: null });
+      setUsoIa({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
+      return;
+    }
+    const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
+      const d = snap.data();
+      const valido = d?.plano === 'pro' && (!d?.validade || Date.parse(String(d.validade)) > Date.now());
+      setPlano({ plano: valido ? 'pro' : 'free', validade: (d?.validade as string) || null });
+    }, () => setPlano({ plano: 'free', validade: null }));
+    const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
+    const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
+      const d = snap.data() || {};
+      const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' });
+      setUsoIa({
+        transcMes: Number(d.transcMes) || 0,
+        melhoriaMes: Number(d.melhoriaMes) || 0,
+        transcDia: d.dia === hoje ? Number(d.transcDia) || 0 : 0,
+        melhoriaDia: d.dia === hoje ? Number(d.melhoriaDia) || 0 : 0,
+        dia: d.dia,
+      });
+    }, () => {});
+    return () => { unsubPlano(); unsubUso(); };
+  }, [user]);
+
   // Sync Obras from Firestore when authenticated
   useEffect(() => {
     if (!user) return;
@@ -177,9 +211,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setObras(obrasList);
       setCarregandoObras(false);
     }, (error) => {
-      console.error('Erro ao ouvir obras:', error);
+      console.error('Erro no listener (obras):', error);
       setCarregandoObras(false);
-      handleFirestoreError(error, OperationType.LIST, obrasPath);
     });
 
     return unsubscribe;
@@ -215,8 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       setDiarios(diariosList);
     }, (error) => {
-      console.error('Erro ao ouvir diários:', error);
-      handleFirestoreError(error, OperationType.LIST, diariosPath);
+      console.error('Erro no listener (diários):', error);
     });
 
     // Subcollection query for all fotos in the diaries of this Obra
@@ -244,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const allFotos = Object.values(aggregatedPhotos).flat();
         setFotos(allFotos);
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, path);
+        console.error('Erro no listener (fotos):', error);
       });
       activeUnsubscribes.push(unsub);
     };
@@ -290,6 +322,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Obra Operations
   const createObra = async (obraData: Omit<Obra, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     if (!user) throw new Error('Usuário não autenticado');
+    if (limiteObrasAtingido) {
+      throw new Error(`Seu plano permite ${LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas. Arquive uma obra concluída para criar outra.`);
+    }
     
     const path = 'obras';
     try {
@@ -549,6 +584,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const arquivarObra = async (id: string, arquivar: boolean): Promise<void> => {
+    await updateObra(id, { arquivada: arquivar } as Partial<Obra>);
+  };
+  const limiteObrasAtingido =
+    obras.filter((o) => !o.arquivada).length >= LIMITES_PLANO[plano.plano].obrasAtivas;
+
   return (
     <AppContext.Provider value={{
       user,
@@ -573,7 +614,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createDiario,
       updateDiario,
       deleteDiario,
-      deleteFoto
+      deleteFoto,
+      plano,
+      usoIa,
+      arquivarObra,
+      limiteObrasAtingido
     }}>
       {children}
     </AppContext.Provider>
