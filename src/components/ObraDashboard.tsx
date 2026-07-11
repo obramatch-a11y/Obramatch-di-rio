@@ -186,13 +186,19 @@ export default function ObraDashboard() {
               </div>
             </div>
 
-            <button
-              onClick={() => setView('diario-form', selectedObra)}
-              className="bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all w-full md:w-auto text-sm"
-            >
-              <Plus className="w-5 h-5 stroke-[2.5]" />
-              Novo Diário de Obra
-            </button>
+            {selectedObra.arquivada ? (
+              <div className="bg-white/10 border border-white/20 text-white/90 font-semibold py-3.5 px-6 rounded-xl w-full md:w-auto text-sm text-center">
+                📦 Obra arquivada — somente leitura. Desarquive para registrar novos RDOs.
+              </div>
+            ) : (
+              <button
+                onClick={() => setView('diario-form', selectedObra)}
+                className="bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all w-full md:w-auto text-sm"
+              >
+                <Plus className="w-5 h-5 stroke-[2.5]" />
+                Novo Diário de Obra
+              </button>
+            )}
             {diarios.length > 0 && (
               <button
                 onClick={() => setView('exportar-rdos', selectedObra)}
@@ -599,7 +605,8 @@ export default function ObraDashboard() {
                       </button>
                       <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || selectedObra.arquivada}
+                        title={selectedObra.arquivada ? 'Desarquive a obra para editar os dados' : undefined}
                         className="bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3 px-5 rounded-xl transition-all cursor-pointer text-xs"
                       >
                         {loading ? 'Salvando...' : 'Atualizar Dados'}

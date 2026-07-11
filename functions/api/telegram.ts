@@ -59,7 +59,9 @@ function rotuloConta(c: { uid: string; data: Record<string, any> }): string {
 }
 
 async function obrasDoUsuario(env: Env, uid: string) {
-  return fsQuery(env, 'obras', 'ownerId', uid, 20);
+  const todas = await fsQuery(env, 'obras', 'ownerId', uid, 20);
+  // No Telegram, obras arquivadas não recebem novos RDOs.
+  return todas.filter((o) => !o.data.arquivada);
 }
 
 function previaRdo(rdo: RdoEstruturado, obraNome: string, clima: any, fotos: number, numeroPrevisto: number): string {
@@ -357,6 +359,18 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
         await enviarMensagem(env, chatId, 'Código inválido ou expirado. Gere um novo no app (cartão "Diário pelo Telegram").');
         return new Response('ok');
       }
+      // Antes de vincular à conta nova, desvincula este chat de qualquer
+      // conta antiga (um chat = uma conta por vez). Evita mandar RDO para a
+      // conta errada quando o usuário troca de login e reconecta o Telegram.
+      const antigas = await fsQuery(env, 'usuarios', 'telegramChatId', chatId, 10);
+      for (const antiga of antigas) {
+        if (antiga.id !== rows[0].id) {
+          await fsSet(env, `usuarios/${antiga.id}`, { telegramChatId: null });
+        }
+      }
+      // Limpa qualquer registro pendente e escolha de conta do vínculo anterior.
+      await fsDelete(env, `rdo_pendentes/${chatId}`);
+
       await fsSet(env, `usuarios/${rows[0].id}`, { telegramChatId: chatId, telegramLinkCode: null });
       const obras = await obrasDoUsuario(env, rows[0].id);
       const lista = obras.length

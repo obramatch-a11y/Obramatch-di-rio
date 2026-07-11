@@ -121,13 +121,16 @@ export default function DiarioDetail() {
             </button>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setView('diario-form', selectedObra, selectedDiario)}
-                className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-[#F4F4F4] rounded-xl transition-all cursor-pointer"
-                title="Editar Diário"
-              >
-                <Edit className="w-5 h-5" />
-              </button>
+              {!selectedObra.arquivada && (
+                <button
+                  onClick={() => setView('diario-form', selectedObra, selectedDiario)}
+                  className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-[#F4F4F4] rounded-xl transition-all cursor-pointer"
+                  title="Editar Diário"
+                  aria-label="Editar diário"
+                >
+                  <Edit className="w-5 h-5" />
+                </button>
+              )}
               <button
                 onClick={handleDelete}
                 className="p-2 text-blue-100 hover:text-red-600 hover:bg-[#F4F4F4] rounded-xl transition-all cursor-pointer"

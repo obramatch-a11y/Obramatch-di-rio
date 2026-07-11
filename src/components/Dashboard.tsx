@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Obra } from '../types';
+import { Obra, LIMITES_PLANO } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
@@ -68,10 +68,11 @@ const ECOSYSTEM_SLIDES = [
 ];
 
 export default function Dashboard() {
-  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras, limiteObrasAtingido, arquivarObra } = useApp();
+  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras, limiteObrasAtingido, arquivarObra, plano } = useApp();
   const [mostrarArquivadas, setMostrarArquivadas] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showLimiteModal, setShowLimiteModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   // Auto rotate ecosystem card
@@ -416,7 +417,7 @@ export default function Dashboard() {
 
               <div className="flex flex-col items-stretch sm:items-end gap-1">
                 <button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true))}
                   className="nb-btn nb-btn-primary py-3 px-5 flex items-center justify-center gap-2 text-sm"
                 >
                   <Plus className="w-5 h-5" />
@@ -547,6 +548,47 @@ export default function Dashboard() {
         onSubmit={handleModalSubmit}
         loading={loading}
       />
+
+      {/* Aviso de limite de obras atingido */}
+      <AnimatePresence>
+        {showLimiteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowLimiteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="nb-card bg-white max-w-sm w-full p-6 space-y-4"
+            >
+              <h3 className="text-lg font-display font-black text-[#111]">Limite de obras atingido</h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Seu plano {plano.plano === 'pro' ? 'PRO' : 'Gratuito'} permite {LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas ao mesmo tempo.
+                Para criar uma nova, <strong>arquive uma obra concluída</strong> — nenhum dado é perdido, e você pode desarquivar quando quiser.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => { setShowLimiteModal(false); setMostrarArquivadas(false); }}
+                  className="nb-btn nb-btn-primary py-2.5 px-4 text-sm w-full"
+                >
+                  Entendi — vou arquivar uma obra
+                </button>
+                <button
+                  onClick={() => setShowLimiteModal(false)}
+                  className="nb-btn nb-btn-ghost py-2.5 px-4 text-sm w-full"
+                >
+                  Fechar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
