@@ -386,6 +386,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
   ): Promise<string> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para registrar novos RDOs.');
     
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     try {
@@ -495,6 +496,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
   ): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para editar RDOs.');
     
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
     try {
