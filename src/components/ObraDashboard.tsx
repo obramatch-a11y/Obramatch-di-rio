@@ -39,7 +39,8 @@ export default function ObraDashboard() {
     updateObra, 
     deleteObra, 
     deleteDiario,
-    openAgentesModal
+    openAgentesModal,
+    arquivarObra
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'diarios' | 'fotos' | 'timeline'>('diarios');
@@ -578,6 +579,14 @@ export default function ObraDashboard() {
                     >
                       <Trash2 className="w-4 h-4" />
                       Excluir Obra
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => { await arquivarObra(selectedObra.id, !selectedObra.arquivada); setView('dashboard'); }}
+                      className="py-3 px-4 nb-btn nb-btn-ghost text-xs"
+                    >
+                      {selectedObra.arquivada ? 'Desarquivar obra' : 'Arquivar obra'}
                     </button>
 
                     <div className="flex items-center gap-2">

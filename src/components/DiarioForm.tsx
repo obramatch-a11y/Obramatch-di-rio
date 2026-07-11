@@ -35,6 +35,7 @@ import SignaturePad, { SignaturePadRef } from './SignaturePad';
 import { buscarClima } from '../lib/clima';
 import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
 import type { ClimaOficialInfo } from '../types';
+import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
 
 const CLIMA_OPTIONS = [
@@ -45,10 +46,12 @@ const CLIMA_OPTIONS = [
 ];
 
 export default function DiarioForm() {
-  const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal, fotos, deleteFoto } = useApp();
+  const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal, fotos, deleteFoto, plano, usoIa } = useApp();
 
   const isEditing = !!editingDiario;
   const fotosExistentes = isEditing && editingDiario ? fotos.filter(f => f.diarioId === editingDiario.id) : [];
+
+  const limites = LIMITES_PLANO[plano.plano];
 
   // Signature pad ref
   const signaturePadRef = useRef<SignaturePadRef>(null);
@@ -89,6 +92,11 @@ export default function DiarioForm() {
   // Photo uploads
   const [uploadedPhotos, setUploadedPhotos] = useState<{ url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const fotosNoRelatorio = uploadedPhotos.length + fotosExistentes.length;
+  const fotosEsgotadas = fotosNoRelatorio >= limites.fotosPorRelatorio;
+  const transcEsgotada = usoIa.transcDia >= limites.transcDia || usoIa.transcMes >= limites.transcMes;
+  const melhoriaEsgotada = usoIa.melhoriaDia >= limites.melhoriaDia || usoIa.melhoriaMes >= limites.melhoriaMes;
 
   // Load defaults or edit values
   useEffect(() => {
@@ -232,15 +240,20 @@ export default function DiarioForm() {
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    if (fotosEsgotadas) return;
+
+    const vagas = Math.max(0, limites.fotosPorRelatorio - fotosNoRelatorio);
+    const arquivos = Array.from(files).slice(0, vagas);
+    if (arquivos.length === 0) return;
 
     setUploadingImage(true);
-    let pendentes = files.length;
+    let pendentes = arquivos.length;
     const concluirUm = () => {
       pendentes -= 1;
       if (pendentes <= 0) setUploadingImage(false);
     };
 
-    Array.from(files).forEach((file: any) => {
+    arquivos.forEach((file: any) => {
       const reader = new FileReader();
       reader.onerror = concluirUm;
       reader.onload = (event) => {
@@ -414,6 +427,10 @@ export default function DiarioForm() {
                   <Square className="w-4 h-4 fill-current" />
                   Parar e processar
                 </button>
+              ) : transcEsgotada ? (
+                <div className="py-3 px-5 bg-[#F4F4F4] border border-[#D1D1D1] text-neutral-500 font-bold rounded-xl text-xs">
+                  Franquia de voz esgotada — preencha manualmente
+                </div>
               ) : (
                 <button
                   type="button"
@@ -562,7 +579,8 @@ export default function DiarioForm() {
                 <button
                   type="button"
                   onClick={handleMelhorarTexto}
-                  disabled={!atividades.trim() || melhorandoTexto}
+                  disabled={!atividades.trim() || melhorandoTexto || melhoriaEsgotada}
+                  title={melhoriaEsgotada ? 'Franquia de melhorias do mês esgotada' : undefined}
                   className="flex items-center gap-1 text-[10px] font-bold text-[#FF6F00] hover:text-[#FF6F00] disabled:opacity-40 cursor-pointer transition-all"
                 >
                   {melhorandoTexto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
@@ -642,6 +660,9 @@ export default function DiarioForm() {
               <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
                 <Camera className="w-4 h-4 text-[#FF6F00]" />
                 Fotografias de Registro
+                <span className="text-[10px] text-neutral-500 normal-case tracking-normal font-semibold">
+                  {fotosNoRelatorio}/{limites.fotosPorRelatorio}
+                </span>
               </h4>
               <p className="text-xs text-neutral-500 mt-1">
                 Capture fotos diretamente pela câmera ou faça upload da galeria do seu celular/computador.
@@ -650,7 +671,7 @@ export default function DiarioForm() {
 
             {/* Upload Zone: câmera direta + galeria */}
             <div className="flex flex-wrap items-center gap-3">
-              <label className="py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs">
+              <label className={`py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
                 <Camera className="w-4 h-4 stroke-[2.5]" />
                 Tirar Foto
                 <input
@@ -658,10 +679,11 @@ export default function DiarioForm() {
                   accept="image/*"
                   capture="environment"
                   onChange={handleImageFile}
+                  disabled={fotosEsgotadas}
                   className="hidden"
                 />
               </label>
-              <label className="py-3 px-5 bg-white border-2 border-[#111111] hover:bg-[#F4F4F4] text-[#111111] font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-xs">
+              <label className={`py-3 px-5 bg-white border-2 border-[#111111] hover:bg-[#F4F4F4] text-[#111111] font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
                 <ImageIcon className="w-4 h-4 stroke-[2.5]" />
                 Galeria
                 <input
@@ -669,9 +691,15 @@ export default function DiarioForm() {
                   multiple
                   accept="image/*"
                   onChange={handleImageFile}
+                  disabled={fotosEsgotadas}
                   className="hidden"
                 />
               </label>
+              {fotosEsgotadas && (
+                <span className="text-[10px] text-neutral-500 w-full">
+                  Limite de fotos deste relatório atingido no seu plano.
+                </span>
+              )}
             </div>
 
             {/* Fotos já salvas (Modo Edição) */}
