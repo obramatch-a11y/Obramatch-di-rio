@@ -55,7 +55,7 @@ export default defineConfig(() => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg}'],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/\.well-known\//, /^\/politica-de-privacidade/, /^\/termos-de-uso/, /^\/excluir-conta/],
+          navigateFallbackDenylist: [/^\/api\//, /^\/\.well-known\//, /^\/politica-de-privacidade/, /^\/termos-de-uso/, /^\/excluir-conta/, /^\/politica-de-ia/, /^\/planos/, /^\/sobre/],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true

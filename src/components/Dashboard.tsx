@@ -528,6 +528,15 @@ export default function Dashboard() {
           {/* Single, non-repetitive ObraMatch promo block below the main list as requested */}
           <ObraMatchSoftPromo variant="dashboard" className="mt-8" />
         </div>
+
+        <footer className="max-w-7xl mx-auto px-4 py-6 w-full text-center text-[10px] text-neutral-500 space-x-3">
+          <a href="/termos-de-uso.html" target="_blank" rel="noopener" className="underline">Termos</a>
+          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener" className="underline">Privacidade</a>
+          <a href="/politica-de-ia.html" target="_blank" rel="noopener" className="underline">IA</a>
+          <a href="/planos.html" target="_blank" rel="noopener" className="underline">Planos</a>
+          <a href="/sobre.html" target="_blank" rel="noopener" className="underline">Sobre</a>
+          <a href="/excluir-conta.html" target="_blank" rel="noopener" className="underline">Excluir conta</a>
+        </footer>
       </main>
 
       {/* Modal for New Obra */}

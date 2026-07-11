@@ -14,7 +14,7 @@ function intervaloDoPeriodo(p: string, de: string, ate: string): { de: string; a
 }
 
 export default function ExportarRdos() {
-  const { selectedObra, diarios, fotos, setView, online } = useApp();
+  const { selectedObra, diarios, fotos, setView, online, plano } = useApp();
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [periodo, setPeriodo] = useState<'todos' | 'este-mes' | 'mes-anterior' | 'personalizado'>('todos');
   const [dataDe, setDataDe] = useState('');
@@ -369,6 +369,11 @@ export default function ExportarRdos() {
             <p className="text-[9px] text-neutral-500">
               Exportado em {new Date().toLocaleString('pt-BR')} · {diariosParaExportar.length} relatórios
             </p>
+            {plano.plano === 'free' && (
+              <p className="text-[9px] text-neutral-500 mt-1">
+                Gerado com ObraMatch Diário — RDO por voz com código de integridade · obramatch.com.br
+              </p>
+            )}
           </div>
         </div>
       )}

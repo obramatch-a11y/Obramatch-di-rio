@@ -36,7 +36,7 @@ const CLIMA_ICONS: { [key: string]: any } = {
 };
 
 export default function DiarioDetail() {
-  const { selectedObra, selectedDiario, deleteDiario, setView, fotos } = useApp();
+  const { selectedObra, selectedDiario, deleteDiario, setView, fotos, plano } = useApp();
   const [copied, setCopied] = useState(false);
   const [verificacao, setVerificacao] = useState<'idle' | 'integro' | 'alterado' | 'verificando'>('idle');
 
@@ -355,6 +355,11 @@ export default function DiarioDetail() {
       {/* PRINT-ONLY TECHNICAL REPORT */}
       <div className="hidden print:block min-h-screen">
         <RdoPrintBlock obra={selectedObra} diario={selectedDiario} fotos={dPhotos} mostrarRodape={true} />
+        {plano.plano === 'free' && (
+          <p style={{ fontSize: '9px', color: '#666', textAlign: 'center', marginTop: '8px' }}>
+            Gerado com ObraMatch Diário — RDO por voz com código de integridade · obramatch.com.br
+          </p>
+        )}
       </div>
 
     </div>

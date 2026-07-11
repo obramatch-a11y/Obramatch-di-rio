@@ -252,6 +252,12 @@ export default function Login() {
         >
           <ObraMatchSoftPromo variant="login" />
         </motion.div>
+
+        <p className="text-center text-[10px] text-neutral-500 mt-2">
+          Ao entrar você concorda com os{' '}
+          <a href="/termos-de-uso.html" target="_blank" rel="noopener" className="underline font-semibold text-[#0A3D91]">Termos de Uso</a>{' '}e a{' '}
+          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener" className="underline font-semibold text-[#0A3D91]">Política de Privacidade</a>.
+        </p>
       </div>
     </div>
   );
