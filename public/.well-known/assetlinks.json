@@ -3,6 +3,9 @@
       "target": {
         "namespace": "android_app",
         "package_name": "com.obramatch.diario",
-        "sha256_cert_fingerprints": ["4F:91:CB:40:B6:B2:2D:AC:22:9C:93:5B:A9:9F:86:B5:29:48:24:7B:7E:5E:21:F1:7E:E4:7A:DE:AE:0E:44:24"]
+        "sha256_cert_fingerprints": [
+          "AF:C5:2B:EA:5A:DF:B5:32:BA:CF:3F:EA:27:D7:72:C1:03:C3:E9:3A:7E:EF:CF:B6:0D:5D:1C:C6:F8:F8:EA:EB",
+          "4F:91:CB:40:B6:B2:2D:AC:22:9C:93:5B:A9:9F:86:B5:29:48:24:7B:7E:5E:21:F1:7E:E4:7A:DE:AE:0E:44:24"
+        ]
       }
     }]
