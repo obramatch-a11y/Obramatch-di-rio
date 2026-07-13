@@ -22,7 +22,7 @@ REGRA ZERO DE FACTUALIDADE (ABSOLUTA): use SOMENTE informações presentes no re
 
 ETAPAS CONSTRUTIVAS SÃO DISTINTAS (NUNCA DEDUZA UMA DA OUTRA): montagem de fôrma, montagem de armadura (ferragem), concretagem, cura e desforma são serviços DIFERENTES. Registre APENAS a etapa citada no relato. Exemplos: "montaram a ferragem da laje" -> "montagem de armadura da laje" (NÃO é concretagem); "fizeram a caixaria das vigas" -> "montagem de fôrmas das vigas" (NÃO é concretagem). Só escreva "concretagem" se o relato disser explicitamente que concretou, bateu laje ou lançou concreto.
 
-NÚMEROS E APROXIMAÇÕES: preserve exatamente todos os números, quantidades, unidades, horários e durações ditos. Mantenha expressões de aproximação ("aproximadamente", "cerca de", "por volta de", "acho que", "mais ou menos") — nunca converta valor aproximado em valor exato.
+NÚMEROS, UNIDADES E APROXIMAÇÕES (OBRIGATÓRIO): preserve obrigatoriamente todas as quantidades, unidades, códigos técnicos (ex.: V12, V13, setor B), horários, durações e aproximações mencionadas no relato. Toda atividade descrita com quantidade ou unidade deve manter essa informação no campo correspondente. Não omita, arredonde, converta, calcule ou substitua valores. Preserve expressões como "aproximadamente", "mais ou menos", "por volta de", "cerca de" e "acho que".
 
 Regras de redação técnica (obrigatórias):
 - Voz impessoal e terceira pessoa: "Foi executada...", "Procedeu-se à...", "Deu-se continuidade a...".
@@ -36,6 +36,8 @@ Regras de redação técnica (obrigatórias):
 - "ocorrencias": imprevistos, chuva e mudanças de clima (com horários e duração, se ditos), paralisações (com duração e frentes afetadas), falhas de equipamento (com causa, ação tomada e responsável, se ditos), retrabalhos, atrasos e acidentes ou incidentes.
 - "observacoes": informações de segurança (DDS, conferência de EPIs e o registro explícito de ausência de acidentes/incidentes, quando dito), programação do dia seguinte (item a item, sem resumir), horários de início e término da jornada e demais informações administrativas.
 
+VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, horário e duração do relato aparece no JSON final, vinculada ao fato correto. Se uma quantidade foi dita, ela não pode ser omitida.
+
 Responda SOMENTE com JSON válido, sem markdown, sem crases, exatamente neste formato:
 {"atividades":"...","equipe":"...","materiais":"...","ocorrencias":"...","observacoes":"..."}`;
 
@@ -46,13 +48,15 @@ REGRA ZERO DE FACTUALIDADE (ABSOLUTA): mantenha TODOS os fatos do original e NÃ
 
 ETAPAS CONSTRUTIVAS SÃO DISTINTAS (NUNCA DEDUZA UMA DA OUTRA): fôrma, armadura (ferragem), concretagem, cura e desforma são serviços DIFERENTES. Nunca acrescente etapa não citada. Só escreva "concretagem" se o texto original disser explicitamente que concretou, bateu laje ou lançou concreto.
 
-NÚMEROS E APROXIMAÇÕES: preserve exatamente números, quantidades, unidades, horários e durações. Mantenha expressões de aproximação ("aproximadamente", "cerca de", "por volta de", "acho que") sem convertê-las em valores exatos.
+NÚMEROS, UNIDADES E APROXIMAÇÕES (OBRIGATÓRIO): preserve obrigatoriamente todas as quantidades, unidades, códigos técnicos (ex.: V12, V13, setor B), horários, durações e aproximações mencionadas no relato. Toda atividade descrita com quantidade ou unidade deve manter essa informação no campo correspondente. Não omita, arredonde, converta, calcule ou substitua valores. Preserve expressões como "aproximadamente", "mais ou menos", "por volta de", "cerca de" e "acho que".
 
 Regras de redação técnica (obrigatórias):
 - Voz impessoal e terceira pessoa: "Foi executada...", "Procedeu-se à...", "Deu-se continuidade a...".
 - Converta termos informais para o termo técnico EQUIVALENTE sem alterar o fato (ex.: "levantar parede" -> "execução de alvenaria de vedação"; "rebocar" -> "aplicação de revestimento argamassado"; "ferragem" -> "armadura"; "caixaria" -> "fôrma").
 - Se o termo informal for ambíguo e não houver equivalente técnico seguro, mantenha o termo original entre aspas.
 - Frases objetivas e profissionais, sem gírias, sem diminutivos, sem opinião.
+
+VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, horário e duração do texto original aparece no texto final, vinculada ao fato correto. Se uma quantidade foi dita, ela não pode ser omitida.
 
 Responda SOMENTE com o texto reescrito, sem comentários.`;
 
