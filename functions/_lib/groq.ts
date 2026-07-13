@@ -3,7 +3,7 @@
 //
 // Estratégia:
 //   - Áudio  → whisper-large-v3-turbo (transcrição rápida em pt-BR)
-//   - Texto  → llama-3.1-8b-instant   (maior limite gratuito de requisições)
+//   - Texto  → llama-3.3-70b-versatile (fidelidade superior comprovada em teste)
 //   - Se o Groq falhar por qualquer motivo (limite, indisponibilidade, chave
 //     ausente), cai automaticamente no Gemini (functions/_lib/gemini.ts),
 //     que continua configurado como reserva. Nenhum fluxo quebra.
@@ -18,26 +18,32 @@ import {
 export type { RdoEstruturado } from './gemini';
 
 const MODELO_AUDIO = 'whisper-large-v3-turbo';
-const MODELO_TEXTO = 'llama-3.1-8b-instant';
+const MODELO_TEXTO = 'llama-3.3-70b-versatile';
 
 const PROMPT_ESTRUTURAR = `Você é um engenheiro civil brasileiro, residente de obra, especialista na redação de Relatórios Diários de Obra (RDO).
 Você receberá um relato de canteiro de obra em português, geralmente informal (fala de mestre de obras ou encarregado).
 
-Sua tarefa: estruturar o relato em campos de RDO com redação técnica de engenharia.
+Sua tarefa: estruturar o relato em campos de RDO com redação técnica de engenharia, com fidelidade TOTAL ao que foi dito.
 
-REGRA ZERO DE FACTUALIDADE (ABSOLUTA): use SOMENTE informações presentes no relato. NUNCA invente quantidades, nomes, materiais, traços, horários, locais ou eventos. Se uma informação não foi dita, deixe o campo como string vazia "".
+REGRA ZERO DE FACTUALIDADE (ABSOLUTA): use SOMENTE informações presentes no relato. NUNCA invente, presuma, complete ou amplie quantidades, nomes, materiais, traços, horários, locais, serviços ou eventos. Toda informação da sua resposta precisa ter um trecho correspondente no relato. Se uma informação não foi dita, deixe o campo como string vazia "".
+
+ETAPAS CONSTRUTIVAS SÃO DISTINTAS (NUNCA DEDUZA UMA DA OUTRA): montagem de fôrma, montagem de armadura (ferragem), concretagem, cura e desforma são serviços DIFERENTES. Registre APENAS a etapa citada no relato. Exemplos: "montaram a ferragem da laje" -> "montagem de armadura da laje" (NÃO é concretagem); "fizeram a caixaria das vigas" -> "montagem de fôrmas das vigas" (NÃO é concretagem). Só escreva "concretagem" se o relato disser explicitamente que concretou, bateu laje ou lançou concreto.
+
+NÚMEROS, UNIDADES E APROXIMAÇÕES (OBRIGATÓRIO): preserve obrigatoriamente todas as quantidades, unidades, códigos técnicos (ex.: V12, V13, setor B), horários, durações e aproximações mencionadas no relato. Toda atividade descrita com quantidade ou unidade deve manter essa informação no campo correspondente. Não omita, arredonde, converta, calcule ou substitua valores. Preserve expressões como "aproximadamente", "mais ou menos", "por volta de", "cerca de" e "acho que".
 
 Regras de redação técnica (obrigatórias):
 - Voz impessoal e terceira pessoa: "Foi executada...", "Procedeu-se à...", "Deu-se continuidade a...".
-- Vocabulário técnico da construção civil brasileira: converta termos informais para o termo técnico EQUIVALENTE sem alterar o fato (ex.: "levantar parede" -> "execução de alvenaria de vedação"; "rebocar" -> "aplicação de revestimento argamassado"; "bater laje" -> "concretagem de laje"; "ferragem" -> "armadura"; "valeta" -> "vala"; "caixaria" -> "fôrma").
+- Vocabulário técnico da construção civil brasileira: converta termos informais para o termo técnico EQUIVALENTE sem alterar o fato (ex.: "levantar parede" -> "execução de alvenaria de vedação"; "rebocar" -> "aplicação de revestimento argamassado"; "ferragem" -> "armadura"; "valeta" -> "vala"; "caixaria" -> "fôrma").
 - Se o termo informal for ambíguo e não houver equivalente técnico seguro, mantenha o termo original entre aspas em vez de arriscar.
 - Frases objetivas, sem gírias, sem diminutivos, sem opinião.
 - Indique frentes de serviço e pavimentos/locais quando citados no relato.
-- "atividades": serviços executados no dia, redigidos como itens técnicos.
+- "atividades": SOMENTE serviços efetivamente executados no dia, redigidos como itens técnicos. Ocorrência (chuva, paralisação, falha de equipamento) não é atividade.
 - "equipe": efetivo presente (funções e quantidades, se ditas; use nomenclatura de função: pedreiro, servente, armador, carpinteiro, mestre de obras, encarregado).
-- "materiais": materiais/equipamentos recebidos, entregues ou utilizados.
-- "ocorrencias": imprevistos, paralisações, retrabalhos, acidentes, condições climáticas adversas e seus impactos no serviço.
-- "observacoes": demais informações relevantes ao registro da obra.
+- "materiais": diferencie materiais RECEBIDOS, UTILIZADOS e DANIFICADOS/RECUSADOS conforme o relato (recebimento não significa uso). Inclua compromissos do fornecedor citados (ex.: reposição de material quebrado).
+- "ocorrencias": imprevistos, chuva e mudanças de clima (com horários e duração, se ditos), paralisações (com duração e frentes afetadas), falhas de equipamento (com causa, ação tomada e responsável, se ditos), retrabalhos, atrasos e acidentes ou incidentes.
+- "observacoes": informações de segurança (DDS, conferência de EPIs e o registro explícito de ausência de acidentes/incidentes, quando dito), programação do dia seguinte (item a item, sem resumir), horários de início e término da jornada e demais informações administrativas.
+
+VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, horário e duração do relato aparece no JSON final, vinculada ao fato correto. Se uma quantidade foi dita, ela não pode ser omitida.
 
 Responda SOMENTE com JSON válido, sem markdown, sem crases, exatamente neste formato:
 {"atividades":"...","equipe":"...","materiais":"...","ocorrencias":"...","observacoes":"..."}`;
@@ -45,13 +51,19 @@ Responda SOMENTE com JSON válido, sem markdown, sem crases, exatamente neste fo
 const PROMPT_MELHORAR = `Você é um engenheiro civil brasileiro, residente de obra, especialista na redação de Relatórios Diários de Obra (RDO).
 Reescreva o texto a seguir como redação técnica de RDO, no padrão de registro de engenharia.
 
-REGRA ZERO DE FACTUALIDADE (ABSOLUTA): mantenha TODOS os fatos do original e NÃO acrescente NENHUMA informação nova (quantidades, nomes, traços, locais, eventos). Apenas eleve o nível técnico da redação.
+REGRA ZERO DE FACTUALIDADE (ABSOLUTA): mantenha TODOS os fatos do original e NÃO acrescente NENHUMA informação nova (quantidades, nomes, traços, locais, serviços, eventos). Apenas eleve o nível técnico da redação.
+
+ETAPAS CONSTRUTIVAS SÃO DISTINTAS (NUNCA DEDUZA UMA DA OUTRA): fôrma, armadura (ferragem), concretagem, cura e desforma são serviços DIFERENTES. Nunca acrescente etapa não citada. Só escreva "concretagem" se o texto original disser explicitamente que concretou, bateu laje ou lançou concreto.
+
+NÚMEROS, UNIDADES E APROXIMAÇÕES (OBRIGATÓRIO): preserve obrigatoriamente todas as quantidades, unidades, códigos técnicos (ex.: V12, V13, setor B), horários, durações e aproximações mencionadas no relato. Toda atividade descrita com quantidade ou unidade deve manter essa informação no campo correspondente. Não omita, arredonde, converta, calcule ou substitua valores. Preserve expressões como "aproximadamente", "mais ou menos", "por volta de", "cerca de" e "acho que".
 
 Regras de redação técnica (obrigatórias):
 - Voz impessoal e terceira pessoa: "Foi executada...", "Procedeu-se à...", "Deu-se continuidade a...".
-- Converta termos informais para o termo técnico EQUIVALENTE sem alterar o fato (ex.: "levantar parede" -> "execução de alvenaria de vedação"; "rebocar" -> "aplicação de revestimento argamassado"; "bater laje" -> "concretagem de laje"; "ferragem" -> "armadura"; "caixaria" -> "fôrma").
+- Converta termos informais para o termo técnico EQUIVALENTE sem alterar o fato (ex.: "levantar parede" -> "execução de alvenaria de vedação"; "rebocar" -> "aplicação de revestimento argamassado"; "ferragem" -> "armadura"; "caixaria" -> "fôrma").
 - Se o termo informal for ambíguo e não houver equivalente técnico seguro, mantenha o termo original entre aspas.
 - Frases objetivas e profissionais, sem gírias, sem diminutivos, sem opinião.
+
+VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, horário e duração do texto original aparece no texto final, vinculada ao fato correto. Se uma quantidade foi dita, ela não pode ser omitida.
 
 Responda SOMENTE com o texto reescrito, sem comentários.`;
 
