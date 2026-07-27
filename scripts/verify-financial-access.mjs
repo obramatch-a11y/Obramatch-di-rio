@@ -11,6 +11,8 @@ function assert(condition, message) {
 
 const financialAccess = read('src/lib/financialAccess.ts');
 const boundary = read('src/components/FinancialAccessBoundary.tsx');
+const rdoAdminBoundary = read('src/components/RdoAdminLockBoundary.tsx');
+const printBlock = read('src/components/RdoPrintBlock.tsx');
 const appContext = read('src/context/AppContext.tsx');
 const dashboard = read('src/components/Dashboard.tsx');
 const rules = read('firestore.rules');
@@ -25,6 +27,10 @@ assert(financialAccess.includes("stage: 'blocked'"), 'fim do prazo deve possuir 
 assert(financialAccess.includes("operationalPlan: 'pro'"), 'durante regularização a operação deve permanecer Pro');
 
 assert(app.includes('<FinancialAccessBoundary>'), 'aplicativo deve envolver as telas autenticadas no bloqueio financeiro');
+assert(app.includes('<RdoAdminLockBoundary>'), 'aplicativo deve envolver os RDOs no bloqueio administrativo');
+assert(rdoAdminBoundary.includes('selectedDiario?.lockedByAdmin'), 'bloqueio administrativo deve observar o RDO selecionado');
+assert(rdoAdminBoundary.includes('RDO bloqueado administrativamente'), 'usuário deve receber comunicação clara do bloqueio');
+assert(printBlock.includes('if (diario.lockedByAdmin) return null'), 'RDO bloqueado não pode gerar relatório');
 assert(boundary.includes('Já renovei — verificar novamente'), 'app deve permitir verificar renovação sem link de pagamento');
 assert(boundary.includes('Continuar no plano Free'), 'app deve oferecer escolha Free após bloqueio');
 assert(boundary.includes('selectFreePlanAuthoritatively'), 'escolha Free do app deve usar servidor');
@@ -50,6 +56,11 @@ assert(rules.includes("plan.keys().hasAny(['currentPeriodEnd'])"), 'regra deve c
 assert(rules.includes("plan.keys().hasAny(['validade'])"), 'regra deve considerar validade');
 assert(rules.includes('workBelongsToCurrentUser(obraId)'), 'subcoleções devem validar o dono da obra pai');
 assert(rules.includes('workIsUnlocked(obraId)'), 'RDOs e fotos devem validar desbloqueio da obra');
+assert(rules.includes('diaryIsUnlocked(obraId, diarioId)'), 'fotos devem validar bloqueio administrativo do RDO');
+assert(rules.includes('newDiaryHasSafeAdminLockDefaults()'), 'cliente não pode criar RDO já marcado como bloqueado');
+assert(rules.includes('clientDidNotChangeDiaryAdminLock()'), 'cliente não pode alterar campos de bloqueio administrativo');
+assert(rules.includes("'lockedByAdmin', 'adminLockedAt', 'adminLockedBy', 'adminLockReason'"), 'todos os campos de bloqueio do RDO devem ser protegidos');
+assert(rules.includes("'adminLockedBy', 'adminLockReason'"), 'metadados de bloqueio da obra devem ser protegidos');
 assert(rules.includes('newWorkHasSafePlanLockDefaults()'), 'criação de obra deve aceitar somente valores seguros de bloqueio');
 assert(rules.includes('.diff(resource.data)'), 'atualização do perfil deve proteger somente campos alterados');
 assert(rules.includes('allow delete: if false;'), 'exclusões diretas pelo cliente devem permanecer negadas');
@@ -59,4 +70,4 @@ assert(worker.includes("pathname === '/api/obras/request-delete'"), 'Worker deve
 assert(proxy.includes("'/api/payments/cancel'"), 'proxy deve autorizar escolha Free');
 assert(proxy.includes("'/api/obras/request-delete'"), 'proxy deve autorizar exclusão de obra');
 
-console.log('Avisos e bloqueios financeiros do aplicativo: OK');
+console.log('Avisos e bloqueios financeiros e administrativos do aplicativo: OK');
