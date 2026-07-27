@@ -19,6 +19,17 @@ export interface DeleteResult {
   message?: string;
   jobCreated?: boolean;
   jobId?: string | null;
+  completed?: boolean;
+  status?: string;
+}
+
+export interface SelectFreePlanResult {
+  success: boolean;
+  message: string;
+  unlockedWorkIds: string[];
+  lockedWorkIds: string[];
+  unlockedCount: number;
+  lockedCount: number;
 }
 
 function ensureOnline(): void {
@@ -77,6 +88,13 @@ export async function setWorkArchived(
   return postAuthenticated<ArchiveWorkResult>(user, path, arquivada ? { obraId, arquivada: true } : { obraId });
 }
 
+export async function deleteWorkAuthoritatively(
+  user: User,
+  obraId: string,
+): Promise<DeleteResult> {
+  return postAuthenticated<DeleteResult>(user, '/api/obras/request-delete', { obraId });
+}
+
 export async function deleteDiaryAuthoritatively(
   user: User,
   obraId: string,
@@ -96,4 +114,10 @@ export async function deletePhotoAuthoritatively(
     diarioId,
     photoId,
   });
+}
+
+export async function selectFreePlanAuthoritatively(
+  user: User,
+): Promise<SelectFreePlanResult> {
+  return postAuthenticated<SelectFreePlanResult>(user, '/api/payments/cancel', { action: 'select_free' });
 }
