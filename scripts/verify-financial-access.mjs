@@ -42,10 +42,16 @@ assert(boundary.includes('deleteWorkAuthoritatively'), 'painel de obras bloquead
 assert(rules.includes("duration.value(5, 'd')"), 'regra do Firestore deve aplicar os cinco dias');
 assert(rules.includes('isFinanciallyBlocked()'), 'regra deve bloquear alterações financeiras vencidas');
 assert(rules.includes('hasPlanExpiry()'), 'regra deve reconhecer validade financeira legada');
+assert(rules.includes('allKnownExpiryGracePeriodsFinished()'), 'regra deve respeitar o maior prazo financeiro conhecido');
+assert(rules.includes('hasExplicitFinancialBlock()'), 'regra deve bloquear imediatamente revisão financeira');
+assert(rules.includes("plan.accessStatus == 'manual_review'"), 'accessStatus manual_review deve bloquear');
+assert(rules.includes("plan.financialStatus == 'manual_review'"), 'financialStatus manual_review deve bloquear');
 assert(rules.includes("plan.keys().hasAny(['currentPeriodEnd'])"), 'regra deve considerar currentPeriodEnd');
 assert(rules.includes("plan.keys().hasAny(['validade'])"), 'regra deve considerar validade');
+assert(rules.includes('workBelongsToCurrentUser(obraId)'), 'subcoleções devem validar o dono da obra pai');
 assert(rules.includes('workIsUnlocked(obraId)'), 'RDOs e fotos devem validar desbloqueio da obra');
 assert(rules.includes('newWorkHasSafePlanLockDefaults()'), 'criação de obra deve aceitar somente valores seguros de bloqueio');
+assert(rules.includes('.diff(resource.data)'), 'atualização do perfil deve proteger somente campos alterados');
 assert(rules.includes('allow delete: if false;'), 'exclusões diretas pelo cliente devem permanecer negadas');
 
 assert(worker.includes("pathname === '/api/payments/cancel'"), 'Worker deve registrar escolha Free');
