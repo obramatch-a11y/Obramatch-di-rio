@@ -42,6 +42,15 @@ service cloud.firestore {
           || get(workPath(obraId)).data.lockedByPlan != true);
     }
 
+    function newWorkHasSafePlanLockDefaults() {
+      return (!request.resource.data.keys().hasAny(['lockedByPlan'])
+          || request.resource.data.lockedByPlan == false)
+        && (!request.resource.data.keys().hasAny(['planLockReason'])
+          || request.resource.data.planLockReason == null)
+        && (!request.resource.data.keys().hasAny(['planLockedAt'])
+          || request.resource.data.planLockedAt == null);
+    }
+
     function clientDidNotChangePlanLock() {
       return !request.resource.data.diff(resource.data).affectedKeys()
         .hasAny(['lockedByPlan', 'planLockReason', 'planLockedAt']);
@@ -73,7 +82,7 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && !isFinanciallyBlocked()
         && ownsNew(request.resource.data)
-        && !request.resource.data.keys().hasAny(['lockedByPlan', 'planLockReason', 'planLockedAt']);
+        && newWorkHasSafePlanLockDefaults();
 
       allow update: if isSignedIn()
         && !isFinanciallyBlocked()
