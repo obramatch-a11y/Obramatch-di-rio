@@ -29,8 +29,6 @@ service cloud.firestore {
         || (plan.keys().hasAny(['validade']) && plan.validade is timestamp);
     }
 
-    // Considera todos os campos legados de validade. O bloqueio por tempo só
-    // ocorre quando nenhum prazo conhecido ainda está dentro dos 5 dias.
     function allKnownExpiryGracePeriodsFinished() {
       let plan = get(planPath()).data;
       return hasPlanExpiry()
@@ -51,8 +49,6 @@ service cloud.firestore {
         );
     }
 
-    // Chargeback/revisão e bloqueio confirmado pelo servidor têm efeito
-    // imediato, mesmo que exista uma validade futura no documento.
     function hasExplicitFinancialBlock() {
       let plan = get(planPath()).data;
       return (
@@ -90,6 +86,10 @@ service cloud.firestore {
       return /databases/$(database)/documents/obras/$(obraId);
     }
 
+    function diaryPath(obraId, diarioId) {
+      return /databases/$(database)/documents/obras/$(obraId)/diarios/$(diarioId);
+    }
+
     function workBelongsToCurrentUser(obraId) {
       return isSignedIn()
         && exists(workPath(obraId))
@@ -101,6 +101,14 @@ service cloud.firestore {
         && (
           !get(workPath(obraId)).data.keys().hasAny(['lockedByPlan'])
           || get(workPath(obraId)).data.lockedByPlan != true
+        );
+    }
+
+    function diaryIsUnlocked(obraId, diarioId) {
+      return exists(diaryPath(obraId, diarioId))
+        && (
+          !get(diaryPath(obraId, diarioId)).data.keys().hasAny(['lockedByAdmin'])
+          || get(diaryPath(obraId, diarioId)).data.lockedByAdmin != true
         );
     }
 
@@ -116,14 +124,44 @@ service cloud.firestore {
         && (
           !request.resource.data.keys().hasAny(['planLockedAt'])
           || request.resource.data.planLockedAt == null
-        );
+        )
+        && !request.resource.data.keys().hasAny(['adminLockedBy', 'adminLockReason']);
     }
 
     function clientDidNotChangePlanLock() {
       return !request.resource.data
         .diff(resource.data)
         .affectedKeys()
-        .hasAny(['lockedByPlan', 'planLockReason', 'planLockedAt']);
+        .hasAny([
+          'lockedByPlan', 'planLockReason', 'planLockedAt',
+          'adminLockedBy', 'adminLockReason'
+        ]);
+    }
+
+    function newDiaryHasSafeAdminLockDefaults() {
+      return (
+          !request.resource.data.keys().hasAny(['lockedByAdmin'])
+          || request.resource.data.lockedByAdmin == false
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockedAt'])
+          || request.resource.data.adminLockedAt == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockedBy'])
+          || request.resource.data.adminLockedBy == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockReason'])
+          || request.resource.data.adminLockReason == null
+        );
+    }
+
+    function clientDidNotChangeDiaryAdminLock() {
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasAny(['lockedByAdmin', 'adminLockedAt', 'adminLockedBy', 'adminLockReason']);
     }
 
     match /planos/{uid} {
@@ -157,8 +195,6 @@ service cloud.firestore {
     }
 
     match /obras/{obraId} {
-      // A listagem permanece permitida para que o usuário veja quais obras
-      // foram bloqueadas pelo limite do Free.
       allow read: if isSignedIn()
         && (resource == null || resource.data.ownerId == request.auth.uid);
 
@@ -177,7 +213,6 @@ service cloud.firestore {
         )
         && clientDidNotChangePlanLock();
 
-      // Exclusões passam pelas APIs autoritativas, inclusive no plano Free.
       allow delete: if false;
 
       match /diarios/{diarioId} {
@@ -186,25 +221,34 @@ service cloud.firestore {
 
         allow create: if !isFinanciallyBlocked()
           && workIsUnlocked(obraId)
-          && ownsNew(request.resource.data);
+          && ownsNew(request.resource.data)
+          && newDiaryHasSafeAdminLockDefaults();
 
         allow update: if !isFinanciallyBlocked()
           && workIsUnlocked(obraId)
           && ownsExisting(resource.data)
-          && ownsNew(request.resource.data);
+          && ownsNew(request.resource.data)
+          && (
+            !resource.data.keys().hasAny(['lockedByAdmin'])
+            || resource.data.lockedByAdmin != true
+          )
+          && clientDidNotChangeDiaryAdminLock();
 
         allow delete: if false;
 
         match /fotos/{fotoId} {
           allow read: if workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
             && (resource == null || resource.data.ownerId == request.auth.uid);
 
           allow create: if !isFinanciallyBlocked()
             && workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
             && ownsNew(request.resource.data);
 
           allow update: if !isFinanciallyBlocked()
             && workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
             && ownsExisting(resource.data)
             && ownsNew(request.resource.data);
 
