@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validar:
@@ -34,7 +35,30 @@ jobs:
         run: npm run typecheck
 
       - name: Compilar regras do Firestore no emulador
-        run: npx --yes firebase-tools@15.24.0 emulators:exec --only firestore --project demo-obramatch --non-interactive "node -e \"console.log('Regras do Firestore compiladas com sucesso.')\""
+        id: firestore_rules
+        continue-on-error: true
+        run: |
+          npx --yes firebase-tools@15.24.0 emulators:exec --only firestore --project demo-obramatch --non-interactive "node -e \"console.log('Regras do Firestore compiladas com sucesso.')\"" > firestore-rules.log 2>&1
+
+      - name: Publicar diagnóstico das regras
+        if: steps.firestore_rules.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('firestore-rules.log', 'utf8').slice(-12000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Diagnóstico temporário das regras do Firestore\n\n\`\`\`text\n${output}\n\`\`\``
+            });
+
+      - name: Interromper se as regras falharam
+        if: steps.firestore_rules.outcome == 'failure'
+        run: |
+          cat firestore-rules.log
+          exit 1
 
       - name: Validar fluxos autoritativos
         run: npm run test:authoritative-flows
