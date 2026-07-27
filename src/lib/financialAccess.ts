@@ -15,6 +15,7 @@ export interface FinancialAccessInput {
   acessoAte?: unknown;
   currentPeriodEnd?: unknown;
   accessStatus?: unknown;
+  financialStatus?: unknown;
 }
 
 export interface FinancialAccessState {
@@ -77,6 +78,7 @@ export function resolveFinancialAccess(
 ): FinancialAccessState {
   const rawPlan: 'free' | 'pro' = String(input?.plano || '').toLowerCase() === 'pro' ? 'pro' : 'free';
   const accessStatus = String(input?.accessStatus || '');
+  const financialStatus = String(input?.financialStatus || '');
   const expiresAtMs = Math.max(
     financialValueToMillis(input?.validade),
     financialValueToMillis(input?.acessoAte),
@@ -96,6 +98,22 @@ export function resolveFinancialAccess(
     daysOverdue: 0,
     regularizationDaysRemaining: 0,
   };
+
+  const explicitlyBlocked = accessStatus === 'blocked_pending_choice'
+    || accessStatus === 'manual_review'
+    || financialStatus === 'blocked'
+    || financialStatus === 'manual_review';
+
+  if (explicitlyBlocked) {
+    return {
+      ...base,
+      stage: 'blocked',
+      operationalPlan: 'pro',
+      daysOverdue: expiresAtMs ? Math.max(0, Math.floor((nowMs - expiresAtMs) / DAY_MS)) : 0,
+      shouldWarn: true,
+      isBlocked: true,
+    };
+  }
 
   if (rawPlan !== 'pro' || accessStatus === 'free_selected') {
     return {
@@ -117,7 +135,7 @@ export function resolveFinancialAccess(
     };
   }
 
-  if (accessStatus === 'blocked_pending_choice' || nowMs >= lockAtMs) {
+  if (nowMs >= lockAtMs) {
     return {
       ...base,
       stage: 'blocked',
