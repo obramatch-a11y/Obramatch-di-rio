@@ -10,6 +10,8 @@ import { onRequestGet as perfilPublicoGet } from '../functions/api/perfil-public
 import { onRequestGet as diagnosticoGet } from '../functions/api/diagnostico';
 import { onRequestPost as archiveWorkPost } from '../functions/api/obras/archive';
 import { onRequestPost as reactivateWorkPost } from '../functions/api/obras/reactivate';
+import { onRequestPost as requestDeleteWorkPost } from '../functions/api/obras/request-delete';
+import { onRequestPost as selectFreePlanPost } from '../functions/api/payments/cancel';
 import { onRequestPost as deletePhotoPost } from '../functions/api/storage/delete-photo';
 import { onRequestPost as deleteDiaryPost } from '../functions/api/diarios/delete';
 import type { Env as ApiEnv } from '../functions/_lib/google';
@@ -41,7 +43,6 @@ export default {
       const ctx = { request, env };
       try {
         if (pathname === '/api/ia' && request.method === 'POST') {
-          // Rate limit por IP (anti-abuso). Só bloqueia se o binding existir.
           if (env.IA_LIMIT) {
             const ip = request.headers.get('CF-Connecting-IP') || 'desconhecido';
             const { success } = await env.IA_LIMIT.limit({ key: ip });
@@ -70,6 +71,8 @@ export default {
         // Rotas autoritativas usadas pelo app/TWA.
         if (pathname === '/api/obras/archive' && request.method === 'POST') return await archiveWorkPost(ctx);
         if (pathname === '/api/obras/reactivate' && request.method === 'POST') return await reactivateWorkPost(ctx);
+        if (pathname === '/api/obras/request-delete' && request.method === 'POST') return await requestDeleteWorkPost(ctx);
+        if (pathname === '/api/payments/cancel' && request.method === 'POST') return await selectFreePlanPost(ctx);
         if (pathname === '/api/storage/delete-photo' && request.method === 'POST') return await deletePhotoPost(ctx);
         if (pathname === '/api/diarios/delete' && request.method === 'POST') return await deleteDiaryPost(ctx);
 
@@ -80,7 +83,6 @@ export default {
       }
     }
 
-    // Todo o resto: site estático com headers de segurança.
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
     headers.set('X-Content-Type-Options', 'nosniff');
