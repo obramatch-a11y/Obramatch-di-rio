@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   validar:
@@ -32,29 +31,7 @@ jobs:
         run: npm ci
 
       - name: Verificar TypeScript
-        id: typecheck
-        continue-on-error: true
-        run: npm run typecheck > typecheck.log 2>&1
-
-      - name: Publicar diagnóstico TypeScript
-        if: steps.typecheck.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const output = fs.readFileSync('typecheck.log', 'utf8').slice(-12000);
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `## Diagnóstico temporário do TypeScript\n\n\`\`\`text\n${output}\n\`\`\``
-            });
-
-      - name: Interromper se TypeScript falhou
-        if: steps.typecheck.outcome == 'failure'
-        run: |
-          cat typecheck.log
-          exit 1
+        run: npm run typecheck
 
       - name: Validar fluxos autoritativos
         run: npm run test:authoritative-flows
