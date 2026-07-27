@@ -75,7 +75,7 @@ export function resolveFinancialAccess(
   input: FinancialAccessInput | null | undefined,
   nowMs = Date.now(),
 ): FinancialAccessState {
-  const rawPlan = String(input?.plano || '').toLowerCase() === 'pro' ? 'pro' : 'free';
+  const rawPlan: 'free' | 'pro' = String(input?.plano || '').toLowerCase() === 'pro' ? 'pro' : 'free';
   const accessStatus = String(input?.accessStatus || '');
   const expiresAtMs = Math.max(
     financialValueToMillis(input?.validade),
