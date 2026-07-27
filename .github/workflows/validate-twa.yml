@@ -11,11 +11,12 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   validar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Baixar código
@@ -27,14 +28,55 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Instalar dependências
         run: npm ci
 
       - name: Verificar TypeScript
         run: npm run typecheck
 
+      - name: Compilar regras do Firestore no emulador
+        id: firestore_rules
+        continue-on-error: true
+        run: |
+          npx --yes firebase-tools@15.24.0 emulators:exec --only firestore --project demo-obramatch --non-interactive "node -e \"console.log('Regras do Firestore compiladas com sucesso.')\"" > firestore-rules.log 2>&1
+
+      - name: Extrair erro das regras
+        if: steps.firestore_rules.outcome == 'failure'
+        run: |
+          grep -Ei "firestore.rules|error|failed|invalid|unexpected|parse|compil" firestore-rules.log | tail -120 > firestore-rules-errors.log || true
+          if [ ! -s firestore-rules-errors.log ]; then tail -120 firestore-rules.log > firestore-rules-errors.log; fi
+
+      - name: Publicar diagnóstico das regras
+        if: steps.firestore_rules.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('firestore-rules-errors.log', 'utf8').slice(-6000);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `## Erro filtrado das regras do Firestore\n\n\`\`\`text\n${output}\n\`\`\``
+            });
+
+      - name: Interromper se as regras falharam
+        if: steps.firestore_rules.outcome == 'failure'
+        run: |
+          cat firestore-rules-errors.log
+          exit 1
+
       - name: Validar fluxos autoritativos
         run: npm run test:authoritative-flows
+
+      - name: Validar avisos e bloqueios financeiros
+        run: npm run test:financial-access
 
       - name: Gerar build de produção
         run: npm run build

@@ -75,7 +75,6 @@ export default function Dashboard() {
   const [showLimiteModal, setShowLimiteModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Auto rotate ecosystem card
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % ECOSYSTEM_SLIDES.length);
@@ -83,7 +82,6 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Close modal on ESC key
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && showAddModal) {
@@ -94,10 +92,7 @@ export default function Dashboard() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [showAddModal]);
 
-  // Form states
   const [loading, setLoading] = useState(false);
-
-  // Connection offline transition states
   const [wasOffline, setWasOffline] = useState(!online);
   const [showSyncSuccess, setShowSyncSuccess] = useState(false);
 
@@ -117,7 +112,6 @@ export default function Dashboard() {
     }
   }, [online, wasOffline]);
 
-  // PWA states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -196,8 +190,6 @@ export default function Dashboard() {
   };
 
   const handleSignOut = async () => {
-    // Limpa qualquer resíduo de cache antigo do navegador antes de sair,
-    // para nunca reaparecerem obras/diários já apagados.
     try {
       const bancos = await (indexedDB as any).databases?.();
       if (bancos) {
@@ -238,8 +230,10 @@ export default function Dashboard() {
     }
   };
 
-  const obrasVisiveis = obras.filter((o) => (mostrarArquivadas ? o.arquivada : !o.arquivada));
-  const totalArquivadas = obras.filter((o) => o.arquivada).length;
+  // Obras bloqueadas pelo limite do Free são exibidas em painel próprio pelo
+  // FinancialAccessBoundary, com somente a opção de exclusão.
+  const obrasVisiveis = obras.filter((o) => !o.lockedByPlan && (mostrarArquivadas ? o.arquivada : !o.arquivada));
+  const totalArquivadas = obras.filter((o) => !o.lockedByPlan && o.arquivada).length;
   const filteredObras = obrasVisiveis.filter(obra => 
     obra.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     obra.cliente.toLowerCase().includes(searchTerm.toLowerCase())
@@ -247,7 +241,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-12">
-      {/* Top Navbar */}
       <header className="nb-topbar sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -285,9 +278,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full pt-8">
-        {/* Connection Status Banners */}
         <AnimatePresence mode="popLayout">
           {!online && (
             <motion.div
@@ -348,7 +339,6 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* PWA Install Banner */}
         <AnimatePresence>
           {showPwaBanner && !isStandalone && (deferredPrompt || isIOS) && (
             <motion.div
@@ -357,9 +347,7 @@ export default function Dashboard() {
               exit={{ opacity: 0, y: -20 }}
               className="mb-6 bg-white border border-[#FF6F00] rounded-xl p-5 relative overflow-hidden"
             >
-              {/* Subtle accent background glow */}
               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-[#FF6F00]/10 rounded-md blur-2xl" />
-              
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
                 <div className="flex items-start gap-3.5">
                   <div className="p-2.5 bg-[#FF6F00]/10 border border-[#FF6F00] text-[#FF6F00] rounded-xl shrink-0">
@@ -379,9 +367,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto self-end sm:self-center shrink-0">
-                  {!isIOS && (
-                    <InstallButton variant="dashboard" />
-                  )}
+                  {!isIOS && <InstallButton variant="dashboard" />}
                   <button
                     onClick={() => setShowPwaBanner(false)}
                     className="p-2 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-xl transition-all cursor-pointer shrink-0 ml-auto"
@@ -396,7 +382,6 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Single-column Layout for Obras & ObraMatch Ecosystem underneath */}
         <div className="space-y-8">
           <PlanoUsoCard />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -404,7 +389,6 @@ export default function Dashboard() {
             <TelegramConnect />
           </div>
           <div className="space-y-6">
-            {/* Welcome Section */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111] font-sans">
@@ -440,7 +424,6 @@ export default function Dashboard() {
               </button>
             )}
 
-            {/* Search Bar */}
             <div className="relative">
               <Search className="absolute left-4 top-3.5 h-5 w-5 text-neutral-500" />
               <input
@@ -448,11 +431,10 @@ export default function Dashboard() {
                 placeholder="Pesquisar por nome da obra ou cliente..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 nb-input focus:ring-1 focus:ring-[#FF6F00]/40  placeholder-neutral-400  text-sm"
+                className="w-full pl-12 pr-4 py-3.5 nb-input focus:ring-1 focus:ring-[#FF6F00]/40 placeholder-neutral-400 text-sm"
               />
             </div>
 
-            {/* Obras Grid */}
             {carregandoObras ? (
               <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
                 <div className="w-10 h-10 border-4 border-[#D1D1D1] border-t-[#FF6F00] rounded-full animate-spin mb-4" aria-hidden="true"></div>
@@ -469,7 +451,6 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filteredObras.map((obra) => {
-                  // Format last update or set placeholder
                   const formatarData = (v: any): string => {
                     if (!v) return 'Não disponível';
                     if (typeof v === 'object' && typeof v.seconds === 'number') return new Date(v.seconds * 1000).toLocaleDateString('pt-BR');
@@ -488,9 +469,7 @@ export default function Dashboard() {
                     >
                       <div>
                         <div className="flex items-start justify-between mb-4">
-                          <span className="nb-chip nb-chip-orange">
-                            Ativa
-                          </span>
+                          <span className="nb-chip nb-chip-orange">Ativa</span>
                           <ChevronRight className="w-5 h-5 text-neutral-500 group-hover:text-[#FF6F00] group-hover:translate-x-1 transition-all" />
                         </div>
 
@@ -527,7 +506,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Single, non-repetitive ObraMatch promo block below the main list as requested */}
           <ObraMatchSoftPromo variant="dashboard" className="mt-8" />
         </div>
 
@@ -541,7 +519,6 @@ export default function Dashboard() {
         </footer>
       </main>
 
-      {/* Modal for New Obra */}
       <NovaObraModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -549,7 +526,6 @@ export default function Dashboard() {
         loading={loading}
       />
 
-      {/* Aviso de limite de obras atingido */}
       <AnimatePresence>
         {showLimiteModal && (
           <motion.div

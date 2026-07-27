@@ -6,6 +6,8 @@
 import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Login from './components/Login';
+import FinancialAccessBoundary from './components/FinancialAccessBoundary';
+import RdoAdminLockBoundary from './components/RdoAdminLockBoundary';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const ObraDashboard = lazy(() => import('./components/ObraDashboard'));
 const DiarioForm = lazy(() => import('./components/DiarioForm'));
@@ -36,36 +38,40 @@ function AppContent() {
       ) : !user ? (
         <Login />
       ) : (
-        <Suspense fallback={<div className="flex-1" />}>
-        <div className="flex-1 flex flex-col">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentView}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="flex-1"
-            >
-              {currentView === 'dashboard' && <Dashboard />}
-              {currentView === 'obra-dashboard' && <ObraDashboard />}
-              {currentView === 'diario-form' && <DiarioForm />}
-              {currentView === 'diario-detail' && <DiarioDetail />}
-              {currentView === 'exportar-rdos' && <ExportarRdos />}
-            </motion.div>
-          </AnimatePresence>
+        <FinancialAccessBoundary>
+          <Suspense fallback={<div className="flex-1" />}>
+            <RdoAdminLockBoundary>
+              <div className="flex-1 flex flex-col">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentView}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex-1"
+                  >
+                    {currentView === 'dashboard' && <Dashboard />}
+                    {currentView === 'obra-dashboard' && <ObraDashboard />}
+                    {currentView === 'diario-form' && <DiarioForm />}
+                    {currentView === 'diario-detail' && <DiarioDetail />}
+                    {currentView === 'exportar-rdos' && <ExportarRdos />}
+                  </motion.div>
+                </AnimatePresence>
 
-          <AnimatePresence>
-            {showAgentesModal && (
-              <AgentesMatchModal
-                isOpen={showAgentesModal}
-                onClose={closeAgentesModal}
-                initialAgentId={selectedAgentId}
-              />
-            )}
-          </AnimatePresence>
-        </div>
-        </Suspense>
+                <AnimatePresence>
+                  {showAgentesModal && (
+                    <AgentesMatchModal
+                      isOpen={showAgentesModal}
+                      onClose={closeAgentesModal}
+                      initialAgentId={selectedAgentId}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            </RdoAdminLockBoundary>
+          </Suspense>
+        </FinancialAccessBoundary>
       )}
     </div>
   );

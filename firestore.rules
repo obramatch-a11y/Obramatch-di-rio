@@ -2,50 +2,257 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Plano do usuario: escrito SOMENTE pelo servidor (service account).
+    function ownsExisting(resourceData) {
+      return isSignedIn() && resourceData.ownerId == request.auth.uid;
+    }
+
+    function ownsNew(requestData) {
+      return isSignedIn() && requestData.ownerId == request.auth.uid;
+    }
+
+    function planPath() {
+      return /databases/$(database)/documents/planos/$(request.auth.uid);
+    }
+
+    function hasPlan() {
+      return isSignedIn() && exists(planPath());
+    }
+
+    function hasPlanExpiry() {
+      let plan = get(planPath()).data;
+      return (plan.keys().hasAny(['acessoAte']) && plan.acessoAte is timestamp)
+        || (plan.keys().hasAny(['currentPeriodEnd']) && plan.currentPeriodEnd is timestamp)
+        || (plan.keys().hasAny(['validade']) && plan.validade is timestamp);
+    }
+
+    function allKnownExpiryGracePeriodsFinished() {
+      let plan = get(planPath()).data;
+      return hasPlanExpiry()
+        && (
+          !plan.keys().hasAny(['acessoAte'])
+          || !(plan.acessoAte is timestamp)
+          || request.time >= plan.acessoAte + duration.value(5, 'd')
+        )
+        && (
+          !plan.keys().hasAny(['currentPeriodEnd'])
+          || !(plan.currentPeriodEnd is timestamp)
+          || request.time >= plan.currentPeriodEnd + duration.value(5, 'd')
+        )
+        && (
+          !plan.keys().hasAny(['validade'])
+          || !(plan.validade is timestamp)
+          || request.time >= plan.validade + duration.value(5, 'd')
+        );
+    }
+
+    function hasExplicitFinancialBlock() {
+      let plan = get(planPath()).data;
+      return (
+          plan.keys().hasAny(['accessStatus'])
+          && (
+            plan.accessStatus == 'blocked_pending_choice'
+            || plan.accessStatus == 'manual_review'
+          )
+        )
+        || (
+          plan.keys().hasAny(['financialStatus'])
+          && (
+            plan.financialStatus == 'blocked'
+            || plan.financialStatus == 'manual_review'
+          )
+        );
+    }
+
+    function isFinanciallyBlocked() {
+      return hasPlan()
+        && (
+          hasExplicitFinancialBlock()
+          || (
+            get(planPath()).data.plano == 'pro'
+            && (
+              !get(planPath()).data.keys().hasAny(['accessStatus'])
+              || get(planPath()).data.accessStatus != 'free_selected'
+            )
+            && allKnownExpiryGracePeriodsFinished()
+          )
+        );
+    }
+
+    function workPath(obraId) {
+      return /databases/$(database)/documents/obras/$(obraId);
+    }
+
+    function diaryPath(obraId, diarioId) {
+      return /databases/$(database)/documents/obras/$(obraId)/diarios/$(diarioId);
+    }
+
+    function workBelongsToCurrentUser(obraId) {
+      return isSignedIn()
+        && exists(workPath(obraId))
+        && get(workPath(obraId)).data.ownerId == request.auth.uid;
+    }
+
+    function workIsUnlocked(obraId) {
+      return workBelongsToCurrentUser(obraId)
+        && (
+          !get(workPath(obraId)).data.keys().hasAny(['lockedByPlan'])
+          || get(workPath(obraId)).data.lockedByPlan != true
+        );
+    }
+
+    function diaryIsUnlocked(obraId, diarioId) {
+      return exists(diaryPath(obraId, diarioId))
+        && (
+          !get(diaryPath(obraId, diarioId)).data.keys().hasAny(['lockedByAdmin'])
+          || get(diaryPath(obraId, diarioId)).data.lockedByAdmin != true
+        );
+    }
+
+    function newWorkHasSafePlanLockDefaults() {
+      return (
+          !request.resource.data.keys().hasAny(['lockedByPlan'])
+          || request.resource.data.lockedByPlan == false
+        )
+        && (
+          !request.resource.data.keys().hasAny(['planLockReason'])
+          || request.resource.data.planLockReason == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['planLockedAt'])
+          || request.resource.data.planLockedAt == null
+        )
+        && !request.resource.data.keys().hasAny(['adminLockedBy', 'adminLockReason']);
+    }
+
+    function clientDidNotChangePlanLock() {
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasAny([
+          'lockedByPlan', 'planLockReason', 'planLockedAt',
+          'adminLockedBy', 'adminLockReason'
+        ]);
+    }
+
+    function newDiaryHasSafeAdminLockDefaults() {
+      return (
+          !request.resource.data.keys().hasAny(['lockedByAdmin'])
+          || request.resource.data.lockedByAdmin == false
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockedAt'])
+          || request.resource.data.adminLockedAt == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockedBy'])
+          || request.resource.data.adminLockedBy == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['adminLockReason'])
+          || request.resource.data.adminLockReason == null
+        );
+    }
+
+    function clientDidNotChangeDiaryAdminLock() {
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
+        .hasAny(['lockedByAdmin', 'adminLockedAt', 'adminLockedBy', 'adminLockReason']);
+    }
+
     match /planos/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow write: if false;
     }
 
-    // Consumo de IA: escrito SOMENTE pelo servidor; o dono pode ler o proprio.
     match /uso_ia/{docId} {
-      allow read: if isSignedIn() && docId.matches('^' + request.auth.uid + '_.*$');
+      allow read: if isSignedIn()
+        && docId.matches('^' + request.auth.uid + '_.*$');
       allow write: if false;
     }
 
-    // Perfil do usuario (vinculo Telegram). O cliente NAO pode escrever
-    // campos de controle de uso/plano (iaUso legado, plano) -> anti-burla.
     match /usuarios/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
-      allow write: if isSignedIn() && request.auth.uid == uid
+
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && !isFinanciallyBlocked()
         && !request.resource.data.keys().hasAny(['iaUso', 'plano']);
+
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && !isFinanciallyBlocked()
+        && !request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasAny(['iaUso', 'plano']);
+
+      allow delete: if false;
     }
 
-    // Obras: cada usuario le e escreve apenas as proprias.
-    // A checagem em list (resource nulo) permite a query filtrada por ownerId.
     match /obras/{obraId} {
-      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-      allow write: if isSignedIn()
-        && (resource == null || resource.data.ownerId == request.auth.uid)
-        && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+      allow read: if isSignedIn()
+        && (resource == null || resource.data.ownerId == request.auth.uid);
+
+      allow create: if isSignedIn()
+        && !isFinanciallyBlocked()
+        && ownsNew(request.resource.data)
+        && newWorkHasSafePlanLockDefaults();
+
+      allow update: if isSignedIn()
+        && !isFinanciallyBlocked()
+        && ownsExisting(resource.data)
+        && ownsNew(request.resource.data)
+        && (
+          !resource.data.keys().hasAny(['lockedByPlan'])
+          || resource.data.lockedByPlan != true
+        )
+        && clientDidNotChangePlanLock();
+
+      allow delete: if false;
 
       match /diarios/{diarioId} {
-        allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-        allow write: if isSignedIn()
-          && (resource == null || resource.data.ownerId == request.auth.uid)
-          && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+        allow read: if workIsUnlocked(obraId)
+          && (resource == null || resource.data.ownerId == request.auth.uid);
+
+        allow create: if !isFinanciallyBlocked()
+          && workIsUnlocked(obraId)
+          && ownsNew(request.resource.data)
+          && newDiaryHasSafeAdminLockDefaults();
+
+        allow update: if !isFinanciallyBlocked()
+          && workIsUnlocked(obraId)
+          && ownsExisting(resource.data)
+          && ownsNew(request.resource.data)
+          && (
+            !resource.data.keys().hasAny(['lockedByAdmin'])
+            || resource.data.lockedByAdmin != true
+          )
+          && clientDidNotChangeDiaryAdminLock();
+
+        allow delete: if false;
 
         match /fotos/{fotoId} {
-          allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-          allow write: if isSignedIn()
-            && (resource == null || resource.data.ownerId == request.auth.uid)
-            && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+          allow read: if workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
+            && (resource == null || resource.data.ownerId == request.auth.uid);
+
+          allow create: if !isFinanciallyBlocked()
+            && workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
+            && ownsNew(request.resource.data);
+
+          allow update: if !isFinanciallyBlocked()
+            && workIsUnlocked(obraId)
+            && diaryIsUnlocked(obraId, diarioId)
+            && ownsExisting(resource.data)
+            && ownsNew(request.resource.data);
+
+          allow delete: if false;
         }
       }
     }

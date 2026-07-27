@@ -4,11 +4,13 @@ import { Obra, Diario, Foto } from '../types';
 interface RdoPrintBlockProps {
   obra: Obra;
   diario: Diario;
-  fotos: Foto[];            // já filtradas por diarioId pelo chamador
-  mostrarRodape?: boolean;  // true no PDF individual; false dentro da exportação conjunta
+  fotos: Foto[];
+  mostrarRodape?: boolean;
 }
 
 export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = true }: RdoPrintBlockProps) {
+  if (diario.lockedByAdmin) return null;
+
   const secoes = [
     'atividades',
     diario.equipe && 'equipe',
@@ -22,8 +24,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
 
   return (
     <div className="bg-white text-black p-8 font-serif leading-relaxed text-sm w-full">
-      
-      {/* Header Block */}
       <div className="border-b-4 border-[#D1D1D1] pb-4 mb-6 flex justify-between items-start">
         <div>
           <span className="text-xs font-bold tracking-widest text-neutral-500 uppercase">ECOSSISTEMA OBRAMATCH</span>
@@ -40,7 +40,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </div>
       </div>
 
-      {/* Technical Metadata Table */}
       <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6 p-4 bg-[#F4F4F4] rounded-xl font-sans text-xs border border-[#D1D1D1]">
         <div>
           <span className="text-neutral-500 font-bold block uppercase tracking-wider text-[10px]">OBRA:</span>
@@ -84,7 +83,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         )}
       </div>
 
-      {/* Content Section: Atividades */}
       <div className="mb-6 font-sans">
         <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-3">
           {num('atividades')}. ATIVIDADES EXECUTADAS DO DIA
@@ -94,7 +92,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </p>
       </div>
 
-      {/* Content Section: Equipe & Materiais */}
       <div className="grid grid-cols-2 gap-6 mb-6 font-sans text-xs">
         {diario.equipe && (
           <div>
@@ -118,7 +115,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         )}
       </div>
 
-      {/* Content Section: Ocorrências */}
       {diario.ocorrencias && (
         <div className="mb-6 font-sans text-xs">
           <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
@@ -130,7 +126,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </div>
       )}
 
-      {/* Content Section: Observações */}
       {diario.observacoes && (
         <div className="mb-6 font-sans text-xs">
           <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-2">
@@ -142,9 +137,8 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </div>
       )}
 
-      {/* Photos grid */}
       {fotos.length > 0 && (
-        <div className={"mb-8 font-sans" + (fotos.length > 2 ? " page-break-before" : "")}>
+        <div className={'mb-8 font-sans' + (fotos.length > 2 ? ' page-break-before' : '')}>
           <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-4">
             {num('fotos')}. REGISTRO FOTOGRÁFICO
           </h3>
@@ -169,7 +163,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </div>
       )}
 
-      {/* Signatures footer block */}
       <div className="mt-12 pt-6 font-sans avoid-break">
         <h3 className="text-xs font-extrabold text-[#111111] uppercase tracking-wider border-b border-[#D1D1D1] pb-1 mb-8">
           {num('assinaturas')}. ASSINATURAS
@@ -196,7 +189,6 @@ export default function RdoPrintBlock({ obra, diario, fotos, mostrarRodape = tru
         </div>
       </div>
 
-      {/* Generation stamp in footer */}
       <div className="mt-16 text-center font-sans border-t border-[#D1D1D1] pt-4 flex flex-col items-center gap-1">
         {diario.hashIntegridade && (
           <p className="text-[9px] text-neutral-500 font-mono mb-1">

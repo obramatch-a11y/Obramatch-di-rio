@@ -3,6 +3,8 @@ const AUTHORITATIVE_ORIGIN = 'https://diario.obramatch.com.br';
 const ALLOWED_PATHS = new Set([
   '/api/obras/archive',
   '/api/obras/reactivate',
+  '/api/obras/request-delete',
+  '/api/payments/cancel',
   '/api/storage/delete-photo',
   '/api/diarios/delete',
 ]);
