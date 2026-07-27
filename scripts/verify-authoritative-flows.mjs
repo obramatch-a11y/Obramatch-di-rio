@@ -16,6 +16,7 @@ const archiveRoute = read('functions/api/obras/archive.ts');
 const reactivateRoute = read('functions/api/obras/reactivate.ts');
 const deletePhotoRoute = read('functions/api/storage/delete-photo.ts');
 const deleteDiaryRoute = read('functions/api/diarios/delete.ts');
+const workerRouter = read('worker/index.ts');
 const assetLinks = read('public/.well-known/assetlinks.json');
 const viteConfig = read('vite.config.ts');
 
@@ -36,6 +37,17 @@ assert(reactivateRoute.includes("'/api/obras/reactivate'"), 'rota de reativaçã
 assert(deletePhotoRoute.includes("'/api/storage/delete-photo'"), 'rota de foto incorreta');
 assert(deleteDiaryRoute.includes("'/api/diarios/delete'"), 'rota de RDO incorreta');
 
+const workerRoutes = [
+  ['/api/obras/archive', 'archiveWorkPost'],
+  ['/api/obras/reactivate', 'reactivateWorkPost'],
+  ['/api/storage/delete-photo', 'deletePhotoPost'],
+  ['/api/diarios/delete', 'deleteDiaryPost'],
+];
+for (const [path, handler] of workerRoutes) {
+  assert(workerRouter.includes(`pathname === '${path}'`), `Worker principal não registra ${path}`);
+  assert(workerRouter.includes(`return await ${handler}(ctx)`), `Worker principal não chama o handler de ${path}`);
+}
+
 const assetLinksJson = JSON.parse(assetLinks);
 assert(Array.isArray(assetLinksJson) && assetLinksJson.length > 0, 'assetlinks deve continuar válido');
 assert(assetLinksJson[0]?.target?.package_name === 'com.obramatch.diario', 'package name do TWA não pode mudar');
@@ -44,4 +56,4 @@ assert(viteConfig.includes("manifestFilename: 'manifest.json'"), 'nome do manife
 assert(viteConfig.includes("start_url: '/'"), 'start_url do TWA deve permanecer estável');
 assert(viteConfig.includes("scope: '/'"), 'scope do TWA deve permanecer estável');
 
-console.log('Fluxos autoritativos do TWA: OK');
+console.log('Fluxos autoritativos e roteador do Cloudflare Worker: OK');
