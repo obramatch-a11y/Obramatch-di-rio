@@ -364,16 +364,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteObra = async (id: string): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
     const current = obras.find((obra) => obra.id === id);
-    if (!current?.lockedByPlan) {
-      const message = 'A exclusão definitiva pelo aplicativo permanece restrita às obras bloqueadas pelo plano. Use o site para outras exclusões.';
-      if (typeof window !== 'undefined') window.alert(message);
-      throw new Error(message);
-    }
+    if (!current) throw new Error('Obra não encontrada.');
     try {
       const result = await deleteWorkAuthoritatively(user, id);
       window.alert(result.completed ? 'Obra excluída definitivamente.' : 'Exclusão solicitada e em processamento.');
+      if (selectedObra?.id === id) {
+        setSelectedObra(null);
+        setSelectedDiario(null);
+        setEditingDiario(null);
+        setCurrentView('dashboard');
+      }
     } catch (error) {
-      showActionError(error, 'Não foi possível excluir a obra bloqueada.');
+      showActionError(error, 'Não foi possível excluir a obra.');
     }
   };
 
