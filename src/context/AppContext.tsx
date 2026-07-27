@@ -1,24 +1,26 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import { 
-  collection, 
-  query, 
-  where, 
-  onSnapshot, 
-  addDoc, 
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  addDoc,
   setDoc,
-  updateDoc, 
-  deleteDoc, 
-  doc, 
+  updateDoc,
+  doc,
   serverTimestamp,
   runTransaction,
-  getDocs,
-  getDoc
 } from 'firebase/firestore';
 import { auth, db, handleFirestoreError } from '../firebase';
 import { Obra, Diario, Foto, OperationType, PlanoInfo, UsoIaInfo, LIMITES_PLANO } from '../types';
 import { uploadFoto } from '../lib/storage';
 import { calcularHashRdo } from '../lib/hash';
+import {
+  deleteDiaryAuthoritatively,
+  deletePhotoAuthoritatively,
+  setWorkArchived,
+} from '../lib/authoritativeApi';
 
 interface AppContextType {
   user: User | null;
@@ -51,6 +53,33 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+function valueToMillis(value: unknown): number {
+  if (!value) return 0;
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (typeof value === 'object') {
+    const candidate = value as { seconds?: unknown; toDate?: () => Date };
+    if (typeof candidate.seconds === 'number') return candidate.seconds * 1000;
+    if (typeof candidate.toDate === 'function') {
+      try {
+        return candidate.toDate().getTime();
+      } catch {
+        return 0;
+      }
+    }
+  }
+  return 0;
+}
+
+function showActionError(error: unknown, fallback: string): never {
+  const message = error instanceof Error && error.message ? error.message : fallback;
+  console.error(fallback, error);
+  if (typeof window !== 'undefined') window.alert(message);
+  throw new Error(message);
+}
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -118,8 +147,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
-      
-      // Se não há estado guardado, volta para dashboard (ponto inicial)
+
       if (!state || !state.appView) {
         setCurrentView('dashboard');
         setSelectedObra(null);
@@ -128,21 +156,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      // Restaurar a view anterior
       const targetView = state.appView as 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos';
       setCurrentView(targetView);
 
-      // Se havia obra selecionada, restaurar (encontrar na lista local)
       if (state.obraId) {
-        const foundObra = obras.find(o => o.id === state.obraId);
+        const foundObra = obras.find((obra) => obra.id === state.obraId);
         setSelectedObra(foundObra || null);
       } else {
         setSelectedObra(null);
       }
 
-      // Se havia diário selecionado, restaurar
       if (state.diarioId) {
-        const foundDiario = diarios.find(d => d.id === state.diarioId);
+        const foundDiario = diarios.find((diario) => diario.id === state.diarioId);
         setSelectedDiario(foundDiario || null);
         setEditingDiario(foundDiario || null);
       } else {
@@ -162,24 +187,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUsoIa({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
       return;
     }
+
     const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
-      const d = snap.data();
-      const valido = d?.plano === 'pro' && (!d?.validade || Date.parse(String(d.validade)) > Date.now());
-      setPlano({ plano: valido ? 'pro' : 'free', validade: (d?.validade as string) || null });
+      const data = snap.data();
+      const validityMs = Math.max(
+        valueToMillis(data?.validade),
+        valueToMillis(data?.acessoAte),
+        valueToMillis(data?.currentPeriodEnd),
+      );
+      const isPro = data?.plano === 'pro' && (!validityMs || validityMs > Date.now());
+      const publicValidity = [data?.validade, data?.acessoAte, data?.currentPeriodEnd]
+        .find((value) => typeof value === 'string') as string | undefined;
+      setPlano({ plano: isPro ? 'pro' : 'free', validade: publicValidity || null });
     }, () => setPlano({ plano: 'free', validade: null }));
+
     const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
     const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
-      const d = snap.data() || {};
+      const data = snap.data() || {};
       const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' });
       setUsoIa({
-        transcMes: Number(d.transcMes) || 0,
-        melhoriaMes: Number(d.melhoriaMes) || 0,
-        transcDia: d.dia === hoje ? Number(d.transcDia) || 0 : 0,
-        melhoriaDia: d.dia === hoje ? Number(d.melhoriaDia) || 0 : 0,
-        dia: d.dia,
+        transcMes: Number(data.transcMes) || 0,
+        melhoriaMes: Number(data.melhoriaMes) || 0,
+        transcDia: data.dia === hoje ? Number(data.transcDia) || 0 : 0,
+        melhoriaDia: data.dia === hoje ? Number(data.melhoriaDia) || 0 : 0,
+        dia: data.dia,
       });
     }, () => {});
-    return () => { unsubPlano(); unsubUso(); };
+
+    return () => {
+      unsubPlano();
+      unsubUso();
+    };
   }, [user]);
 
   // Sync Obras from Firestore when authenticated
@@ -187,25 +225,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return;
     setCarregandoObras(true);
 
-    const obrasPath = 'obras';
-    const q = query(collection(db, obrasPath), where('ownerId', '==', user.uid));
-    
+    const q = query(collection(db, 'obras'), where('ownerId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const obrasList: Obra[] = [];
-      snapshot.forEach((doc) => {
-        obrasList.push({ id: doc.id, ...doc.data() } as Obra);
+      snapshot.forEach((obraDoc) => {
+        obrasList.push({ id: obraDoc.id, ...obraDoc.data() } as Obra);
       });
-      // Ordena por data de atualização/criação de forma ROBUSTA: aceita tanto
-      // timestamp do Firestore ({seconds}) quanto texto ISO (formato gravado
-      // pelo bot do Telegram). Assim uma obra criada pelo bot nunca derruba a
-      // lista inteira (causava "0 obras" mesmo com a obra existindo).
-      const quando = (o: any): number => {
-        const v = o?.updatedAt ?? o?.createdAt;
-        if (!v) return 0;
-        if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
-        if (typeof v === 'string') { const t = Date.parse(v); return isNaN(t) ? 0 : t; }
-        if (typeof v?.toDate === 'function') { try { return v.toDate().getTime(); } catch { return 0; } }
-        return 0;
+
+      const quando = (obra: unknown): number => {
+        const record = obra as { updatedAt?: unknown; createdAt?: unknown };
+        return valueToMillis(record.updatedAt ?? record.createdAt);
       };
       obrasList.sort((a, b) => quando(b) - quando(a));
       setObras(obrasList);
@@ -218,6 +247,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return unsubscribe;
   }, [user]);
 
+  // Mantém a obra selecionada sincronizada com arquivamento/reativação feitos pelo servidor.
+  useEffect(() => {
+    if (!selectedObra) return;
+    const current = obras.find((obra) => obra.id === selectedObra.id);
+    if (!current) {
+      setSelectedObra(null);
+      setSelectedDiario(null);
+      setEditingDiario(null);
+      setCurrentView('dashboard');
+      return;
+    }
+    setSelectedObra(current);
+  }, [obras, selectedObra?.id]);
+
   // Sync Diarios and Fotos for selected Obra
   useEffect(() => {
     if (!user || !selectedObra) {
@@ -228,74 +271,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     const qDiarios = query(collection(db, diariosPath), where('ownerId', '==', user.uid));
-    
+
     const unsubDiarios = onSnapshot(qDiarios, (snapshot) => {
       const diariosList: Diario[] = [];
-      snapshot.forEach((doc) => {
-        diariosList.push({ id: doc.id, ...doc.data() } as Diario);
+      snapshot.forEach((diarioDoc) => {
+        diariosList.push({ id: diarioDoc.id, ...diarioDoc.data() } as Diario);
       });
-      // Ordena por data e horário (mais recente primeiro), de forma robusta:
-      // trata qualquer campo ausente ou de tipo inesperado como texto vazio,
-      // para que UM diário mal formado nunca derrube a lista inteira.
       diariosList.sort((a, b) => {
-        const dataA = String((a as any).data ?? '');
-        const dataB = String((b as any).data ?? '');
-        const dateComp = dataB.localeCompare(dataA);
+        const dateComp = String(b.data ?? '').localeCompare(String(a.data ?? ''));
         if (dateComp !== 0) return dateComp;
-        const horaA = String((a as any).horario ?? '');
-        const horaB = String((b as any).horario ?? '');
-        return horaB.localeCompare(horaA);
+        return String(b.horario ?? '').localeCompare(String(a.horario ?? ''));
       });
       setDiarios(diariosList);
     }, (error) => {
       console.error('Erro no listener (diários):', error);
     });
 
-    // Subcollection query for all fotos in the diaries of this Obra
-    const fotosPath = `obras/${selectedObra.id}/diarios`;
-    // To sync fotos easily, we listen to them or fetch them directly in an onSnapshot inside diários
-    // Since firestore doesn't easily let us query across multiple nested levels without collectionGroup,
-    // we can sync photos in subcollections for the active diários. Let's make a real listener for each diario's photos
     const activeUnsubscribes: (() => void)[] = [];
-
-    // Let's create an aggregated list of photos
-    const aggregatedPhotos: { [diarioId: string]: Foto[] } = {};
+    const aggregatedPhotos: Record<string, Foto[]> = {};
 
     const syncPhotosForDiario = (diarioId: string) => {
       const path = `obras/${selectedObra.id}/diarios/${diarioId}/fotos`;
       const qFotos = query(collection(db, path), where('ownerId', '==', user.uid));
-      
-      const unsub = onSnapshot(qFotos, (snapshot) => {
+      const unsubscribe = onSnapshot(qFotos, (snapshot) => {
         const diaryPhotos: Foto[] = [];
-        snapshot.forEach((doc) => {
-          diaryPhotos.push({ id: doc.id, ...doc.data() } as Foto);
+        snapshot.forEach((photoDoc) => {
+          diaryPhotos.push({ id: photoDoc.id, ...photoDoc.data() } as Foto);
         });
         aggregatedPhotos[diarioId] = diaryPhotos;
-        
-        // Flatten and update state
-        const allFotos = Object.values(aggregatedPhotos).flat();
-        setFotos(allFotos);
+        setFotos(Object.values(aggregatedPhotos).flat());
       }, (error) => {
         console.error('Erro no listener (fotos):', error);
       });
-      activeUnsubscribes.push(unsub);
+      activeUnsubscribes.push(unsubscribe);
     };
 
-    // We can run this whenever diaries update
-    diarios.forEach((d) => {
-      syncPhotosForDiario(d.id);
-    });
+    diarios.forEach((diario) => syncPhotosForDiario(diario.id));
 
     return () => {
       unsubDiarios();
-      activeUnsubscribes.forEach((unsub) => unsub());
+      activeUnsubscribes.forEach((unsubscribe) => unsubscribe());
     };
-  }, [user, selectedObra, diarios.map(d => d.id).join(',')]);
+  }, [user, selectedObra, diarios.map((diario) => diario.id).join(',')]);
 
   const setView = (
-    view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos', 
-    obra: Obra | null = null, 
-    diario: Diario | null = null
+    view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos',
+    obra: Obra | null = null,
+    diario: Diario | null = null,
   ) => {
     setCurrentView(view);
     if (obra !== undefined) setSelectedObra(obra);
@@ -303,18 +325,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSelectedDiario(diario);
       setEditingDiario(diario);
     }
-    
-    // Guardar estado na history para suportar o botão voltar do Android
-    // Estado inicial (dashboard) não cria entrada para evitar múltiplas entradas
+
     if (view !== 'dashboard') {
       window.history.pushState(
-        { 
+        {
           appView: view,
           obraId: obra?.id || null,
-          diarioId: diario?.id || null
+          diarioId: diario?.id || null,
         },
         '',
-        window.location.href
+        window.location.href,
       );
     }
   };
@@ -325,7 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (limiteObrasAtingido) {
       throw new Error(`Seu plano permite ${LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas. Arquive uma obra concluída para criar outra.`);
     }
-    
+
     const path = 'obras';
     try {
       const docRef = await addDoc(collection(db, path), {
@@ -343,9 +363,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateObra = async (id: string, obraData: Partial<Obra>): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
     const path = `obras/${id}`;
+    const safeData = { ...obraData };
+    delete safeData.arquivada;
     try {
       await updateDoc(doc(db, 'obras', id), {
-        ...obraData,
+        ...safeData,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
@@ -353,75 +375,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const deleteObra = async (id: string): Promise<void> => {
-    if (!user) throw new Error('Usuário não autenticado');
-    const path = `obras/${id}`;
-    try {
-      // 1. Buscar todos os diários da obra
-      const diariosSnap = await getDocs(query(collection(db, 'obras', id, 'diarios'), where('ownerId', '==', user.uid)));
-      for (const d of diariosSnap.docs) {
-        // 2. Buscar e deletar fotos de cada diário
-        const fotosSnap = await getDocs(query(collection(db, 'obras', id, 'diarios', d.id, 'fotos'), where('ownerId', '==', user.uid)));
-        for (const f of fotosSnap.docs) {
-          await deleteDoc(doc(db, 'obras', id, 'diarios', d.id, 'fotos', f.id));
-        }
-        // 3. Deletar o diário
-        await deleteDoc(doc(db, 'obras', id, 'diarios', d.id));
-      }
-      // 4. Por fim, deletar a obra
-      await deleteDoc(doc(db, 'obras', id));
-      
-      if (selectedObra?.id === id) {
-        setSelectedObra(null);
-        setCurrentView('dashboard');
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
-    }
+  const deleteObra = async (_id: string): Promise<void> => {
+    const message = 'A exclusão definitiva da obra está temporariamente bloqueada para proteger fotos e RDOs durante a homologação. Arquive a obra por enquanto; nenhum dado será perdido.';
+    if (typeof window !== 'undefined') window.alert(message);
+    throw new Error(message);
   };
 
   // Diario Operations
   const createDiario = async (
     diarioData: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>,
-    base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
+    base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<string> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para registrar novos RDOs.');
-    
+
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     try {
-      // Numeração sequencial do RDO (transação sobre o documento da obra).
-      // BLINDAGEM: se a transação falhar por qualquer motivo (documento da
-      // obra em estado estranho no servidor), usa numeração local e segue —
-      // o diário é o que importa e será salvo mesmo assim.
       const obraRef = doc(db, 'obras', selectedObra.id);
       let numeroRdo: number;
       try {
-        numeroRdo = await runTransaction(db, async (tx) => {
-        const snap = await tx.get(obraRef);
-        const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
-        const numero = Math.max(atual, diarios.length + 1);
-        if (snap.exists()) {
-          tx.update(obraRef, { proximoNumeroRdo: numero + 1, updatedAt: serverTimestamp() });
-        } else {
-          // A obra ainda não existe no servidor (ficou presa no cache local
-          // enquanto as gravações eram recusadas). Grava ela inteira agora.
-          const { id: _obraId, ...obraSemId } = selectedObra as any;
-          tx.set(obraRef, {
-            ...obraSemId,
-            ownerId: user.uid,
-            proximoNumeroRdo: numero + 1,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          });
-        }
-        return numero;
-      });
-      } catch (txErr: any) {
-        console.warn('Numeração via servidor falhou, usando numeração local:', txErr?.message || txErr);
+        numeroRdo = await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(obraRef);
+          const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
+          const numero = Math.max(atual, diarios.length + 1);
+          if (snap.exists()) {
+            transaction.update(obraRef, { proximoNumeroRdo: numero + 1, updatedAt: serverTimestamp() });
+          } else {
+            const { id: _obraId, ...obraSemId } = selectedObra as Obra & { id: string };
+            transaction.set(obraRef, {
+              ...obraSemId,
+              ownerId: user.uid,
+              proximoNumeroRdo: numero + 1,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          }
+          return numero;
+        });
+      } catch (transactionError) {
+        console.warn('Numeração via servidor falhou, usando numeração local:', transactionError);
         numeroRdo = diarios.length + 1;
       }
-      // Código de integridade (SHA-256 do conteúdo canônico)
+
       const hashIntegridade = await calcularHashRdo({
         obraId: selectedObra.id,
         numeroRdo,
@@ -436,12 +431,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         gps: diarioData.gps || null,
       });
 
-      // Add the diary document.
-      // OFFLINE: com o cache persistente, a gravação local é imediata, mas a
-      // promessa só resolve quando o servidor confirma. Sem internet, esperar
-      // travaria o "Salvar" para sempre. Então: cria a referência, dispara a
-      // gravação e só ESPERA a confirmação quando há conexão. Offline, o RDO
-      // fica salvo no aparelho e sincroniza sozinho quando a internet voltar.
       const docRef = doc(collection(db, diariosPath));
       const gravacaoDiario = setDoc(docRef, {
         ...diarioData,
@@ -456,16 +445,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (navigator.onLine) {
         await gravacaoDiario;
       } else {
-        gravacaoDiario.catch((e) => console.error('Sincronização pendente do diário:', e));
+        gravacaoDiario.catch((error) => console.error('Sincronização pendente do diário:', error));
       }
 
       const diaryId = docRef.id;
-
-      // Fotos: upload ao Supabase Storage (fallback: base64) e gravação da URL
       const photosPath = `${diariosPath}/${diaryId}/fotos`;
-      for (let i = 0; i < base64Photos.length; i++) {
-        const photo = base64Photos[i];
-        const url = await uploadFoto(photo.url, `${selectedObra.id}/${diaryId}/foto-${Date.now()}-${i}`);
+      for (let index = 0; index < base64Photos.length; index += 1) {
+        const photo = base64Photos[index];
+        const url = await uploadFoto(photo.url, `${selectedObra.id}/${diaryId}/foto-${Date.now()}-${index}`);
         const gravacaoFoto = addDoc(collection(db, photosPath), {
           diarioId: diaryId,
           obraId: selectedObra.id,
@@ -480,7 +467,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (navigator.onLine) {
           await gravacaoFoto;
         } else {
-          gravacaoFoto.catch((e) => console.error('Sincronização pendente de foto:', e));
+          gravacaoFoto.catch((error) => console.error('Sincronização pendente de foto:', error));
         }
       }
 
@@ -491,17 +478,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateDiario = async (
-    id: string, 
+    id: string,
     diarioData: Partial<Diario>,
-    base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[]
+    base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para editar RDOs.');
-    
+
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
     try {
-      // Recalcula o código de integridade quando os campos do RDO mudam
-      const original = diarios.find((d) => d.id === id);
+      const original = diarios.find((diario) => diario.id === id);
       const combinado = { ...(original || {}), ...diarioData } as Diario;
       const hashIntegridade = await calcularHashRdo({
         obraId: selectedObra.id,
@@ -525,15 +511,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (navigator.onLine) {
         await gravacaoEdicao;
       } else {
-        gravacaoEdicao.catch((e) => console.error('Sincronização pendente da edição:', e));
+        gravacaoEdicao.catch((error) => console.error('Sincronização pendente da edição:', error));
       }
 
-      // If new photos were provided, add them as well
       if (base64Photos && base64Photos.length > 0) {
         const photosPath = `${diarioPath}/fotos`;
-        for (let i = 0; i < base64Photos.length; i++) {
-          const photo = base64Photos[i];
-          const url = await uploadFoto(photo.url, `${selectedObra.id}/${id}/foto-${Date.now()}-${i}`);
+        for (let index = 0; index < base64Photos.length; index += 1) {
+          const photo = base64Photos[index];
+          const url = await uploadFoto(photo.url, `${selectedObra.id}/${id}/foto-${Date.now()}-${index}`);
           const gravacaoFotoEdicao = addDoc(collection(db, photosPath), {
             diarioId: id,
             obraId: selectedObra.id,
@@ -548,7 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (navigator.onLine) {
             await gravacaoFotoEdicao;
           } else {
-            gravacaoFotoEdicao.catch((e) => console.error('Sincronização pendente de foto:', e));
+            gravacaoFotoEdicao.catch((error) => console.error('Sincronização pendente de foto:', error));
           }
         }
       }
@@ -559,38 +544,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteDiario = async (id: string): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
-    
-    const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
     try {
-      const fotosSnap = await getDocs(query(collection(db, 'obras', selectedObra.id, 'diarios', id, 'fotos'), where('ownerId', '==', user.uid)));
-      for (const f of fotosSnap.docs) {
-        await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', id, 'fotos', f.id));
-      }
-      await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', id));
+      await deleteDiaryAuthoritatively(user, selectedObra.id, id);
       if (selectedDiario?.id === id) {
         setSelectedDiario(null);
+        setEditingDiario(null);
         setCurrentView('obra-dashboard');
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, diarioPath);
+      showActionError(error, 'Não foi possível excluir o RDO com segurança.');
     }
   };
 
   const deleteFoto = async (diarioId: string, fotoId: string): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
-    const path = `obras/${selectedObra.id}/diarios/${diarioId}/fotos/${fotoId}`;
     try {
-      await deleteDoc(doc(db, 'obras', selectedObra.id, 'diarios', diarioId, 'fotos', fotoId));
+      await deletePhotoAuthoritatively(user, selectedObra.id, diarioId, fotoId);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, path);
+      showActionError(error, 'Não foi possível excluir a foto com segurança.');
     }
   };
 
   const arquivarObra = async (id: string, arquivar: boolean): Promise<void> => {
-    await updateObra(id, { arquivada: arquivar } as Partial<Obra>);
+    if (!user) throw new Error('Usuário não autenticado');
+    try {
+      await setWorkArchived(user, id, arquivar);
+      setObras((current) => current.map((obra) => (
+        obra.id === id ? { ...obra, arquivada: arquivar } : obra
+      )));
+      setSelectedObra((current) => (
+        current?.id === id ? { ...current, arquivada: arquivar } : current
+      ));
+    } catch (error) {
+      showActionError(error, arquivar ? 'Não foi possível arquivar a obra.' : 'Não foi possível reativar a obra.');
+    }
   };
-  const limiteObrasAtingido =
-    obras.filter((o) => !o.arquivada).length >= LIMITES_PLANO[plano.plano].obrasAtivas;
+
+  const limiteObrasAtingido = obras.filter((obra) => !obra.arquivada).length
+    >= LIMITES_PLANO[plano.plano].obrasAtivas;
 
   return (
     <AppContext.Provider value={{
@@ -620,7 +611,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       plano,
       usoIa,
       arquivarObra,
-      limiteObrasAtingido
+      limiteObrasAtingido,
     }}>
       {children}
     </AppContext.Provider>
