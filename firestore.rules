@@ -29,45 +29,101 @@ service cloud.firestore {
         || (plan.keys().hasAny(['validade']) && plan.validade is timestamp);
     }
 
-    function planExpiry() {
+    // Considera todos os campos legados de validade. O bloqueio por tempo só
+    // ocorre quando nenhum prazo conhecido ainda está dentro dos 5 dias.
+    function allKnownExpiryGracePeriodsFinished() {
       let plan = get(planPath()).data;
-      return plan.keys().hasAny(['acessoAte']) && plan.acessoAte is timestamp
-        ? plan.acessoAte
-        : plan.keys().hasAny(['currentPeriodEnd']) && plan.currentPeriodEnd is timestamp
-          ? plan.currentPeriodEnd
-          : plan.validade;
+      return hasPlanExpiry()
+        && (
+          !plan.keys().hasAny(['acessoAte'])
+          || !(plan.acessoAte is timestamp)
+          || request.time >= plan.acessoAte + duration.value(5, 'd')
+        )
+        && (
+          !plan.keys().hasAny(['currentPeriodEnd'])
+          || !(plan.currentPeriodEnd is timestamp)
+          || request.time >= plan.currentPeriodEnd + duration.value(5, 'd')
+        )
+        && (
+          !plan.keys().hasAny(['validade'])
+          || !(plan.validade is timestamp)
+          || request.time >= plan.validade + duration.value(5, 'd')
+        );
+    }
+
+    // Chargeback/revisão e bloqueio confirmado pelo servidor têm efeito
+    // imediato, mesmo que exista uma validade futura no documento.
+    function hasExplicitFinancialBlock() {
+      let plan = get(planPath()).data;
+      return (
+          plan.keys().hasAny(['accessStatus'])
+          && (
+            plan.accessStatus == 'blocked_pending_choice'
+            || plan.accessStatus == 'manual_review'
+          )
+        )
+        || (
+          plan.keys().hasAny(['financialStatus'])
+          && (
+            plan.financialStatus == 'blocked'
+            || plan.financialStatus == 'manual_review'
+          )
+        );
     }
 
     function isFinanciallyBlocked() {
+      let plan = get(planPath()).data;
       return hasPlan()
-        && get(planPath()).data.plano == 'pro'
-        && hasPlanExpiry()
-        && request.time >= planExpiry() + duration.value(5, 'd')
-        && (!get(planPath()).data.keys().hasAny(['accessStatus'])
-          || get(planPath()).data.accessStatus != 'free_selected');
+        && (
+          hasExplicitFinancialBlock()
+          || (
+            plan.plano == 'pro'
+            && (
+              !plan.keys().hasAny(['accessStatus'])
+              || plan.accessStatus != 'free_selected'
+            )
+            && allKnownExpiryGracePeriodsFinished()
+          )
+        );
     }
 
     function workPath(obraId) {
       return /databases/$(database)/documents/obras/$(obraId);
     }
 
+    function workBelongsToCurrentUser(obraId) {
+      return isSignedIn()
+        && exists(workPath(obraId))
+        && get(workPath(obraId)).data.ownerId == request.auth.uid;
+    }
+
     function workIsUnlocked(obraId) {
-      return exists(workPath(obraId))
-        && (!get(workPath(obraId)).data.keys().hasAny(['lockedByPlan'])
-          || get(workPath(obraId)).data.lockedByPlan != true);
+      return workBelongsToCurrentUser(obraId)
+        && (
+          !get(workPath(obraId)).data.keys().hasAny(['lockedByPlan'])
+          || get(workPath(obraId)).data.lockedByPlan != true
+        );
     }
 
     function newWorkHasSafePlanLockDefaults() {
-      return (!request.resource.data.keys().hasAny(['lockedByPlan'])
-          || request.resource.data.lockedByPlan == false)
-        && (!request.resource.data.keys().hasAny(['planLockReason'])
-          || request.resource.data.planLockReason == null)
-        && (!request.resource.data.keys().hasAny(['planLockedAt'])
-          || request.resource.data.planLockedAt == null);
+      return (
+          !request.resource.data.keys().hasAny(['lockedByPlan'])
+          || request.resource.data.lockedByPlan == false
+        )
+        && (
+          !request.resource.data.keys().hasAny(['planLockReason'])
+          || request.resource.data.planLockReason == null
+        )
+        && (
+          !request.resource.data.keys().hasAny(['planLockedAt'])
+          || request.resource.data.planLockedAt == null
+        );
     }
 
     function clientDidNotChangePlanLock() {
-      return !request.resource.data.diff(resource.data).affectedKeys()
+      return !request.resource.data
+        .diff(resource.data)
+        .affectedKeys()
         .hasAny(['lockedByPlan', 'planLockReason', 'planLockedAt']);
     }
 
@@ -77,22 +133,35 @@ service cloud.firestore {
     }
 
     match /uso_ia/{docId} {
-      allow read: if isSignedIn() && docId.matches('^' + request.auth.uid + '_.*$');
+      allow read: if isSignedIn()
+        && docId.matches('^' + request.auth.uid + '_.*$');
       allow write: if false;
     }
 
     match /usuarios/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
-      allow create, update: if isSignedIn()
+
+      allow create: if isSignedIn()
         && request.auth.uid == uid
         && !isFinanciallyBlocked()
         && !request.resource.data.keys().hasAny(['iaUso', 'plano']);
+
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && !isFinanciallyBlocked()
+        && !request.resource.data
+          .diff(resource.data)
+          .affectedKeys()
+          .hasAny(['iaUso', 'plano']);
+
       allow delete: if false;
     }
 
     match /obras/{obraId} {
-      // A listagem continua disponível para mostrar quais obras foram bloqueadas.
-      allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
+      // A listagem permanece permitida para que o usuário veja quais obras
+      // foram bloqueadas pelo limite do Free.
+      allow read: if isSignedIn()
+        && (resource == null || resource.data.ownerId == request.auth.uid);
 
       allow create: if isSignedIn()
         && !isFinanciallyBlocked()
@@ -103,34 +172,41 @@ service cloud.firestore {
         && !isFinanciallyBlocked()
         && ownsExisting(resource.data)
         && ownsNew(request.resource.data)
-        && (!resource.data.keys().hasAny(['lockedByPlan']) || resource.data.lockedByPlan != true)
+        && (
+          !resource.data.keys().hasAny(['lockedByPlan'])
+          || resource.data.lockedByPlan != true
+        )
         && clientDidNotChangePlanLock();
 
-      // Exclusões passam sempre pelas APIs autoritativas, inclusive no bloqueio Free.
+      // Exclusões passam pelas APIs autoritativas, inclusive no plano Free.
       allow delete: if false;
 
       match /diarios/{diarioId} {
-        allow read: if isSignedIn()
-          && workIsUnlocked(obraId)
+        allow read: if workIsUnlocked(obraId)
           && (resource == null || resource.data.ownerId == request.auth.uid);
 
-        allow create, update: if isSignedIn()
-          && !isFinanciallyBlocked()
+        allow create: if !isFinanciallyBlocked()
           && workIsUnlocked(obraId)
-          && (resource == null || resource.data.ownerId == request.auth.uid)
+          && ownsNew(request.resource.data);
+
+        allow update: if !isFinanciallyBlocked()
+          && workIsUnlocked(obraId)
+          && ownsExisting(resource.data)
           && ownsNew(request.resource.data);
 
         allow delete: if false;
 
         match /fotos/{fotoId} {
-          allow read: if isSignedIn()
-            && workIsUnlocked(obraId)
+          allow read: if workIsUnlocked(obraId)
             && (resource == null || resource.data.ownerId == request.auth.uid);
 
-          allow create, update: if isSignedIn()
-            && !isFinanciallyBlocked()
+          allow create: if !isFinanciallyBlocked()
             && workIsUnlocked(obraId)
-            && (resource == null || resource.data.ownerId == request.auth.uid)
+            && ownsNew(request.resource.data);
+
+          allow update: if !isFinanciallyBlocked()
+            && workIsUnlocked(obraId)
+            && ownsExisting(resource.data)
             && ownsNew(request.resource.data);
 
           allow delete: if false;
