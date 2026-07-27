@@ -22,12 +22,27 @@ service cloud.firestore {
       return isSignedIn() && exists(planPath());
     }
 
+    function hasPlanExpiry() {
+      let plan = get(planPath()).data;
+      return (plan.keys().hasAny(['acessoAte']) && plan.acessoAte is timestamp)
+        || (plan.keys().hasAny(['currentPeriodEnd']) && plan.currentPeriodEnd is timestamp)
+        || (plan.keys().hasAny(['validade']) && plan.validade is timestamp);
+    }
+
+    function planExpiry() {
+      let plan = get(planPath()).data;
+      return plan.keys().hasAny(['acessoAte']) && plan.acessoAte is timestamp
+        ? plan.acessoAte
+        : plan.keys().hasAny(['currentPeriodEnd']) && plan.currentPeriodEnd is timestamp
+          ? plan.currentPeriodEnd
+          : plan.validade;
+    }
+
     function isFinanciallyBlocked() {
       return hasPlan()
         && get(planPath()).data.plano == 'pro'
-        && get(planPath()).data.keys().hasAny(['acessoAte'])
-        && get(planPath()).data.acessoAte is timestamp
-        && request.time >= get(planPath()).data.acessoAte + duration.value(5, 'd')
+        && hasPlanExpiry()
+        && request.time >= planExpiry() + duration.value(5, 'd')
         && (!get(planPath()).data.keys().hasAny(['accessStatus'])
           || get(planPath()).data.accessStatus != 'free_selected');
     }
