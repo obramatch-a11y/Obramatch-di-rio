@@ -15,7 +15,7 @@ permissions:
 jobs:
   validar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Baixar código
@@ -32,6 +32,9 @@ jobs:
 
       - name: Verificar TypeScript
         run: npm run typecheck
+
+      - name: Compilar regras do Firestore no emulador
+        run: npx --yes firebase-tools@15.24.0 emulators:exec --only firestore --project demo-obramatch --non-interactive "node -e \"console.log('Regras do Firestore compiladas com sucesso.')\""
 
       - name: Validar fluxos autoritativos
         run: npm run test:authoritative-flows
