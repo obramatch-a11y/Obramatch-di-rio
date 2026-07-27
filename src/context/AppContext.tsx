@@ -19,8 +19,15 @@ import { calcularHashRdo } from '../lib/hash';
 import {
   deleteDiaryAuthoritatively,
   deletePhotoAuthoritatively,
+  deleteWorkAuthoritatively,
   setWorkArchived,
 } from '../lib/authoritativeApi';
+import {
+  financialValueToMillis,
+  resolveFinancialAccess,
+  type FinancialAccessInput,
+  type FinancialAccessState,
+} from '../lib/financialAccess';
 
 interface AppContextType {
   user: User | null;
@@ -47,32 +54,14 @@ interface AppContextType {
   deleteDiario: (id: string) => Promise<void>;
   deleteFoto: (diarioId: string, fotoId: string) => Promise<void>;
   plano: PlanoInfo;
+  financialAccess: FinancialAccessState;
   usoIa: UsoIaInfo;
   arquivarObra: (id: string, arquivar: boolean) => Promise<void>;
   limiteObrasAtingido: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-function valueToMillis(value: unknown): number {
-  if (!value) return 0;
-  if (typeof value === 'string') {
-    const parsed = Date.parse(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  if (typeof value === 'object') {
-    const candidate = value as { seconds?: unknown; toDate?: () => Date };
-    if (typeof candidate.seconds === 'number') return candidate.seconds * 1000;
-    if (typeof candidate.toDate === 'function') {
-      try {
-        return candidate.toDate().getTime();
-      } catch {
-        return 0;
-      }
-    }
-  }
-  return 0;
-}
+const INITIAL_FINANCIAL_ACCESS = resolveFinancialAccess(null);
 
 function showActionError(error: unknown, fallback: string): never {
   const message = error instanceof Error && error.message ? error.message : fallback;
@@ -89,10 +78,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [diarios, setDiarios] = useState<Diario[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
-  const [plano, setPlano] = useState<PlanoInfo>({ plano: 'free', validade: null });
+  const [plano, setPlano] = useState<PlanoInfo>({ plano: 'free', rawPlan: 'free', validade: null });
+  const [planSource, setPlanSource] = useState<FinancialAccessInput | null>(null);
+  const [financialAccess, setFinancialAccess] = useState<FinancialAccessState>(INITIAL_FINANCIAL_ACCESS);
   const [usoIa, setUsoIa] = useState<UsoIaInfo>({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
 
-  // Navigation and State
   const [currentView, setCurrentView] = useState<'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos'>('dashboard');
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [selectedDiario, setSelectedDiario] = useState<Diario | null>(null);
@@ -110,21 +100,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedAgentId(null);
   };
 
-  // Monitor network status
   useEffect(() => {
     const handleOnline = () => setOnline(true);
     const handleOffline = () => setOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Monitor Auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -134,6 +120,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCarregandoObras(true);
         setDiarios([]);
         setFotos([]);
+        setPlanSource(null);
+        setPlano({ plano: 'free', rawPlan: 'free', validade: null });
+        setFinancialAccess(INITIAL_FINANCIAL_ACCESS);
         setCurrentView('dashboard');
         setSelectedObra(null);
         setSelectedDiario(null);
@@ -143,11 +132,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return unsubscribe;
   }, []);
 
-  // Handle browser back button (Android back gesture + browser back button)
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const state = event.state;
-
       if (!state || !state.appView) {
         setCurrentView('dashboard');
         setSelectedObra(null);
@@ -156,16 +143,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      const targetView = state.appView as 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos';
-      setCurrentView(targetView);
-
-      if (state.obraId) {
-        const foundObra = obras.find((obra) => obra.id === state.obraId);
-        setSelectedObra(foundObra || null);
-      } else {
+      const targetView = state.appView as AppContextType['currentView'];
+      const foundObra = state.obraId ? obras.find((obra) => obra.id === state.obraId) : null;
+      if (foundObra?.lockedByPlan) {
+        setCurrentView('dashboard');
         setSelectedObra(null);
+        setSelectedDiario(null);
+        setEditingDiario(null);
+        return;
       }
 
+      setCurrentView(targetView);
+      setSelectedObra(foundObra || null);
       if (state.diarioId) {
         const foundDiario = diarios.find((diario) => diario.id === state.diarioId);
         setSelectedDiario(foundDiario || null);
@@ -180,26 +169,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => window.removeEventListener('popstate', handlePopState);
   }, [obras, diarios]);
 
-  // Plano e consumo de IA (documentos escritos só pelo servidor; aqui só leitura)
   useEffect(() => {
     if (!user) {
-      setPlano({ plano: 'free', validade: null });
+      setPlanSource(null);
       setUsoIa({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
       return;
     }
 
     const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
-      const data = snap.data();
-      const validityMs = Math.max(
-        valueToMillis(data?.validade),
-        valueToMillis(data?.acessoAte),
-        valueToMillis(data?.currentPeriodEnd),
-      );
-      const isPro = data?.plano === 'pro' && (!validityMs || validityMs > Date.now());
-      const publicValidity = [data?.validade, data?.acessoAte, data?.currentPeriodEnd]
-        .find((value) => typeof value === 'string') as string | undefined;
-      setPlano({ plano: isPro ? 'pro' : 'free', validade: publicValidity || null });
-    }, () => setPlano({ plano: 'free', validade: null }));
+      setPlanSource((snap.data() || null) as FinancialAccessInput | null);
+    }, () => setPlanSource(null));
 
     const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
     const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
@@ -220,38 +199,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [user]);
 
-  // Sync Obras from Firestore when authenticated
+  useEffect(() => {
+    const updateFinancialState = () => {
+      const access = resolveFinancialAccess(planSource);
+      const source = planSource as Record<string, unknown> | null;
+      setFinancialAccess(access);
+      setPlano({
+        plano: access.operationalPlan,
+        rawPlan: access.rawPlan,
+        validade: access.expiresAt,
+        accessStatus: String(source?.accessStatus || '') || null,
+        financialStatus: String(source?.financialStatus || '') || null,
+        acessoAte: access.expiresAt,
+        currentPeriodEnd: access.expiresAt,
+      });
+    };
+
+    updateFinancialState();
+    const timer = window.setInterval(updateFinancialState, 60_000);
+    return () => window.clearInterval(timer);
+  }, [planSource]);
+
   useEffect(() => {
     if (!user) return;
     setCarregandoObras(true);
-
     const q = query(collection(db, 'obras'), where('ownerId', '==', user.uid));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const obrasList: Obra[] = [];
       snapshot.forEach((obraDoc) => {
         obrasList.push({ id: obraDoc.id, ...obraDoc.data() } as Obra);
       });
-
-      const quando = (obra: unknown): number => {
-        const record = obra as { updatedAt?: unknown; createdAt?: unknown };
-        return valueToMillis(record.updatedAt ?? record.createdAt);
-      };
-      obrasList.sort((a, b) => quando(b) - quando(a));
+      obrasList.sort((a, b) => financialValueToMillis(b.updatedAt ?? b.createdAt) - financialValueToMillis(a.updatedAt ?? a.createdAt));
       setObras(obrasList);
       setCarregandoObras(false);
     }, (error) => {
       console.error('Erro no listener (obras):', error);
       setCarregandoObras(false);
     });
-
     return unsubscribe;
   }, [user]);
 
-  // Mantém a obra selecionada sincronizada com arquivamento/reativação feitos pelo servidor.
   useEffect(() => {
     if (!selectedObra) return;
     const current = obras.find((obra) => obra.id === selectedObra.id);
-    if (!current) {
+    if (!current || current.lockedByPlan) {
       setSelectedObra(null);
       setSelectedDiario(null);
       setEditingDiario(null);
@@ -261,9 +252,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedObra(current);
   }, [obras, selectedObra?.id]);
 
-  // Sync Diarios and Fotos for selected Obra
   useEffect(() => {
-    if (!user || !selectedObra) {
+    if (!user || !selectedObra || selectedObra.lockedByPlan) {
       setDiarios([]);
       setFotos([]);
       return;
@@ -271,7 +261,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const diariosPath = `obras/${selectedObra.id}/diarios`;
     const qDiarios = query(collection(db, diariosPath), where('ownerId', '==', user.uid));
-
     const unsubDiarios = onSnapshot(qDiarios, (snapshot) => {
       const diariosList: Diario[] = [];
       snapshot.forEach((diarioDoc) => {
@@ -279,17 +268,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       diariosList.sort((a, b) => {
         const dateComp = String(b.data ?? '').localeCompare(String(a.data ?? ''));
-        if (dateComp !== 0) return dateComp;
-        return String(b.horario ?? '').localeCompare(String(a.horario ?? ''));
+        return dateComp !== 0 ? dateComp : String(b.horario ?? '').localeCompare(String(a.horario ?? ''));
       });
       setDiarios(diariosList);
-    }, (error) => {
-      console.error('Erro no listener (diários):', error);
-    });
+    }, (error) => console.error('Erro no listener (diários):', error));
 
     const activeUnsubscribes: (() => void)[] = [];
     const aggregatedPhotos: Record<string, Foto[]> = {};
-
     const syncPhotosForDiario = (diarioId: string) => {
       const path = `obras/${selectedObra.id}/diarios/${diarioId}/fotos`;
       const qFotos = query(collection(db, path), where('ownerId', '==', user.uid));
@@ -300,12 +285,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
         aggregatedPhotos[diarioId] = diaryPhotos;
         setFotos(Object.values(aggregatedPhotos).flat());
-      }, (error) => {
-        console.error('Erro no listener (fotos):', error);
-      });
+      }, (error) => console.error('Erro no listener (fotos):', error));
       activeUnsubscribes.push(unsubscribe);
     };
-
     diarios.forEach((diario) => syncPhotosForDiario(diario.id));
 
     return () => {
@@ -315,41 +297,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [user, selectedObra, diarios.map((diario) => diario.id).join(',')]);
 
   const setView = (
-    view: 'dashboard' | 'obra-dashboard' | 'diario-form' | 'diario-detail' | 'timeline' | 'exportar-rdos',
+    view: AppContextType['currentView'],
     obra: Obra | null = null,
     diario: Diario | null = null,
   ) => {
+    if (obra?.lockedByPlan && view !== 'dashboard') {
+      window.alert('Esta obra está bloqueada pelo limite do plano Free. Renove o Pro para desbloqueá-la ou exclua a obra.');
+      return;
+    }
     setCurrentView(view);
     if (obra !== undefined) setSelectedObra(obra);
     if (diario !== undefined) {
       setSelectedDiario(diario);
       setEditingDiario(diario);
     }
-
     if (view !== 'dashboard') {
-      window.history.pushState(
-        {
-          appView: view,
-          obraId: obra?.id || null,
-          diarioId: diario?.id || null,
-        },
-        '',
-        window.location.href,
-      );
+      window.history.pushState({ appView: view, obraId: obra?.id || null, diarioId: diario?.id || null }, '', window.location.href);
     }
   };
 
-  // Obra Operations
+  const assertWorkAvailable = (obra?: Obra | null) => {
+    if (obra?.lockedByPlan) {
+      throw new Error('Esta obra está bloqueada pelo limite do plano Free. Somente a exclusão da obra permanece disponível.');
+    }
+  };
+
   const createObra = async (obraData: Omit<Obra, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     if (!user) throw new Error('Usuário não autenticado');
     if (limiteObrasAtingido) {
       throw new Error(`Seu plano permite ${LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas. Arquive uma obra concluída para criar outra.`);
     }
-
     const path = 'obras';
     try {
       const docRef = await addDoc(collection(db, path), {
         ...obraData,
+        lockedByPlan: false,
+        planLockReason: null,
+        planLockedAt: null,
         ownerId: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -362,31 +346,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateObra = async (id: string, obraData: Partial<Obra>): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
+    const current = obras.find((obra) => obra.id === id);
+    assertWorkAvailable(current);
     const path = `obras/${id}`;
     const safeData = { ...obraData };
     delete safeData.arquivada;
+    delete safeData.lockedByPlan;
+    delete safeData.planLockReason;
+    delete safeData.planLockedAt;
     try {
-      await updateDoc(doc(db, 'obras', id), {
-        ...safeData,
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(doc(db, 'obras', id), { ...safeData, updatedAt: serverTimestamp() });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
   };
 
-  const deleteObra = async (_id: string): Promise<void> => {
-    const message = 'A exclusão definitiva da obra está temporariamente bloqueada para proteger fotos e RDOs durante a homologação. Arquive a obra por enquanto; nenhum dado será perdido.';
-    if (typeof window !== 'undefined') window.alert(message);
-    throw new Error(message);
+  const deleteObra = async (id: string): Promise<void> => {
+    if (!user) throw new Error('Usuário não autenticado');
+    const current = obras.find((obra) => obra.id === id);
+    if (!current?.lockedByPlan) {
+      const message = 'A exclusão definitiva pelo aplicativo permanece restrita às obras bloqueadas pelo plano. Use o site para outras exclusões.';
+      if (typeof window !== 'undefined') window.alert(message);
+      throw new Error(message);
+    }
+    try {
+      const result = await deleteWorkAuthoritatively(user, id);
+      window.alert(result.completed ? 'Obra excluída definitivamente.' : 'Exclusão solicitada e em processamento.');
+    } catch (error) {
+      showActionError(error, 'Não foi possível excluir a obra bloqueada.');
+    }
   };
 
-  // Diario Operations
   const createDiario = async (
     diarioData: Omit<Diario, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>,
     base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<string> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    assertWorkAvailable(selectedObra);
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para registrar novos RDOs.');
 
     const diariosPath = `obras/${selectedObra.id}/diarios`;
@@ -396,6 +392,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try {
         numeroRdo = await runTransaction(db, async (transaction) => {
           const snap = await transaction.get(obraRef);
+          if (snap.data()?.lockedByPlan) throw new Error('Esta obra está bloqueada pelo limite do plano Free.');
           const atual = (snap.data()?.proximoNumeroRdo as number) || (diarios.length + 1);
           const numero = Math.max(atual, diarios.length + 1);
           if (snap.exists()) {
@@ -413,6 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return numero;
         });
       } catch (transactionError) {
+        if (transactionError instanceof Error && transactionError.message.includes('bloqueada')) throw transactionError;
         console.warn('Numeração via servidor falhou, usando numeração local:', transactionError);
         numeroRdo = diarios.length + 1;
       }
@@ -442,11 +440,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      if (navigator.onLine) {
-        await gravacaoDiario;
-      } else {
-        gravacaoDiario.catch((error) => console.error('Sincronização pendente do diário:', error));
-      }
+      if (navigator.onLine) await gravacaoDiario;
+      else gravacaoDiario.catch((error) => console.error('Sincronização pendente do diário:', error));
 
       const diaryId = docRef.id;
       const photosPath = `${diariosPath}/${diaryId}/fotos`;
@@ -464,13 +459,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ownerId: user.uid,
           createdAt: serverTimestamp(),
         });
-        if (navigator.onLine) {
-          await gravacaoFoto;
-        } else {
-          gravacaoFoto.catch((error) => console.error('Sincronização pendente de foto:', error));
-        }
+        if (navigator.onLine) await gravacaoFoto;
+        else gravacaoFoto.catch((error) => console.error('Sincronização pendente de foto:', error));
       }
-
       return diaryId;
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, diariosPath);
@@ -483,6 +474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    assertWorkAvailable(selectedObra);
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para editar RDOs.');
 
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
@@ -508,11 +500,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         hashIntegridade,
         updatedAt: serverTimestamp(),
       });
-      if (navigator.onLine) {
-        await gravacaoEdicao;
-      } else {
-        gravacaoEdicao.catch((error) => console.error('Sincronização pendente da edição:', error));
-      }
+      if (navigator.onLine) await gravacaoEdicao;
+      else gravacaoEdicao.catch((error) => console.error('Sincronização pendente da edição:', error));
 
       if (base64Photos && base64Photos.length > 0) {
         const photosPath = `${diarioPath}/fotos`;
@@ -530,11 +519,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ownerId: user.uid,
             createdAt: serverTimestamp(),
           });
-          if (navigator.onLine) {
-            await gravacaoFotoEdicao;
-          } else {
-            gravacaoFotoEdicao.catch((error) => console.error('Sincronização pendente de foto:', error));
-          }
+          if (navigator.onLine) await gravacaoFotoEdicao;
+          else gravacaoFotoEdicao.catch((error) => console.error('Sincronização pendente de foto:', error));
         }
       }
     } catch (error) {
@@ -544,6 +530,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteDiario = async (id: string): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    assertWorkAvailable(selectedObra);
     try {
       await deleteDiaryAuthoritatively(user, selectedObra.id, id);
       if (selectedDiario?.id === id) {
@@ -558,6 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteFoto = async (diarioId: string, fotoId: string): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    assertWorkAvailable(selectedObra);
     try {
       await deletePhotoAuthoritatively(user, selectedObra.id, diarioId, fotoId);
     } catch (error) {
@@ -567,20 +555,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const arquivarObra = async (id: string, arquivar: boolean): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
+    const currentWork = obras.find((obra) => obra.id === id);
+    assertWorkAvailable(currentWork);
     try {
       await setWorkArchived(user, id, arquivar);
-      setObras((current) => current.map((obra) => (
-        obra.id === id ? { ...obra, arquivada: arquivar } : obra
-      )));
-      setSelectedObra((current) => (
-        current?.id === id ? { ...current, arquivada: arquivar } : current
-      ));
+      setObras((current) => current.map((obra) => obra.id === id ? { ...obra, arquivada: arquivar } : obra));
+      setSelectedObra((current) => current?.id === id ? { ...current, arquivada: arquivar } : current);
     } catch (error) {
       showActionError(error, arquivar ? 'Não foi possível arquivar a obra.' : 'Não foi possível reativar a obra.');
     }
   };
 
-  const limiteObrasAtingido = obras.filter((obra) => !obra.arquivada).length
+  const limiteObrasAtingido = obras.filter((obra) => !obra.arquivada && !obra.lockedByPlan).length
     >= LIMITES_PLANO[plano.plano].obrasAtivas;
 
   return (
@@ -609,6 +595,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteDiario,
       deleteFoto,
       plano,
+      financialAccess,
       usoIa,
       arquivarObra,
       limiteObrasAtingido,
