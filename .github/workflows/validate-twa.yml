@@ -36,5 +36,8 @@ jobs:
       - name: Validar fluxos autoritativos
         run: npm run test:authoritative-flows
 
+      - name: Validar avisos e bloqueios financeiros
+        run: npm run test:financial-access
+
       - name: Gerar build de produção
         run: npm run build
