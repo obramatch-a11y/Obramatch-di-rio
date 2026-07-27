@@ -72,15 +72,14 @@ service cloud.firestore {
     }
 
     function isFinanciallyBlocked() {
-      let plan = get(planPath()).data;
       return hasPlan()
         && (
           hasExplicitFinancialBlock()
           || (
-            plan.plano == 'pro'
+            get(planPath()).data.plano == 'pro'
             && (
-              !plan.keys().hasAny(['accessStatus'])
-              || plan.accessStatus != 'free_selected'
+              !get(planPath()).data.keys().hasAny(['accessStatus'])
+              || get(planPath()).data.accessStatus != 'free_selected'
             )
             && allKnownExpiryGracePeriodsFinished()
           )
