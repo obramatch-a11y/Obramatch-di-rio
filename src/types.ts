@@ -10,8 +10,10 @@ export interface Obra {
   proximoNumeroRdo?: number;
   arquivada?: boolean;
   lockedByPlan?: boolean;
-  planLockReason?: 'free_limit' | null;
+  planLockReason?: 'free_limit' | 'admin_manual' | null;
   planLockedAt?: unknown;
+  adminLockedBy?: string | null;
+  adminLockReason?: string | null;
   ownerId: string;
   createdAt: any;
   updatedAt: any;
@@ -48,6 +50,10 @@ export interface Diario {
   assinatura?: string;
   gps?: GPSLocation | null;
   condicaoTrabalho?: 'Praticável' | 'Parcialmente praticável' | 'Impraticável';
+  lockedByAdmin?: boolean;
+  adminLockedAt?: unknown;
+  adminLockedBy?: string | null;
+  adminLockReason?: string | null;
   ownerId: string;
   createdAt: any;
   updatedAt: any;
