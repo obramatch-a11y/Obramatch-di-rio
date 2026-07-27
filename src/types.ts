@@ -6,12 +6,15 @@ export interface Obra {
   responsavelTecnico: string;
   dataInicio: string;
   observacoes: string;
-  gps?: GPSLocation | null;       // Localização da obra (base do clima oficial)
-  proximoNumeroRdo?: number;      // Numeração sequencial dos RDOs
-  arquivada?: boolean;            // Obra arquivada não conta no limite do plano
+  gps?: GPSLocation | null;
+  proximoNumeroRdo?: number;
+  arquivada?: boolean;
+  lockedByPlan?: boolean;
+  planLockReason?: 'free_limit' | null;
+  planLockedAt?: unknown;
   ownerId: string;
-  createdAt: any; // Timestamp
-  updatedAt: any; // Timestamp
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface GPSLocation {
@@ -30,37 +33,37 @@ export interface ClimaOficialInfo {
 export interface Diario {
   id: string;
   obraId: string;
-  numeroRdo?: number;                     // RDO Nº sequencial por obra
+  numeroRdo?: number;
   data: string;
   horario: string;
   clima: string;
-  climaOficial?: ClimaOficialInfo | null; // Clima de fonte oficial (Open-Meteo)
+  climaOficial?: ClimaOficialInfo | null;
   origem?: 'app' | 'telegram';
-  hashIntegridade?: string;               // SHA-256 do conteúdo confirmado
+  hashIntegridade?: string;
   equipe: string;
   atividades: string;
   materiais: string;
   ocorrencias: string;
   observacoes: string;
-  assinatura?: string; // Base64 signature image
+  assinatura?: string;
   gps?: GPSLocation | null;
   condicaoTrabalho?: 'Praticável' | 'Parcialmente praticável' | 'Impraticável';
   ownerId: string;
-  createdAt: any; // Timestamp
-  updatedAt: any; // Timestamp
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Foto {
   id: string;
   diarioId: string;
   obraId: string;
-  url: string; // Base64 compressed image
+  url: string;
   legenda?: string;
   data: string;
   horario: string;
   gps?: GPSLocation | null;
   ownerId: string;
-  createdAt: any; // Timestamp
+  createdAt: any;
 }
 
 export enum OperationType {
@@ -86,12 +89,17 @@ export interface FirestoreErrorInfo {
       providerId?: string | null;
       email?: string | null;
     }[];
-  }
+  };
 }
 
 export interface PlanoInfo {
   plano: 'free' | 'pro';
+  rawPlan?: 'free' | 'pro';
   validade?: string | null;
+  accessStatus?: string | null;
+  financialStatus?: string | null;
+  acessoAte?: string | null;
+  currentPeriodEnd?: string | null;
 }
 
 export interface UsoIaInfo {
