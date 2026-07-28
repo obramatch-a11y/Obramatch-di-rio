@@ -12,6 +12,7 @@ function assert(condition, message) {
 const appContext = read('src/context/AppContext.tsx');
 const clientApi = read('src/lib/authoritativeApi.ts');
 const proxy = read('functions/_lib/authoritativeProxy.ts');
+const firestore = read('functions/_lib/firestore.ts');
 const archiveRoute = read('functions/api/obras/archive.ts');
 const reactivateRoute = read('functions/api/obras/reactivate.ts');
 const deletePhotoRoute = read('functions/api/storage/delete-photo.ts');
@@ -45,6 +46,10 @@ assert(!workerRouter.includes("from '../functions/api/storage/delete-photo'"), '
 assert(!workerRouter.includes("from '../functions/api/diarios/delete'"), 'Worker não pode chamar proxy de RDO para o próprio domínio');
 assert(workerActions.includes('accounts:lookup'), 'ações diretas devem validar o token Firebase');
 assert(workerActions.includes('obra.data.ownerId !== uid'), 'ações diretas devem validar propriedade da obra');
+assert(firestore.includes('export async function fsList'), 'helper deve listar subcoleções por caminho completo');
+assert(workerActions.includes('fsList(ctx.env, photoCollectionPath)'), 'exclusão do RDO deve listar sua subcoleção de fotos');
+assert(workerActions.includes('`obras/${obraId}/diarios/${diarioId}/fotos`'), 'caminho aninhado das fotos deve ser explícito');
+assert(!workerActions.includes("fsQuery(ctx.env, 'fotos'"), 'exclusão do RDO não pode consultar fotos como coleção raiz');
 
 const workerRoutes = [
   ['/api/obras/archive', 'archiveWorkPost'],
@@ -66,4 +71,4 @@ assert(viteConfig.includes("manifestFilename: 'manifest.json'"), 'nome do manife
 assert(viteConfig.includes("start_url: '/'"), 'start_url do TWA deve permanecer estável');
 assert(viteConfig.includes("scope: '/'"), 'scope do TWA deve permanecer estável');
 
-console.log('Fluxos autoritativos do Worker sem proxy recursivo: OK');
+console.log('Fluxos autoritativos do Worker e exclusão aninhada: OK');
