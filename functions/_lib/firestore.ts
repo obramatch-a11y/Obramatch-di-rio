@@ -87,10 +87,39 @@ export async function fsAdd(env: Env, collectionPath: string, dados: Record<stri
 
 export async function fsDelete(env: Env, path: string): Promise<void> {
   const token = await obterAccessToken(env);
-  await fetch(`${baseUrl(env)}/${path}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(`${baseUrl(env)}/${path}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok && res.status !== 404) throw new Error(`Firestore DELETE ${path}: ${await res.text()}`);
 }
 
-/** Consulta simples: coleção filtrada por um campo == valor. */
+/** Lista apenas os documentos filhos diretos de uma coleção, inclusive subcoleções aninhadas. */
+export async function fsList(
+  env: Env,
+  collectionPath: string,
+  pageSize = 1000,
+): Promise<{ id: string; data: Record<string, any> }[]> {
+  const token = await obterAccessToken(env);
+  const limit = Math.min(Math.max(pageSize, 1), 1000);
+  const documents: { id: string; data: Record<string, any> }[] = [];
+  let pageToken = '';
+
+  do {
+    const params = new URLSearchParams({ pageSize: String(limit), showMissing: 'false' });
+    if (pageToken) params.set('pageToken', pageToken);
+    const res = await fetch(`${baseUrl(env)}/${collectionPath}?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`Firestore LIST ${collectionPath}: ${await res.text()}`);
+    const payload = await res.json() as { documents?: any[]; nextPageToken?: string };
+    for (const doc of payload.documents || []) {
+      documents.push({ id: doc.name.split('/').pop(), data: deCampos(doc.fields) });
+    }
+    pageToken = payload.nextPageToken || '';
+  } while (pageToken);
+
+  return documents;
+}
+
+/** Consulta simples: coleção raiz filtrada por um campo == valor. */
 export async function fsQuery(
   env: Env,
   colecao: string,
