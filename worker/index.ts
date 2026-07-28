@@ -8,10 +8,12 @@ import { onRequestPost as telegramPost } from '../functions/api/telegram';
 import { onRequestGet as setupWebhookGet } from '../functions/api/setup-webhook';
 import { onRequestGet as perfilPublicoGet } from '../functions/api/perfil-publico';
 import { onRequestGet as diagnosticoGet } from '../functions/api/diagnostico';
-import { onRequestPost as archiveWorkPost } from '../functions/api/obras/archive';
-import { onRequestPost as reactivateWorkPost } from '../functions/api/obras/reactivate';
-import { onRequestPost as deletePhotoPost } from '../functions/api/storage/delete-photo';
-import { onRequestPost as deleteDiaryPost } from '../functions/api/diarios/delete';
+import {
+  archiveWorkPost,
+  reactivateWorkPost,
+  deletePhotoPost,
+  deleteDiaryPost,
+} from './authoritativeActions';
 import type { Env as ApiEnv } from '../functions/_lib/google';
 
 interface RateLimiter {
