@@ -10,6 +10,9 @@ function assert(condition, message) {
 }
 
 const appContext = read('src/context/AppContext.tsx');
+const app = read('src/App.tsx');
+const planCard = read('src/components/PlanoUsoCard.tsx');
+const financialAccess = read('src/lib/financialAccess.ts');
 const clientApi = read('src/lib/authoritativeApi.ts');
 const proxy = read('functions/_lib/authoritativeProxy.ts');
 const firestore = read('functions/_lib/firestore.ts');
@@ -29,6 +32,16 @@ assert(appContext.includes('deleteDiaryAuthoritatively'), 'RDO deve usar a API a
 assert(appContext.includes('deletePhotoAuthoritatively'), 'foto deve usar a API autoritativa');
 assert(appContext.includes('temporariamente bloqueada'), 'exclusão total deve permanecer bloqueada até homologação do pipeline em lote');
 assert(appContext.includes('delete safeData.arquivada'), 'updateObra não pode alterar arquivada diretamente');
+assert(appContext.includes('resolveFinancialAccess(planSource)'), 'TWA deve recalcular o estado financeiro autoritativo');
+assert(appContext.includes('financialAccess,'), 'estado financeiro deve ser exposto pelo contexto');
+assert(financialAccess.includes('if (acessoAteMs || currentPeriodEndMs)'), 'campos canônicos devem prevalecer sobre validade legada');
+assert(financialAccess.includes("accessStatus === 'payment_overdue'"), 'TWA deve reconhecer vencimento explícito');
+assert(financialAccess.includes("accessStatus === 'blocked_pending_choice'"), 'TWA deve reconhecer bloqueio explícito');
+assert(!financialAccess.includes('Math.max(\n    financialValueToMillis(input?.validade)'), 'validade legada não pode mascarar homologação nova');
+assert(planCard.includes('Plano PRO vencido'), 'cartão deve exibir vencimento ao usuário');
+assert(planCard.includes('Válido até'), 'compra única deve exibir validade, não renovação automática');
+assert(!planCard.includes('Renova em'), 'cartão não pode prometer renovação automática');
+assert(app.includes('financialAccess.isBlocked'), 'TWA deve bloquear uso após o prazo de regularização');
 assert(clientApi.includes('user.getIdToken(true)'), 'cliente deve renovar token após 401');
 assert(clientApi.includes('if (!navigator.onLine)'), 'ações destrutivas devem ser bloqueadas offline');
 assert(proxy.includes("const AUTHORITATIVE_ORIGIN = 'https://diario.obramatch.com.br'"), 'proxy legado deve continuar restrito ao domínio homologado');
@@ -71,4 +84,4 @@ assert(viteConfig.includes("manifestFilename: 'manifest.json'"), 'nome do manife
 assert(viteConfig.includes("start_url: '/'"), 'start_url do TWA deve permanecer estável');
 assert(viteConfig.includes("scope: '/'"), 'scope do TWA deve permanecer estável');
 
-console.log('Fluxos autoritativos do Worker e exclusão aninhada: OK');
+console.log('Fluxos autoritativos, validade financeira e exclusão aninhada: OK');
