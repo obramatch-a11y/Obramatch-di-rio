@@ -21,6 +21,11 @@ import {
   deletePhotoAuthoritatively,
   setWorkArchived,
 } from '../lib/authoritativeApi';
+import {
+  resolveFinancialAccess,
+  type FinancialAccessInput,
+  type FinancialAccessState,
+} from '../lib/financialAccess';
 
 interface AppContextType {
   user: User | null;
@@ -47,12 +52,14 @@ interface AppContextType {
   deleteDiario: (id: string) => Promise<void>;
   deleteFoto: (diarioId: string, fotoId: string) => Promise<void>;
   plano: PlanoInfo;
+  financialAccess: FinancialAccessState;
   usoIa: UsoIaInfo;
   arquivarObra: (id: string, arquivar: boolean) => Promise<void>;
   limiteObrasAtingido: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+const INITIAL_FINANCIAL_ACCESS = resolveFinancialAccess(null);
 
 function valueToMillis(value: unknown): number {
   if (!value) return 0;
@@ -89,7 +96,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [diarios, setDiarios] = useState<Diario[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
-  const [plano, setPlano] = useState<PlanoInfo>({ plano: 'free', validade: null });
+  const [plano, setPlano] = useState<PlanoInfo>({
+    plano: 'free',
+    rawPlan: 'free',
+    validade: null,
+    stage: 'free',
+    accessStatus: null,
+    financialStatus: null,
+    regularizationDaysRemaining: 0,
+    isBlocked: false,
+  });
+  const [planSource, setPlanSource] = useState<FinancialAccessInput | null>(null);
+  const [financialAccess, setFinancialAccess] = useState<FinancialAccessState>(INITIAL_FINANCIAL_ACCESS);
   const [usoIa, setUsoIa] = useState<UsoIaInfo>({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
 
   // Navigation and State
@@ -183,23 +201,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Plano e consumo de IA (documentos escritos só pelo servidor; aqui só leitura)
   useEffect(() => {
     if (!user) {
-      setPlano({ plano: 'free', validade: null });
+      setPlanSource(null);
+      setPlano({
+        plano: 'free',
+        rawPlan: 'free',
+        validade: null,
+        stage: 'free',
+        accessStatus: null,
+        financialStatus: null,
+        regularizationDaysRemaining: 0,
+        isBlocked: false,
+      });
+      setFinancialAccess(INITIAL_FINANCIAL_ACCESS);
       setUsoIa({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
       return;
     }
 
     const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
-      const data = snap.data();
-      const validityMs = Math.max(
-        valueToMillis(data?.validade),
-        valueToMillis(data?.acessoAte),
-        valueToMillis(data?.currentPeriodEnd),
-      );
-      const isPro = data?.plano === 'pro' && (!validityMs || validityMs > Date.now());
-      const publicValidity = [data?.validade, data?.acessoAte, data?.currentPeriodEnd]
-        .find((value) => typeof value === 'string') as string | undefined;
-      setPlano({ plano: isPro ? 'pro' : 'free', validade: publicValidity || null });
-    }, () => setPlano({ plano: 'free', validade: null }));
+      setPlanSource((snap.data() || null) as FinancialAccessInput | null);
+    }, () => setPlanSource(null));
 
     const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
     const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
@@ -219,6 +239,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubUso();
     };
   }, [user]);
+
+  useEffect(() => {
+    const updateFinancialState = () => {
+      const access = resolveFinancialAccess(planSource);
+      const source = planSource as Record<string, unknown> | null;
+      setFinancialAccess(access);
+      setPlano({
+        plano: access.operationalPlan,
+        rawPlan: access.rawPlan,
+        validade: access.expiresAt,
+        stage: access.stage,
+        accessStatus: String(source?.accessStatus || '') || null,
+        financialStatus: String(source?.financialStatus || '') || null,
+        regularizationDaysRemaining: access.regularizationDaysRemaining,
+        isBlocked: access.isBlocked,
+      });
+    };
+
+    updateFinancialState();
+    const timer = window.setInterval(updateFinancialState, 60_000);
+    return () => window.clearInterval(timer);
+  }, [planSource]);
 
   // Sync Obras from Firestore when authenticated
   useEffect(() => {
@@ -609,6 +651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteDiario,
       deleteFoto,
       plano,
+      financialAccess,
       usoIa,
       arquivarObra,
       limiteObrasAtingido,
