@@ -1,5 +1,5 @@
 import type { Env } from '../functions/_lib/google';
-import { fsDelete, fsGet, fsQuery, fsSet } from '../functions/_lib/firestore';
+import { fsDelete, fsGet, fsList, fsQuery, fsSet } from '../functions/_lib/firestore';
 
 type WorkerContext = { request: Request; env: Env };
 
@@ -159,12 +159,14 @@ export async function deleteDiaryPost(ctx: WorkerContext): Promise<Response> {
   if (diario.data.ownerId !== auth.uid) return json(403, { message: 'Você não tem acesso a este RDO.' });
   if (diario.data.lockedByAdmin === true) return json(423, { message: 'Este RDO está bloqueado para alterações.' });
 
-  const fotos = await fsQuery(ctx.env, 'fotos', 'diarioId', diarioId, 1000);
+  const photoCollectionPath = `obras/${obraId}/diarios/${diarioId}/fotos`;
+  const fotos = await fsList(ctx.env, photoCollectionPath);
   for (const foto of fotos) {
-    if (foto.data.ownerId === auth.uid && foto.data.obraId === obraId) {
-      await fsDelete(ctx.env, `obras/${obraId}/diarios/${diarioId}/fotos/${foto.id}`);
+    if (foto.data.ownerId !== auth.uid) {
+      return json(409, { message: 'A exclusão foi interrompida porque existe uma foto com proprietário divergente.' });
     }
+    await fsDelete(ctx.env, `${photoCollectionPath}/${foto.id}`);
   }
   await fsDelete(ctx.env, `obras/${obraId}/diarios/${diarioId}`);
-  return json(200, { success: true, jobCreated: false, jobId: null });
+  return json(200, { success: true, jobCreated: false, jobId: null, deletedPhotos: fotos.length });
 }
