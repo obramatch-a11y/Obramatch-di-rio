@@ -89,9 +89,17 @@ export interface FirestoreErrorInfo {
   }
 }
 
+export type PlanoStage = 'free' | 'pro_active' | 'pro_expiring' | 'overdue' | 'blocked';
+
 export interface PlanoInfo {
   plano: 'free' | 'pro';
+  rawPlan?: 'free' | 'pro';
   validade?: string | null;
+  stage?: PlanoStage;
+  accessStatus?: string | null;
+  financialStatus?: string | null;
+  regularizationDaysRemaining?: number;
+  isBlocked?: boolean;
 }
 
 export interface UsoIaInfo {
