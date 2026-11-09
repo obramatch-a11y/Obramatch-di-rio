@@ -7,6 +7,22 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function obraEditavel(obraId) {
+      let obra = get(/databases/$(database)/documents/obras/$(obraId)).data;
+      return obra.ownerId == request.auth.uid
+        && !obra.get('lockedByPlan', false)
+        && !obra.get('lockedByAdmin', false)
+        && !obra.get('arquivada', false)
+        && !(obra.get('deletionStatus', '') in ['pending', 'processing']);
+    }
+
+    function diarioEditavel(obraId, diarioId) {
+      let diario = get(/databases/$(database)/documents/obras/$(obraId)/diarios/$(diarioId)).data;
+      return diario.ownerId == request.auth.uid
+        && !diario.get('lockedByAdmin', false)
+        && diario.get('deletionStatus', '') != 'processing';
+    }
+
     // Plano do usuario: escrito SOMENTE pelo servidor (service account).
     match /planos/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
@@ -31,23 +47,31 @@ service cloud.firestore {
     // A checagem em list (resource nulo) permite a query filtrada por ownerId.
     match /obras/{obraId} {
       allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-      allow write: if isSignedIn()
-        && (resource == null || resource.data.ownerId == request.auth.uid)
-        && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid
+        && !request.resource.data.keys().hasAny(['lockedByPlan', 'lockedByAdmin', 'planLockReason', 'planLockedAt', 'deletionStatus']);
+      allow update: if isSignedIn() && obraEditavel(obraId)
+        && request.resource.data.ownerId == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId', 'arquivada', 'lockedByPlan', 'lockedByAdmin', 'planLockReason', 'planLockedAt', 'deletionStatus']);
+      allow delete: if false;
 
       match /diarios/{diarioId} {
         allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-        allow write: if isSignedIn()
-          && (resource == null || resource.data.ownerId == request.auth.uid)
-          && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+        allow create: if isSignedIn() && obraEditavel(obraId)
+          && request.resource.data.ownerId == request.auth.uid
+          && !request.resource.data.keys().hasAny(['lockedByAdmin', 'deletionStatus']);
+        allow update: if isSignedIn() && obraEditavel(obraId) && diarioEditavel(obraId, diarioId)
+          && request.resource.data.ownerId == request.auth.uid
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId', 'obraId', 'lockedByAdmin', 'deletionStatus']);
+        allow delete: if false;
 
         match /fotos/{fotoId} {
           allow read: if isSignedIn() && (resource == null || resource.data.ownerId == request.auth.uid);
-          allow write: if isSignedIn()
-            && (resource == null || resource.data.ownerId == request.auth.uid)
-            && (request.resource == null || request.resource.data.ownerId == request.auth.uid);
+          allow create: if isSignedIn() && obraEditavel(obraId) && diarioEditavel(obraId, diarioId)
+            && request.resource.data.ownerId == request.auth.uid;
+          allow update, delete: if false;
         }
       }
     }
   }
 }
+

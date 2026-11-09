@@ -5,6 +5,7 @@ const ALLOWED_PATHS = new Set([
   '/api/obras/reactivate',
   '/api/storage/delete-photo',
   '/api/diarios/delete',
+  '/api/payments/cancel',
 ]);
 
 function json(status: number, body: Record<string, unknown>): Response {
@@ -80,3 +81,4 @@ export async function proxyAuthoritativePost(request: Request, upstreamPath: str
     return json(502, { message: 'O serviço de sincronização está temporariamente indisponível.' });
   }
 }
+

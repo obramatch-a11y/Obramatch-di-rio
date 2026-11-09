@@ -74,6 +74,33 @@ async function obterPlano(env: Env, uid: string): Promise<'free' | 'pro'> {
   return plano?.data?.plano === 'pro' ? 'pro' : 'free';
 }
 
+// Apenas arquivos legados criados pelo app no caminho da própria obra/RDO.
+// URLs de outros provedores ou do Telegram exigem um fluxo de migração separado.
+function caminhoArquivoFoto(env: Env, foto: Record<string, any>, obraId: string, diarioId: string): string | null {
+  const url = typeof foto.url === 'string' ? foto.url : '';
+  if (url.startsWith('data:')) return null;
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) throw new Error('Serviço de armazenamento indisponível para exclusão.');
+  const base = `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/diario-fotos/`;
+  if (!url.startsWith(base)) throw new Error('Foto de origem não reconhecida. Solicite a exclusão ao suporte.');
+  let path: string;
+  try { path = decodeURIComponent(url.slice(base.length).split('?')[0]); } catch { throw new Error('Caminho da foto inválido.'); }
+  if (!path.startsWith(`${obraId}/${diarioId}/`) || path.includes('..') || path.includes('\\')) {
+    throw new Error('Foto de origem não reconhecida. Solicite a exclusão ao suporte.');
+  }
+  return path;
+}
+
+export async function removerArquivoFoto(env: Env, foto: Record<string, any>, obraId: string, diarioId: string): Promise<void> {
+  const path = caminhoArquivoFoto(env, foto, obraId, diarioId);
+  if (!path) return;
+  const response = await fetch(`${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/diario-fotos`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, apikey: env.SUPABASE_SERVICE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefixes: [path] }),
+  });
+  if (!response.ok && response.status !== 404) throw new Error('Não foi possível excluir o arquivo da foto. Tente novamente.');
+}
+
 export async function archiveWorkPost(ctx: WorkerContext): Promise<Response> {
   const auth = await autenticar(ctx);
   if (auth instanceof Response) return auth;
@@ -141,6 +168,8 @@ export async function deletePhotoPost(ctx: WorkerContext): Promise<Response> {
   if (!foto) return json(200, { success: true, message: 'A foto já havia sido excluída.' });
   if (foto.data.ownerId !== auth.uid) return json(403, { message: 'Você não tem acesso a esta foto.' });
 
+  try { await removerArquivoFoto(ctx.env, foto.data, obraId, diarioId); }
+  catch (error) { return json(409, { message: error instanceof Error ? error.message : 'Não foi possível excluir a foto.' }); }
   await fsDelete(ctx.env, `obras/${obraId}/diarios/${diarioId}/fotos/${photoId}`);
   return json(200, { success: true, jobCreated: false, jobId: null });
 }
@@ -165,8 +194,18 @@ export async function deleteDiaryPost(ctx: WorkerContext): Promise<Response> {
     if (foto.data.ownerId !== auth.uid) {
       return json(409, { message: 'A exclusão foi interrompida porque existe uma foto com proprietário divergente.' });
     }
-    await fsDelete(ctx.env, `${photoCollectionPath}/${foto.id}`);
+  }
+  try {
+    // Verifique todas as origens antes de começar a excluir.
+    for (const foto of fotos) caminhoArquivoFoto(ctx.env, foto.data, obraId, diarioId);
+    for (const foto of fotos) {
+      await removerArquivoFoto(ctx.env, foto.data, obraId, diarioId);
+      await fsDelete(ctx.env, `${photoCollectionPath}/${foto.id}`);
+    }
+  } catch (error) {
+    return json(409, { message: error instanceof Error ? error.message : 'Não foi possível concluir a exclusão. Tente novamente.' });
   }
   await fsDelete(ctx.env, `obras/${obraId}/diarios/${diarioId}`);
   return json(200, { success: true, jobCreated: false, jobId: null, deletedPhotos: fotos.length });
 }
+
