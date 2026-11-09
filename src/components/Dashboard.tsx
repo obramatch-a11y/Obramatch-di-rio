@@ -308,7 +308,7 @@ export default function Dashboard() {
                     <span className="w-2 h-2 rounded-full bg-[#FF6F00] animate-ping" />
                   </h4>
                   <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Você está navegando sem internet. Todos os diários, fotos e dados são salvos no dispositivo. Quando a conexão voltar, tudo sincroniza automaticamente com a nuvem — sem perder nada.
+                    Você está sem internet. Alguns registros podem aguardar sincronização; confira-os depois que a conexão voltar.
                   </p>
                 </div>
               </div>
@@ -333,7 +333,7 @@ export default function Dashboard() {
                     Conexão Restaurada!
                   </h4>
                   <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Sua conexão com a internet foi restabelecida. Seus dados estão sincronizados e seguros na nuvem do ObraMatch Diário.
+                    Sua conexão com a internet foi restabelecida. Confira se os registros e fotos aparecem antes de sair do aplicativo.
                   </p>
                 </div>
               </div>
@@ -592,3 +592,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
