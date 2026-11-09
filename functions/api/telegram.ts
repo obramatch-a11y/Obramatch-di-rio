@@ -3,7 +3,7 @@
 // → prévia com botões → ✅ grava no Firestore com clima oficial, GPS e hash.
 
 import { Env } from '../_lib/google';
-import { fsGet, fsSet, fsAdd, fsDelete, fsQuery } from '../_lib/firestore';
+import { fsGet, fsSet, fsAdd, fsDelete, fsQuery, fsCommitRdoTelegram } from '../_lib/firestore';
 import { estruturarRdo, RdoEstruturado } from '../_lib/groq';
 import {
   enviarMensagem,
@@ -106,7 +106,7 @@ async function mostrarPrevia(env: Env, chatId: number, pend: Record<string, any>
   await enviarMensagem(env, chatId, previaRdo(rdo, obra?.data?.nome || 'Obra', clima, (pend.fotos || []).length, numeroPrevisto), TECLADO_CONFIRMA);
 }
 
-async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void> {
+export async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void> {
   const pendDoc = await fsGet(env, `rdo_pendentes/${chatId}`);
   if (!pendDoc || (!pendDoc.data.atividades && !pendDoc.data.ocorrencias && !pendDoc.data.observacoes)) {
     await enviarMensagem(env, chatId, 'Não há registro pendente. Mande um áudio contando o dia da obra. 🎙');
@@ -117,20 +117,18 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
     return;
   }
   const pend = pendDoc.data;
-  const obra = await fsGet(env, `obras/${pend.obraId}`);
-  if (!obra) {
-    await enviarMensagem(env, chatId, 'Obra não encontrada. Abra o app e verifique suas obras.');
-    return;
-  }
-
-  const numeroRdo = Number(obra.data.proximoNumeroRdo) || 1;
+  if (pend.uid && pend.uid !== uid) throw new Error('Conta do registro pendente divergente.');
+  if (!pendDoc.updateTime || typeof pend.obraId !== 'string' || !/^[A-Za-z0-9_-]{1,160}$/.test(pend.obraId)) throw new Error('Registro pendente inválido.');
+  const diarioId = crypto.randomUUID();
   const dataISO = pend.data || hojeISO();
   const horario = pend.horario || horaAgora();
-  const gps = obra.data.gps
-    ? { latitude: Number(obra.data.gps.latitude), longitude: Number(obra.data.gps.longitude) }
-    : null;
   const clima = pend.climaOficial?.condicao || 'Ensolarado';
-
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+  const obra = await fsGet(env, `obras/${pend.obraId}`);
+  if (!obra || obra.data.ownerId !== uid || !obra.updateTime) throw new Error('Obra não encontrada ou sem acesso.');
+  if (obra.data.arquivada || obra.data.lockedByPlan || obra.data.lockedByAdmin || ['pending', 'processing'].includes(obra.data.deletionStatus)) throw new Error('Esta obra não está disponível para novos RDOs.');
+  const numeroRdo = Number(obra.data.proximoNumeroRdo) || 1;
+  const gps = obra.data.gps ? { latitude: Number(obra.data.gps.latitude), longitude: Number(obra.data.gps.longitude) } : null;
   const hashIntegridade = await calcularHash({
     obraId: pend.obraId,
     numeroRdo,
@@ -146,7 +144,7 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
   });
 
   const agoraISO = new Date().toISOString();
-  const diarioId = await fsAdd(env, `obras/${pend.obraId}/diarios`, {
+  const diario = {
     obraId: pend.obraId,
     ownerId: pend.uid || uid,
     numeroRdo,
@@ -165,18 +163,18 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
     hashIntegridade,
     createdAt: agoraISO,
     updatedAt: agoraISO,
-  });
-
-  for (const foto of pend.fotos || []) {
-    await fsAdd(env, `obras/${pend.obraId}/diarios/${diarioId}/fotos`, {
+  };
+  const fotos = (pend.fotos || []).map((foto: any) => ({
       diarioId, obraId: pend.obraId, ownerId: pend.uid || uid,
       url: foto.url, legenda: foto.legenda || '',
       data: dataISO, horario, gps, createdAt: agoraISO,
-    });
+  }));
+  const committed = await fsCommitRdoTelegram(env, { obraId: pend.obraId, diarioId, chatId, obraUpdateTime: obra.updateTime, pendenteUpdateTime: pendDoc.updateTime, numeroRdo, diario, fotos });
+  if (!committed) {
+    const currentPending = await fsGet(env, `rdo_pendentes/${chatId}`);
+    if (!currentPending || currentPending.updateTime !== pendDoc.updateTime) throw new Error('O registro pendente mudou. Revise e confirme novamente.');
+    continue;
   }
-
-  await fsSet(env, `obras/${pend.obraId}`, { proximoNumeroRdo: numeroRdo + 1 });
-  await fsDelete(env, `rdo_pendentes/${chatId}`);
 
   await enviarMensagem(
     env,
@@ -185,6 +183,9 @@ async function confirmarRdo(env: Env, chatId: number, uid: string): Promise<void
     `🔒 Código de integridade: <code>${hashIntegridade.slice(0, 12)}…</code>\n\n` +
     `📲 O registro já foi enviado para o app ObraMatch Diário. Abra o app para ver o relatório completo e gerar o PDF.`
   );
+  return;
+  }
+  throw new Error('Não foi possível reservar o número do RDO. Tente confirmar novamente.');
 }
 
 async function processarRelato(
@@ -459,3 +460,4 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
     return new Response('ok'); // sempre 200 para o Telegram não reenviar em loop
   }
 };
+

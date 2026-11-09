@@ -53,13 +53,37 @@ export function deCampos(fields: Record<string, any> | undefined): Record<string
 }
 
 // ---- Operações ----
-export async function fsGet(env: Env, path: string): Promise<{ id: string; data: Record<string, any> } | null> {
+export async function fsGet(env: Env, path: string): Promise<{ id: string; data: Record<string, any>; updateTime: string } | null> {
   const token = await obterAccessToken(env);
   const res = await fetch(`${baseUrl(env)}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Firestore GET ${path}: ${await res.text()}`);
   const doc = await res.json();
-  return { id: doc.name.split('/').pop(), data: deCampos(doc.fields) };
+  return { id: doc.name.split('/').pop(), data: deCampos(doc.fields), updateTime: doc.updateTime || '' };
+}
+
+/** Commit atômico com precondições, para não duplicar RDOs concorrentes. */
+export async function fsCommitRdoTelegram(env: Env, params: {
+  obraId: string; diarioId: string; chatId: number; obraUpdateTime: string;
+  pendenteUpdateTime: string; numeroRdo: number; diario: Record<string, any>;
+  fotos: Record<string, any>[];
+}): Promise<boolean> {
+  const { projectId, dbId } = projetoEBanco(env);
+  const prefix = `projects/${projectId}/databases/${dbId}/documents`;
+  const obra = `${prefix}/obras/${params.obraId}`;
+  const diario = `${obra}/diarios/${params.diarioId}`;
+  const writes: Record<string, any>[] = [
+    { update: { name: obra, fields: paraCampos({ proximoNumeroRdo: params.numeroRdo + 1, updatedAt: new Date().toISOString() }) }, updateMask: { fieldPaths: ['proximoNumeroRdo', 'updatedAt'] }, currentDocument: { updateTime: params.obraUpdateTime } },
+    { update: { name: diario, fields: paraCampos(params.diario) }, currentDocument: { exists: false } },
+    ...params.fotos.map((foto, index) => ({ update: { name: `${diario}/fotos/${index}`, fields: paraCampos(foto) }, currentDocument: { exists: false } })),
+    { delete: `${prefix}/rdo_pendentes/${params.chatId}`, currentDocument: { updateTime: params.pendenteUpdateTime } },
+  ];
+  const token = await obterAccessToken(env);
+  const res = await fetch(`${baseUrl(env)}:commit`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ writes }) });
+  if (res.ok) return true;
+  const detail = await res.text();
+  if ((res.status === 400 || res.status === 409) && /FAILED_PRECONDITION|ABORTED/i.test(detail)) return false;
+  throw new Error(`Falha ao registrar RDO (${res.status}).`);
 }
 
 export async function fsSet(env: Env, path: string, dados: Record<string, any>, merge = true): Promise<void> {
@@ -151,3 +175,4 @@ export async function fsQuery(
     .filter((l) => l.document)
     .map((l) => ({ id: l.document.name.split('/').pop(), data: deCampos(l.document.fields) }));
 }
+
