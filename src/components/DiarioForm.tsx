@@ -240,7 +240,7 @@ export default function DiarioForm() {
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    if (fotosEsgotadas) return;
+    if (fotosEsgotadas || uploadingImage) return;
 
     const vagas = Math.max(0, limites.fotosPorRelatorio - fotosNoRelatorio);
     const arquivos = Array.from(files).slice(0, vagas);
@@ -255,7 +255,7 @@ export default function DiarioForm() {
 
     arquivos.forEach((file: any) => {
       const reader = new FileReader();
-      reader.onerror = concluirUm;
+      reader.onerror = () => { setSaveError('Não foi possível ler uma das fotos. Selecione-a novamente.'); concluirUm(); };
       reader.onload = (event) => {
         const img = new Image();
         img.src = event.target?.result as string;
@@ -286,7 +286,17 @@ export default function DiarioForm() {
             ctx.drawImage(img, 0, 0, width, height);
             
             // Generate photo metadata
-            const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+            let quality = 0.7;
+            let compressedUrl = canvas.toDataURL('image/jpeg', quality);
+            while (compressedUrl.length > 700_000 && quality > 0.25) {
+              quality -= 0.1;
+              compressedUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            if (compressedUrl.length > 700_000) {
+              setSaveError('Uma foto ficou grande demais. Escolha uma imagem menor e tente novamente.');
+              concluirUm();
+              return;
+            }
             
             setUploadedPhotos(prev => [
               ...prev,
@@ -296,10 +306,10 @@ export default function DiarioForm() {
                 gps: gps || null
               }
             ]);
-          }
+          } else setSaveError('Não foi possível preparar uma das fotos. Tente novamente.');
           concluirUm();
         };
-        img.onerror = concluirUm;
+        img.onerror = () => { setSaveError('Não foi possível abrir uma das fotos. Selecione-a novamente.'); concluirUm(); };
       };
       reader.readAsDataURL(file);
     });
@@ -316,7 +326,7 @@ export default function DiarioForm() {
   // Submit report
   const handleSaveReport = async () => {
     if (!atividades) return;
-    if (isSaving) return; // BLINDAGEM: ignora cliques repetidos enquanto salva (evita RDOs duplicados)
+    if (isSaving || uploadingImage) return;
     setIsSaving(true);
 
     // Capture signature from SignaturePad component
@@ -384,7 +394,7 @@ export default function DiarioForm() {
 
           <button
             onClick={handleSaveReport}
-            disabled={!atividades || isSaving}
+            disabled={!atividades || isSaving || uploadingImage}
             className="bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs"
           >
             <Save className="w-4 h-4" />
@@ -679,7 +689,7 @@ export default function DiarioForm() {
                   accept="image/*"
                   capture="environment"
                   onChange={handleImageFile}
-                  disabled={fotosEsgotadas}
+                  disabled={fotosEsgotadas || uploadingImage}
                   className="hidden"
                 />
               </label>
@@ -691,7 +701,7 @@ export default function DiarioForm() {
                   multiple
                   accept="image/*"
                   onChange={handleImageFile}
-                  disabled={fotosEsgotadas}
+                  disabled={fotosEsgotadas || uploadingImage}
                   className="hidden"
                 />
               </label>
@@ -777,7 +787,7 @@ export default function DiarioForm() {
             <button
               type="button"
               onClick={handleSaveReport}
-              disabled={!atividades || isSaving}
+              disabled={!atividades || isSaving || uploadingImage}
               className="w-full sm:w-auto bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
             >
               <Save className="w-5 h-5" />
@@ -859,3 +869,4 @@ export default function DiarioForm() {
     </div>
   );
 }
+
