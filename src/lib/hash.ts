@@ -1,5 +1,5 @@
 // Código de integridade do RDO: SHA-256 sobre JSON canônico (chaves ordenadas).
-// Qualquer alteração posterior nos campos quebra o hash — valor probatório.
+// Verifica consistência dos campos atuais; não comprova autoria ou histórico.
 
 export interface CamposHashRdo {
   obraId: string;
@@ -32,3 +32,4 @@ export async function calcularHashRdo(campos: CamposHashRdo): Promise<string> {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
+
