@@ -53,6 +53,7 @@ interface AppContextType {
   deleteFoto: (diarioId: string, fotoId: string) => Promise<void>;
   plano: PlanoInfo;
   financialAccess: FinancialAccessState;
+  planStatus: 'loading' | 'ready' | 'error';
   usoIa: UsoIaInfo;
   arquivarObra: (id: string, arquivar: boolean) => Promise<void>;
   limiteObrasAtingido: boolean;
@@ -107,6 +108,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isBlocked: false,
   });
   const [planSource, setPlanSource] = useState<FinancialAccessInput | null>(null);
+  const [planStatus, setPlanStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [financialAccess, setFinancialAccess] = useState<FinancialAccessState>(INITIAL_FINANCIAL_ACCESS);
   const [usoIa, setUsoIa] = useState<UsoIaInfo>({ transcMes: 0, melhoriaMes: 0, transcDia: 0, melhoriaDia: 0 });
 
@@ -201,6 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Plano e consumo de IA (documentos escritos só pelo servidor; aqui só leitura)
   useEffect(() => {
     if (!user) {
+      setPlanStatus('loading');
       setPlanSource(null);
       setPlano({
         plano: 'free',
@@ -217,9 +220,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    setPlanStatus('loading');
     const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
       setPlanSource((snap.data() || null) as FinancialAccessInput | null);
-    }, () => setPlanSource(null));
+      setPlanStatus('ready');
+    }, () => setPlanStatus('error'));
 
     const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
     const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
@@ -404,6 +409,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateObra = async (id: string, obraData: Partial<Obra>): Promise<void> => {
     if (!user) throw new Error('Usuário não autenticado');
+    if (obras.find((obra) => obra.id === id)?.lockedByPlan || obras.find((obra) => obra.id === id)?.lockedByAdmin) throw new Error('Esta obra está bloqueada.');
     const path = `obras/${id}`;
     const safeData = { ...obraData };
     delete safeData.arquivada;
@@ -429,6 +435,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     base64Photos: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<string> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    if (selectedObra.lockedByPlan || selectedObra.lockedByAdmin) throw new Error('Esta obra está bloqueada.');
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para registrar novos RDOs.');
 
     const diariosPath = `obras/${selectedObra.id}/diarios`;
@@ -525,6 +532,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     base64Photos?: { url: string; legenda: string; gps?: { latitude: number; longitude: number } | null }[],
   ): Promise<void> => {
     if (!user || !selectedObra) throw new Error('Usuário ou Obra não selecionada');
+    if (selectedObra.lockedByPlan || selectedObra.lockedByAdmin) throw new Error('Esta obra está bloqueada.');
     if (selectedObra.arquivada) throw new Error('Esta obra está arquivada. Desarquive-a para editar RDOs.');
 
     const diarioPath = `obras/${selectedObra.id}/diarios/${id}`;
@@ -652,6 +660,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteFoto,
       plano,
       financialAccess,
+      planStatus,
       usoIa,
       arquivarObra,
       limiteObrasAtingido,
@@ -668,3 +677,4 @@ export const useApp = () => {
   }
   return context;
 };
+

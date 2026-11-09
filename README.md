@@ -5,7 +5,7 @@ Diário de Obra (RDO) por app e por **Telegram com IA** — parte do ecossistema
 **Diferenciais:**
 - 🎙 **Registro por áudio no Telegram** (@diariomatchbot): a IA transcreve e estrutura o RDO — nada é salvo sem confirmação
 - 🌤 **Clima de fonte oficial** (Open-Meteo) preenchido automaticamente pelo GPS da obra
-- 🔒 **Código de integridade SHA-256** em cada RDO + verificação no app — valor probatório em perícias
+- 🔒 **Código SHA-256** para verificar a consistência do conteúdo atual do RDO; não comprova autoria nem histórico de alterações
 - 📋 **RDO numerado** com PDF padrão de mercado (assinaturas RT e cliente)
 - 🏗 Ponte com o marketplace ObraMatch (selo "Profissional que documenta")
 
@@ -46,3 +46,4 @@ npm run dev        # app local
 npm run typecheck  # verificação de tipos
 npm run build      # build de produção
 ```
+

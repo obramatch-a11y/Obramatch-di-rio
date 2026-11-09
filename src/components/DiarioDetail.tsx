@@ -166,10 +166,11 @@ export default function DiarioDetail() {
                   {verificacao === 'alterado' ? <ShieldAlert className="w-3.5 h-3.5" /> : <ShieldCheck className="w-3.5 h-3.5" />}
                   {verificacao === 'idle' && `🔒 Integridade ${selectedDiario.hashIntegridade.slice(0, 8)} — toque para verificar`}
                   {verificacao === 'verificando' && 'Verificando...'}
-                  {verificacao === 'integro' && '✅ Registro íntegro — sem alterações'}
+                  {verificacao === 'integro' && '✅ Conteúdo corresponde ao código atual'}
                   {verificacao === 'alterado' && '⚠️ Conteúdo divergente do código registrado'}
                 </button>
               )}
+              {selectedDiario.hashIntegridade && <p className="mt-1 text-xs text-neutral-600">Este código verifica a consistência do conteúdo atual. Ele não comprova autoria nem preserva histórico de alterações.</p>}
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -368,3 +369,4 @@ export default function DiarioDetail() {
     </div>
   );
 }
+
