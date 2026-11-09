@@ -329,7 +329,12 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
         const pend = await fsGet(env, `rdo_pendentes/${chatId}`);
         if (pend) await mostrarPrevia(env, chatId, pend.data);
       } else if (dado === 'conf') {
-        await confirmarRdo(env, chatId, usuario.uid);
+        try {
+          await confirmarRdo(env, chatId, usuario.uid);
+        } catch (error) {
+          console.error('Falha ao confirmar RDO:', error instanceof Error ? error.message : error);
+          await enviarMensagem(env, chatId, 'Não consegui confirmar o resultado. Confira os RDOs no aplicativo antes de tentar novamente.');
+        }
       } else if (dado === 'corr') {
         await enviarMensagem(env, chatId, '✏️ Sem problema. Mande um novo áudio com o relato corrigido — vou montar a prévia de novo.');
       } else if (dado === 'desc') {
