@@ -9,6 +9,8 @@ export interface Obra {
   gps?: GPSLocation | null;       // Localização da obra (base do clima oficial)
   proximoNumeroRdo?: number;      // Numeração sequencial dos RDOs
   arquivada?: boolean;            // Obra arquivada não conta no limite do plano
+  lockedByPlan?: boolean;
+  lockedByAdmin?: boolean;
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp
@@ -114,3 +116,4 @@ export const LIMITES_PLANO = {
   free: { obrasAtivas: 2, fotosPorRelatorio: 5, transcMes: 30, melhoriaMes: 30, transcDia: 2, melhoriaDia: 2 },
   pro:  { obrasAtivas: 10, fotosPorRelatorio: 20, transcMes: 300, melhoriaMes: 600, transcDia: 20, melhoriaDia: 60 },
 } as const;
+
