@@ -21,6 +21,12 @@ export interface DeleteResult {
   jobId?: string | null;
 }
 
+export async function selectFreePlan(user: User): Promise<{ success: boolean; message?: string }> {
+  const result = await postAuthenticated<{ success: boolean; message?: string }>(user, '/api/payments/cancel', { action: 'select_free' });
+  if (!result.success) throw new Error(result.message || 'Não foi possível retornar ao plano Free.');
+  return result;
+}
+
 function ensureOnline(): void {
   if (!navigator.onLine) {
     throw new Error('Esta operação precisa de internet para ser confirmada com segurança. Conecte-se e tente novamente.');
@@ -97,3 +103,4 @@ export async function deletePhotoAuthoritatively(
     photoId,
   });
 }
+

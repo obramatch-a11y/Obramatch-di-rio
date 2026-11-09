@@ -15,6 +15,7 @@ import {
   deleteDiaryPost,
 } from './authoritativeActions';
 import type { Env as ApiEnv } from '../functions/_lib/google';
+import { proxyAuthoritativePost } from '../functions/_lib/authoritativeProxy';
 
 interface RateLimiter {
   limit: (options: { key: string }) => Promise<{ success: boolean }>;
@@ -74,6 +75,7 @@ export default {
         if (pathname === '/api/obras/reactivate' && request.method === 'POST') return await reactivateWorkPost(ctx);
         if (pathname === '/api/storage/delete-photo' && request.method === 'POST') return await deletePhotoPost(ctx);
         if (pathname === '/api/diarios/delete' && request.method === 'POST') return await deleteDiaryPost(ctx);
+        if (pathname === '/api/payments/cancel' && request.method === 'POST') return await proxyAuthoritativePost(request, pathname);
 
         return json(404, { erro: 'Rota de API não encontrada.' });
       } catch (error) {
@@ -97,3 +99,4 @@ export default {
     });
   },
 };
+
