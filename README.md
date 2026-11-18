@@ -1,5 +1,18 @@
 # ObraMatch Diário
 
+## 🧭 Identificação rápida — CAMPO / TWA
+
+**ESTE REPOSITÓRIO É O OBRAMATCH CAMPO:** aplicação React/Vite/PWA utilizada pela **Trusted Web Activity Android**. Contém a experiência de campo, registro de RDO, voz/IA e integrações pertinentes. **Não é o site/Central empresarial.**
+
+📄 **[Abrir proposta de reformulação do Campo — UX amigável, TWA, obras e envio](docs/PROPOSTA-CAMPO-TWA-UX-2026-11.md)**
+
+🔗 **Site e futura Central:** [`Landing_page_diario`](https://github.com/obramatch-a11y/Landing_page_diario) (repositório privado). **Documentação mestre e regras oficiais estão lá.**
+
+> **Status:** proposta documental para auditoria, não implementação. Antes de mexer no TWA/Google Play, ler `AGENTS.md` e a documentação mestre. Não alterar manifestos, assinatura, domínio, assetlinks ou código de produção sem autorização.
+
+---
+
+
 Diário de Obra (RDO) por app e por **Telegram com IA** — parte do ecossistema [ObraMatch](https://obramatch.com.br).
 
 **Diferenciais:**
