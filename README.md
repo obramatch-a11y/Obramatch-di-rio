@@ -1,5 +1,16 @@
 # ObraMatch Diário
 
+## 🛡️ Proteção do aplicativo da Google Play — estratégia Web-first
+
+**[PLANO DE PROTEÇÃO DO CAMPO/TWA — congelamento funcional e integração mínima posterior](docs/PLANO-PROTECAO-CAMPO-TWA-WEB-FIRST-2026-11.md)**
+
+**[Estratégia de orquestração no repositório WEB](https://github.com/obramatch-a11y/Landing_page_diario/blob/main/docs/16-ESTRATEGIA-ORQUESTRACAO-WEB-FIRST-2026-11.md)** (privado).
+
+Primeiro evoluir o **site/Central** e preservar código, identidade, manifesto e publicação **TWA**. Campo e site compartilham dados Firebase; compatibilidade deve ser testada.
+
+---
+
+
 ## 🧭 Identificação rápida — CAMPO / TWA
 
 **ESTE REPOSITÓRIO É O OBRAMATCH CAMPO:** aplicação React/Vite/PWA utilizada pela **Trusted Web Activity Android**. Contém a experiência de campo, registro de RDO, voz/IA e integrações pertinentes. **Não é o site/Central empresarial.**
