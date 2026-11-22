@@ -21,3 +21,11 @@ Reversão: reativar a versão anterior no Cloudflare (Implantações).
 - Ponte da Central: leituras de RDO liberadas com parâmetros em lista fechada.
 - Tela branca ao abrir: se `#root` seguir vazio após 6 s, recarrega uma única vez.
 - Pendente: corrigir e reenviar RDO devolvido, aviso de devolvido, papel de revisor no App.
+
+## 3ª rodada: avisos, correção e revisão
+- Avisos na tela inicial (`AvisosEmpresa`): RDO devolvido para o autor; RDO aguardando revisão para quem tem `canReview`. Atualiza ao abrir, ao voltar ao app e a cada 60 s.
+- Corrigir e reenviar (`resubmit_field_rdo`): edita os textos; fotos e assinatura da versão anterior são mantidas pelo servidor.
+- Revisão no App: Aceitar (`accept_document`) e Devolver com motivo de 10+ letras (`request_correction`). A regra "revisor independente" e as permissões continuam sendo do servidor.
+- Aviso no celular: `public/firebase-messaging-sw.js` + `src/lib/push.ts` (mesma chave VAPID e mesmo registro da Web, via ponte). O toque no aviso abre a tela inicial. Depende de o Chrome/TWA permitir notificações para o app instalado.
+- Ponte: POST liberado também para `request_correction`, `accept_document`, `register_push_token`, `unregister_push_token`; GET com `alertStatus`. Demais ações: 404 (testado com Central simulada).
+- Não verificado com conta real nesta data: envio/recebimento do push, aceite/devolução e reenvio de ponta a ponta.

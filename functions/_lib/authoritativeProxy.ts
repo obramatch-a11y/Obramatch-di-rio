@@ -84,9 +84,9 @@ export async function proxyAuthoritativePost(request: Request, upstreamPath: str
 
 
 const CENTRAL_ACOES_GET = new Set(['list_assigned_works', 'list_rdos', 'list_own_rdos', 'get_rdo', 'get_rdo_photo', 'list_rdo_alerts', 'list_rdo_events']);
-const CENTRAL_ACOES_POST = new Set(['submit_field_rdo', 'resubmit_field_rdo', 'mark_rdo_alert_read']);
+const CENTRAL_ACOES_POST = new Set(['submit_field_rdo', 'resubmit_field_rdo', 'mark_rdo_alert_read', 'request_correction', 'accept_document', 'register_push_token', 'unregister_push_token']);
 // Parâmetros de consulta aceitos na leitura (tudo o mais é descartado).
-const CENTRAL_PARAMS_GET = ['companyId', 'workId', 'rdoId', 'photoId', 'version', 'status', 'pageToken'];
+const CENTRAL_PARAMS_GET = ['companyId', 'workId', 'rdoId', 'photoId', 'version', 'status', 'alertStatus', 'pageToken'];
 
 /** Ponte restrita para a Central: o executante consulta suas obras atribuídas e envia RDOs. */
 export async function proxyCentral(request: Request): Promise<Response> {
