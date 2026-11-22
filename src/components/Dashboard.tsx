@@ -275,12 +275,14 @@ export default function Dashboard() {
                   </label>
                 )}
                 {!obraAtual && <p className="campo-web-escolher-obra">Escolha a obra para começar a gravação.</p>}
+                <p className="campo-web-passo"><b>1.</b> Toque no botão e fale o que foi feito hoje. <b>2.</b> Toque em parar. <b>3.</b> Confira e envie.</p>
                 <div className="campo-web-actions">
                   <GravarAgora disabled={!obraAtual} onGravado={audioGravado} />
                   <button type="submit" className="campo-web-manual" disabled={!obraAtual}>
-                    <FilePlus2 size={19} aria-hidden="true" /> Escrever RDO
+                    <FilePlus2 size={19} aria-hidden="true" /> Prefiro escrever
                   </button>
                 </div>
+                <p className="campo-web-passo">Quer anexar fotos? É opcional. Pode tirar agora ou escolher da galeria.</p>
                 {fotosEscolhidas.length > 0 && (
                   <div className="campo-web-anexos" aria-label="Fotos anexadas">
                     <div className="campo-web-anexos-topo"><strong>{fotosEscolhidas.length} foto{fotosEscolhidas.length > 1 ? 's' : ''} anexada{fotosEscolhidas.length > 1 ? 's' : ''}</strong><button type="button" onClick={limparFotos}>Remover todas</button></div>

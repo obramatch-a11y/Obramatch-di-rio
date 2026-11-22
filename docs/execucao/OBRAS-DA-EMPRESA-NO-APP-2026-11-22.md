@@ -53,3 +53,7 @@ Relatório: RELATORIO_VARREDURA.md.
 - Fotos (tirar/escolher) ficam na tela inicial com miniaturas, remoção individual e "Remover todas"; só entram no relatório quando ele abre.
 - "Gravar RDO" grava na própria tela inicial (cronômetro, "Parar e continuar", "Cancelar"). Ao parar, abre o relatório e a IA já preenche os campos para edição.
 - `fotoPendente.ts` guarda fotos e áudio pendentes; `DiarioForm` os recolhe ao abrir (`processarAudio`).
+
+## Rodada 8 — linguagem simples
+- Tela inicial com 3 passos explicados (falar, parar, conferir e enviar), "Prefiro escrever" e aviso de fotos opcionais.
+- Formulário: botões "Enviar"/"Enviar relatório" para obra da empresa; mensagem de pronto após a IA.

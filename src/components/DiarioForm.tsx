@@ -434,7 +434,7 @@ export default function DiarioForm() {
             className="bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all text-xs"
           >
             <Save className="w-4 h-4" />
-            {isSaving ? 'Salvando...' : 'Salvar'}
+            {isSaving ? 'Enviando...' : selectedObra?.empresa ? 'Enviar' : 'Salvar'}
           </button>
         </div>
       </header>
@@ -456,7 +456,7 @@ export default function DiarioForm() {
                 </p>
                 {erroIa && <p className="text-xs text-red-600 mt-1.5 font-semibold">{erroIa}</p>}
                 {camposIa && !erroIa && (
-                  <p className="text-xs text-emerald-600 mt-1.5 font-semibold">✓ Campos preenchidos pela IA — revise antes de salvar.</p>
+                  <p className="text-xs text-emerald-600 mt-1.5 font-semibold">✓ Pronto! O texto foi escrito pelo que você falou. Confira, mude o que quiser e toque em Enviar.</p>
                 )}
               </div>
               {processandoIa ? (
@@ -826,7 +826,7 @@ export default function DiarioForm() {
               className="w-full sm:w-auto bg-[#FF6F00] hover:bg-[#e86500] disabled:opacity-50 text-white font-bold py-3.5 px-8 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all text-sm"
             >
               <Save className="w-5 h-5" />
-              <span>{isSaving ? 'Salvando...' : 'Salvar Diário de Obra'}</span>
+              <span>{isSaving ? 'Enviando...' : selectedObra?.empresa ? 'Enviar relatório' : 'Salvar relatório'}</span>
             </button>
           </div>
 
