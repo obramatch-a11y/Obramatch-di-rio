@@ -23,7 +23,7 @@ export async function listarObrasDaEmpresa(signal?: AbortSignal): Promise<ObraDa
     const q = new URLSearchParams({ scope: 'central', action: 'list_assigned_works' });
     if (pagina) q.set('pageToken', pagina);
     const r = await fetch(`/api/obras/dispatcher?${q}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal });
-    if (!r.ok) throw new Error('Não foi possível consultar as obras da empresa.');
+    if (!r.ok) throw new Error(`Não foi possível consultar as obras da empresa (código ${r.status}).`);
     const corpo = await r.json() as { works?: ObraDaEmpresa[]; nextPageToken?: string };
     for (const o of corpo.works ?? []) obras.set(`${o.empresaId}:${o.obraId}`, o);
     pagina = corpo.nextPageToken ?? '';
