@@ -40,15 +40,23 @@ export default function Dashboard() {
 
   const [obrasEmpresa, setObrasEmpresa] = useState<ObraDaEmpresa[]>([]);
   const [erroEmpresa, setErroEmpresa] = useState('');
+  const [consultandoEmpresa, setConsultandoEmpresa] = useState(false);
+  const [tentativaEmpresa, setTentativaEmpresa] = useState(0);
   useEffect(() => {
     if (!user || !online) return;
     const controle = new AbortController();
     setErroEmpresa('');
+    setConsultandoEmpresa(true);
     listarObrasDaEmpresa(controle.signal)
-      .then(setObrasEmpresa)
-      .catch((e: unknown) => { if (!controle.signal.aborted) setErroEmpresa(e instanceof Error ? e.message : 'Não foi possível consultar as obras da empresa.'); });
+      .then((obras) => { setObrasEmpresa(obras); setConsultandoEmpresa(false); })
+      .catch((e: unknown) => {
+        if (controle.signal.aborted) return;
+        setConsultandoEmpresa(false);
+        setErroEmpresa(e instanceof Error ? e.message : 'Não foi possível consultar as obras da empresa.');
+      });
     return () => controle.abort();
-  }, [user, online]);
+    // uid em vez do objeto user: o objeto pode ser recriado e cancelaria a consulta.
+  }, [user?.uid, online, tentativaEmpresa]);
   // Obras da empresa viram "obras" do App para o executante: mesma escolha, mesmo botão de gravar.
   const obrasDaEmpresa: Obra[] = obrasEmpresa
     .filter((o) => o.capabilities?.canRegister !== false)
@@ -192,6 +200,14 @@ export default function Dashboard() {
               <img className="campo-web-mascot" src="/img/campo-web-mascote.webp" width="320" height="320" alt="" />
             </div>
 
+            <p role="status" className="campo-web-escolher-obra" style={{ margin: '8px 0 0' }}>
+              {consultandoEmpresa ? 'Consultando obras da empresa…'
+                : erroEmpresa ? erroEmpresa
+                : obrasEmpresa.length > 0 ? `Obras da empresa: ${obrasEmpresa.length}`
+                : 'Nenhuma obra de empresa atribuída a esta conta.'}{' '}
+              {!consultandoEmpresa && online && <button type="button" onClick={() => setTentativaEmpresa((n) => n + 1)} style={{ textDecoration: 'underline', fontWeight: 700 }}>Atualizar</button>}
+            </p>
+
             {!online && (
               <p role="status" className="campo-web-escolher-obra"><CloudOff size={16} aria-hidden="true" /> Sem internet. Os registros aguardam a conexão voltar.</p>
             )}
@@ -283,7 +299,6 @@ export default function Dashboard() {
                 </div>
               </section>
             )}
-            {erroEmpresa && <p role="status" className="campo-web-escolher-obra">{erroEmpresa}</p>}
 
             {carregandoObras ? (
               <div className="app-empty-state" role="status">Carregando obras...</div>

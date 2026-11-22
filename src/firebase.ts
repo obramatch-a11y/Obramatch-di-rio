@@ -23,7 +23,9 @@ const app = initializeApp(firebaseConfig);
 // fotos e obras são salvos localmente e sincronizam quando a conexão volta.
 // Multi-tab manager evita conflitos entre abas abertas.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  // Conexões do celular/TWA às vezes deixam o canal em tempo real pendurado; isto troca sozinho para o modo alternativo.
+  experimentalAutoDetectLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth(app);

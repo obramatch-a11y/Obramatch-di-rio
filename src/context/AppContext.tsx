@@ -222,10 +222,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setPlanStatus('loading');
+    // Se o banco não responder em 8 s, mostra a tela de "tentar novamente" em vez de ficar parado.
+    // Se a resposta chegar depois, o snapshot abaixo volta o estado para 'ready' sozinho.
+    const vigia = window.setTimeout(() => setPlanStatus((atual) => (atual === 'loading' ? 'error' : atual)), 8000);
     const unsubPlano = onSnapshot(doc(db, 'planos', user.uid), (snap) => {
+      window.clearTimeout(vigia);
       setPlanSource((snap.data() || null) as FinancialAccessInput | null);
       setPlanStatus('ready');
-    }, () => setPlanStatus('error'));
+    }, () => { window.clearTimeout(vigia); setPlanStatus('error'); });
 
     const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }).slice(0, 7);
     const unsubUso = onSnapshot(doc(db, 'uso_ia', `${user.uid}_${mes}`), (snap) => {
@@ -241,6 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, () => {});
 
     return () => {
+      window.clearTimeout(vigia);
       unsubPlano();
       unsubUso();
     };
