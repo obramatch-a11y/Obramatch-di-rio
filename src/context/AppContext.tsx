@@ -303,6 +303,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Mantém a obra selecionada sincronizada com arquivamento/reativação feitos pelo servidor.
   useEffect(() => {
     if (!selectedObra) return;
+    // Obra de empresa (Central) não vive na coleção 'obras' do usuário: não a descarta.
+    if (selectedObra.empresa) return;
     const current = obras.find((obra) => obra.id === selectedObra.id);
     if (!current) {
       setSelectedObra(null);

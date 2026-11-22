@@ -60,3 +60,54 @@ export async function enviarRdoParaCentral(
   if (!r.ok || !corpo?.rdo?.id) throw new Error(corpo?.message || 'Não foi possível enviar o relatório para a Central.');
   return corpo.rdo;
 }
+
+export interface RdoDaCentral {
+  id: string;
+  status: string;
+  submittedByName?: string;
+  data?: string;
+  latestVersion: number;
+  submittedAt?: string;
+  lastReason?: string;
+  sourceType?: string;
+}
+
+async function lerCentral<T>(acao: string, params: Record<string, string>, signal?: AbortSignal): Promise<T> {
+  const token = await idToken();
+  const q = new URLSearchParams({ scope: 'central', action: acao, ...params });
+  const r = await fetch(`/api/obras/dispatcher?${q}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal });
+  const corpo = await r.json().catch(() => null) as (T & { message?: string }) | null;
+  if (!r.ok || !corpo) throw new Error((corpo as { message?: string } | null)?.message || `Não foi possível consultar a Central (código ${r.status}).`);
+  return corpo;
+}
+
+/** Relatórios da obra de empresa que esta conta pode ver (inclui os enviados pela Web). */
+export async function listarRdosDaCentral(empresaId: string, obraId: string, signal?: AbortSignal): Promise<RdoDaCentral[]> {
+  const todos: RdoDaCentral[] = [];
+  let pagina = '';
+  for (let i = 0; i < 10; i += 1) {
+    const params: Record<string, string> = { companyId: empresaId, workId: obraId };
+    if (pagina) params.pageToken = pagina;
+    const corpo = await lerCentral<{ rdos?: RdoDaCentral[]; nextPageToken?: string }>('list_rdos', params, signal);
+    todos.push(...(corpo.rdos ?? []));
+    pagina = corpo.nextPageToken ?? '';
+    if (!pagina) break;
+  }
+  return todos;
+}
+
+export interface DetalheRdoCentral {
+  rdo: RdoDaCentral;
+  version: number;
+  snapshot: Record<string, unknown>;
+  photos: { id: string; legenda?: string }[];
+}
+
+export function detalharRdoDaCentral(empresaId: string, obraId: string, rdoId: string, signal?: AbortSignal) {
+  return lerCentral<DetalheRdoCentral>('get_rdo', { companyId: empresaId, workId: obraId, rdoId }, signal);
+}
+
+export async function fotoRdoDaCentral(empresaId: string, obraId: string, rdoId: string, photoId: string, version: number, signal?: AbortSignal): Promise<string> {
+  const corpo = await lerCentral<{ dataUrl: string }>('get_rdo_photo', { companyId: empresaId, workId: obraId, rdoId, photoId, version: String(version) }, signal);
+  return corpo.dataUrl;
+}
