@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { motion } from 'motion/react';
-import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle } from 'lucide-react';
+import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import InstallButton from './InstallButton';
 
@@ -12,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -19,11 +20,17 @@ export default function Login() {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
+      // Fechar a janela do Google de propósito não é um erro.
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request' || err.code === 'auth/user-cancelled') return;
       console.error(err);
       if (err.code === 'auth/network-request-failed') {
-        setError('Erro de conexão com o Firebase. Abra o aplicativo em uma nova guia se estiver no visualizador do AI Studio.');
+        setError('Sem conexão com a internet. Verifique o sinal e tente de novo.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('O navegador bloqueou a janela do Google. Permita janelas deste site e tente de novo.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.');
       } else {
-        setError('Erro ao fazer login com o Google. Verifique sua conexão.');
+        setError('Não foi possível entrar com o Google. Tente de novo ou use e-mail e senha.');
       }
     } finally {
       setLoading(false);
@@ -173,14 +180,23 @@ export default function Login() {
                 <Lock className="absolute left-4 top-3.5 w-5 h-5 text-[#0A3D91]" />
                 <input
                   id="login-senha"
-                  type="password"
+                  type={mostrarSenha ? 'text' : 'password'}
                   autoComplete={isSignUp ? "new-password" : "current-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Sua senha secreta"
-                  className="nb-input w-full pl-12 pr-4 py-3.5 text-sm"
+                  className="nb-input w-full pl-12 pr-14 py-3.5 text-sm"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(v => !v)}
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  aria-pressed={mostrarSenha}
+                  className="absolute right-1 top-0 h-full min-w-11 px-3 text-[#0A3D91]"
+                >
+                  {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 

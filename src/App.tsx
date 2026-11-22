@@ -15,8 +15,11 @@ const AgentesMatchModal = lazy(() => import('./components/AgentesMatchModal'));
 import { motion, AnimatePresence } from 'motion/react';
 import { HardHat, LockKeyhole } from 'lucide-react';
 import { selectFreePlan } from './lib/authoritativeApi';
+import DialogProvider from './components/dialog/DialogProvider';
+import { useDialog } from './components/dialog/dialogContext';
 
 function AppContent() {
+  const dialog = useDialog();
   const [selectingFree, setSelectingFree] = useState(false);
   const [freeError, setFreeError] = useState('');
   const [freeMessage, setFreeMessage] = useState('');
@@ -35,7 +38,12 @@ function AppContent() {
 
   const returnToFree = async () => {
     if (!user || selectingFree) return;
-    if (!window.confirm('No plano Free, as duas obras ativas mais recentes permanecem disponíveis. As demais ficam bloqueadas; nenhum dado é apagado automaticamente. Deseja continuar?')) return;
+    const confirmado = await dialog.confirm({
+      title: 'Continuar no plano Free?',
+      message: 'No plano Free, as duas obras ativas mais recentes permanecem disponíveis. As demais ficam bloqueadas; nenhum dado é apagado automaticamente.',
+      confirmLabel: 'Continuar no Free',
+    });
+    if (!confirmado) return;
     setSelectingFree(true);
     setFreeError('');
     setFreeMessage('');
@@ -137,9 +145,11 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <DialogProvider>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </DialogProvider>
   );
 }
 

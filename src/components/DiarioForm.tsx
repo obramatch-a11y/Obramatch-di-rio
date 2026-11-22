@@ -37,6 +37,7 @@ import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
 import type { ClimaOficialInfo } from '../types';
 import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
+import { useDialog } from './dialog/dialogContext';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-[#FF6F00] bg-[#FF6F00]/10 border-[#FF6F00]' },
@@ -46,6 +47,7 @@ const CLIMA_OPTIONS = [
 ];
 
 export default function DiarioForm() {
+  const dialog = useDialog();
   const { selectedObra, createDiario, editingDiario, updateDiario, setView, openAgentesModal, fotos, deleteFoto, plano, usoIa } = useApp();
 
   const isEditing = !!editingDiario;
@@ -721,10 +723,9 @@ export default function DiarioForm() {
                     <div key={foto.id} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (window.confirm('Excluir esta foto do diário?')) {
-                            deleteFoto(editingDiario.id, foto.id);
-                          }
+                        onClick={async () => {
+                          const confirmado = await dialog.confirm({ title: 'Excluir esta foto?', message: 'A foto será removida deste diário.', confirmLabel: 'Excluir', danger: true });
+                          if (confirmado) deleteFoto(editingDiario.id, foto.id);
                         }}
                         className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
                         aria-label="Excluir foto"

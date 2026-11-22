@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useDialog } from './dialog/dialogContext';
 import { useApp } from '../context/AppContext';
 import { calcularHashRdo } from '../lib/hash';
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
@@ -36,6 +37,7 @@ const CLIMA_ICONS: { [key: string]: any } = {
 };
 
 export default function DiarioDetail() {
+  const dialog = useDialog();
   const { selectedObra, selectedDiario, deleteDiario, setView, fotos, plano } = useApp();
   const [copied, setCopied] = useState(false);
   const [verificacao, setVerificacao] = useState<'idle' | 'integro' | 'alterado' | 'verificando'>('idle');
@@ -67,7 +69,13 @@ export default function DiarioDetail() {
 
 
   const handleDelete = async () => {
-    if (window.confirm('Tem certeza que deseja excluir permanentemente este diário de obra?')) {
+    const confirmado = await dialog.confirm({
+      title: 'Excluir este diário?',
+      message: 'Tem certeza que deseja excluir permanentemente este diário de obra? Esta ação não pode ser desfeita.',
+      confirmLabel: 'Excluir',
+      danger: true,
+    });
+    if (confirmado) {
       try {
         await deleteDiario(selectedDiario.id);
       } catch (err) {

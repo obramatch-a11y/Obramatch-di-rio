@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { avisoGlobal } from '../components/dialog/dialogContext';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import {
   collection,
@@ -85,7 +86,7 @@ function valueToMillis(value: unknown): number {
 function showActionError(error: unknown, fallback: string): never {
   const message = error instanceof Error && error.message ? error.message : fallback;
   console.error(fallback, error);
-  if (typeof window !== 'undefined') window.alert(message);
+  if (typeof window !== 'undefined') void avisoGlobal(message);
   throw new Error(message);
 }
 
@@ -425,7 +426,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteObra = async (_id: string): Promise<void> => {
     const message = 'A exclusão definitiva da obra está temporariamente bloqueada para proteger fotos e RDOs durante a homologação. Arquive a obra por enquanto; nenhum dado será perdido.';
-    if (typeof window !== 'undefined') window.alert(message);
+    if (typeof window !== 'undefined') void avisoGlobal(message);
     throw new Error(message);
   };
 
