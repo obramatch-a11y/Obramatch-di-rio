@@ -1,3 +1,4 @@
+import { comprimirFoto } from '../lib/comprimirFoto';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Camera, CheckCircle2, ClipboardList, Loader2, Undo2 } from 'lucide-react';
 import { auth } from '../firebase';
@@ -46,6 +47,10 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
   const [detalhe, setDetalhe] = useState<DetalheRdoCentral | null>(null);
   const [erroDetalhe, setErroDetalhe] = useState('');
   const [fotos, setFotos] = useState<Record<string, string>>({});
+  // Fotos do relatório em correção: as já enviadas + as novas (a Central recebe a lista completa).
+  const [fotosEdicao, setFotosEdicao] = useState<{ url: string; legenda: string }[] | null>(null);
+  const [erroFotos, setErroFotos] = useState('');
+  const [preparandoFotos, setPreparandoFotos] = useState(false);
   const [carregandoFotos, setCarregandoFotos] = useState(false);
   const [tentativa, setTentativa] = useState(0);
 
@@ -103,10 +108,39 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
     } finally { setProcessando(false); }
   };
 
-  const iniciarCorrecao = () => {
+  const iniciarCorrecao = async () => {
     if (!detalhe) return;
+    setErroFotos(''); setFotosEdicao(null);
+    if (detalhe.rdo.sourceType === 'campo') {
+      setPreparandoFotos(true);
+      try {
+        const lista: { url: string; legenda: string }[] = [];
+        for (const f of detalhe.photos) {
+          const url = fotos[f.id] || await fotoRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, f.id, detalhe.version);
+          lista.push({ url, legenda: f.legenda || '' });
+        }
+        setFotosEdicao(lista);
+      } catch (e) {
+        setErroFotos(e instanceof Error ? e.message : 'Não foi possível carregar as fotos atuais.');
+      } finally { setPreparandoFotos(false); }
+    }
     const g = (k: string) => (typeof detalhe.snapshot[k] === 'string' ? (detalhe.snapshot[k] as string) : '');
     setEditando({ atividades: g('atividades'), equipe: g('equipe'), materiais: g('materiais'), ocorrencias: g('ocorrencias'), observacoes: g('observacoes') });
+  };
+
+  const adicionarFotosCorrecao = async (event: import('react').ChangeEvent<HTMLInputElement>) => {
+    const arquivos = Array.from(event.target.files ?? []) as File[];
+    event.target.value = '';
+    if (arquivos.length === 0 || !fotosEdicao) return;
+    setErroFotos(''); setPreparandoFotos(true);
+    try {
+      const novas: { url: string; legenda: string }[] = [];
+      for (const arq of arquivos.slice(0, Math.max(0, 10 - fotosEdicao.length))) novas.push({ url: await comprimirFoto(arq), legenda: '' });
+      if (arquivos.length > novas.length) setErroFotos('O relatório aceita até 10 fotos.');
+      setFotosEdicao((atual) => [...(atual ?? []), ...novas]);
+    } catch (e) {
+      setErroFotos(e instanceof Error ? e.message : 'Não foi possível preparar a foto.');
+    } finally { setPreparandoFotos(false); }
   };
 
   const reenviar = () => {
@@ -120,7 +154,7 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
       ocorrencias: editando.ocorrencias, observacoes: editando.observacoes,
     };
     if (detalhe.rdo.sourceType === 'campo') {
-      void concluir(() => reenviarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, relatorio), 'Relatório corrigido e reenviado para a revisão.');
+      void concluir(() => reenviarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, relatorio, fotosEdicao ?? undefined), 'Relatório corrigido e reenviado para a revisão.');
       return;
     }
     // Enviado do Diário pessoal: corrige o RDO original e reenvia a nova versão.
@@ -203,9 +237,37 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                         <textarea value={editando[chave]} rows={chave === 'atividades' ? 6 : 3} onChange={(e) => setEditando({ ...editando, [chave]: e.target.value })} />
                       </label>
                     ))}
-                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>As fotos já enviadas continuam como estavam.</p>
-                    <button type="button" className="campo-web-record" disabled={processando || !(editando.atividades.trim() || editando.ocorrencias.trim() || editando.observacoes.trim())} onClick={reenviar}>{processando ? 'Enviando…' : 'Reenviar para a revisão'}</button>
-                    <button type="button" className="campo-web-manual" disabled={processando} onClick={() => setEditando(null)}>Cancelar</button>
+                    {detalhe.rdo.sourceType === 'campo' ? (
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <h3 style={{ margin: 0 }}><Camera size={16} style={{ verticalAlign: '-3px' }} /> Fotos {fotosEdicao ? `(${fotosEdicao.length}/10)` : ''}</h3>
+                        {fotosEdicao && fotosEdicao.length > 0 && (
+                          <div className="campo-web-anexos-grade">
+                            {fotosEdicao.map((f, i) => (
+                              <div key={`${i}-${f.url.length}`} className="campo-web-anexo">
+                                <img src={f.url} alt={`Foto ${i + 1}`} />
+                                <button type="button" aria-label={`Remover foto ${i + 1}`} onClick={() => setFotosEdicao((atual) => (atual ?? []).filter((_, k) => k !== i))}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="rel-fotos-botoes">
+                          <label className="campo-web-photo-control">
+                            <Camera size={22} aria-hidden="true" /> Tirar foto
+                            <input type="file" accept="image/*" capture="environment" disabled={!fotosEdicao || preparandoFotos || fotosEdicao.length >= 10} onChange={adicionarFotosCorrecao} />
+                          </label>
+                          <label className="campo-web-photo-control">
+                            <Camera size={22} aria-hidden="true" /> Escolher foto
+                            <input type="file" accept="image/*" multiple disabled={!fotosEdicao || preparandoFotos || fotosEdicao.length >= 10} onChange={adicionarFotosCorrecao} />
+                          </label>
+                        </div>
+                        {preparandoFotos && <p role="status" style={{ margin: 0, fontSize: 13 }}><Loader2 size={14} /> Preparando fotos…</p>}
+                        {erroFotos && <p role="alert" style={{ margin: 0, fontSize: 13, color: '#b42318', fontWeight: 700 }}>{erroFotos}</p>}
+                      </div>
+                    ) : (
+                      <p style={{ margin: 0, fontSize: 12, color: '#666' }}>Para mudar fotos deste relatório, corrija-o no Diário onde ele foi criado.</p>
+                    )}
+                    <button type="button" className="campo-web-record" disabled={processando || preparandoFotos || (detalhe.rdo.sourceType === 'campo' && !fotosEdicao) || !(editando.atividades.trim() || editando.ocorrencias.trim() || editando.observacoes.trim())} onClick={reenviar}>{processando ? 'Enviando…' : 'Reenviar para a revisão'}</button>
+                    <button type="button" className="campo-web-manual" disabled={processando} onClick={() => { setEditando(null); setFotosEdicao(null); setErroFotos(''); }}>Cancelar</button>
                   </div>
                 )}
                 {detalhe.rdo.status === 'submitted' && empresa.podeRevisar && detalhe.rdo.submittedBy !== meuUid && (
