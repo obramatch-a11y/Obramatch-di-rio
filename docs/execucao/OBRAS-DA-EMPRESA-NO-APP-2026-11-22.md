@@ -57,3 +57,6 @@ Relatório: RELATORIO_VARREDURA.md.
 ## Rodada 8 — linguagem simples
 - Tela inicial com 3 passos explicados (falar, parar, conferir e enviar), "Prefiro escrever" e aviso de fotos opcionais.
 - Formulário: botões "Enviar"/"Enviar relatório" para obra da empresa; mensagem de pronto após a IA.
+
+## Rodada 9 — relatório simples
+Ordem do formulário: Ditar → Atividades (texto principal) → Fotos → "Mais detalhes (opcional)" (equipe, materiais, ocorrências, observações) fechado → "Data, horário, GPS e clima" fechado → Enviar. Nenhum campo foi removido; apenas recolhido.

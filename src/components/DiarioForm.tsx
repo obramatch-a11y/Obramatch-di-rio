@@ -490,8 +490,219 @@ export default function DiarioForm() {
             </div>
           )}
 
+          {/* Texto principal */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                  Atividades Executadas (Progresso do Dia) *
+                </label>
+                <button
+                  type="button"
+                  onClick={handleMelhorarTexto}
+                  disabled={!atividades.trim() || melhorandoTexto || melhoriaEsgotada}
+                  title={melhoriaEsgotada ? 'Franquia de melhorias do mês esgotada' : undefined}
+                  className="flex items-center gap-1 text-[10px] font-bold text-[#FF6F00] hover:text-[#FF6F00] disabled:opacity-40 cursor-pointer transition-all"
+                >
+                  {melhorandoTexto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                  Melhorar texto
+                </button>
+              </div>
+              <textarea
+                required
+                rows={4}
+                value={atividades}
+                onChange={(e) => setAtividades(e.target.value)}
+                placeholder="Ex: Concretagem de vigas concluída. Alvenaria do 2º pavimento iniciada."
+                className="w-full px-4 py-3.5 nb-input  placeholder-neutral-400  text-sm leading-relaxed"
+              />
+            </div>
+
+          </div>
+
+          {/* Section: Photographs */}
+          <div className="pt-6 border-t border-[#D1D1D1] space-y-4">
+            <div>
+              <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
+                <Camera className="w-4 h-4 text-[#FF6F00]" />
+                Fotografias de Registro
+                <span className="text-[10px] text-neutral-500 normal-case tracking-normal font-semibold">
+                  {fotosNoRelatorio}/{limites.fotosPorRelatorio}
+                </span>
+              </h4>
+              <p className="text-xs text-neutral-500 mt-1">
+                Capture fotos diretamente pela câmera ou faça upload da galeria do seu celular/computador.
+              </p>
+            </div>
+
+            {/* Upload Zone: câmera direta + galeria */}
+            <div className="flex flex-wrap items-center gap-3">
+              <label className={`py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                <Camera className="w-4 h-4 stroke-[2.5]" />
+                Tirar Foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageFile}
+                  disabled={fotosEsgotadas || uploadingImage}
+                  className="hidden"
+                />
+              </label>
+              <label className={`py-3 px-5 bg-white border-2 border-[#111111] hover:bg-[#F4F4F4] text-[#111111] font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                <ImageIcon className="w-4 h-4 stroke-[2.5]" />
+                Galeria
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageFile}
+                  disabled={fotosEsgotadas || uploadingImage}
+                  className="hidden"
+                />
+              </label>
+              {fotosEsgotadas && (
+                <span className="text-[10px] text-neutral-500 w-full">
+                  Limite de fotos deste relatório atingido no seu plano.
+                </span>
+              )}
+            </div>
+
+            {/* Fotos já salvas (Modo Edição) */}
+            {isEditing && fotosExistentes.length > 0 && (
+              <div className="space-y-2 pt-2 pb-4">
+                <h5 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Fotos já salvas</h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {fotosExistentes.map((foto) => (
+                    <div key={foto.id} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const confirmado = await dialog.confirm({ title: 'Excluir esta foto?', message: 'A foto será removida deste diário.', confirmLabel: 'Excluir', danger: true });
+                          if (confirmado) deleteFoto(editingDiario.id, foto.id);
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
+                        aria-label="Excluir foto"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      
+                      <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
+                        <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
+                      </div>
+
+                      {foto.legenda && (
+                        <p className="text-xs text-[#222222] italic mt-2.5 px-1">{foto.legenda}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Photo Preview Grid */}
+            {uploadedPhotos.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                {uploadedPhotos.map((photo, index) => (
+                  <div key={index} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      aria-label="Remover foto"
+                      className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-[#111111] rounded-full transition-all cursor-pointer z-10"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    
+                    <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
+                      <img src={photo.url} alt="Uploaded" className="w-full h-full object-cover" />
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Legenda da foto..."
+                      value={photo.legenda}
+                      onChange={(e) => updatePhotoLegend(index, e.target.value)}
+                      className="w-full mt-3 px-3 py-1.5 nb-input  placeholder-neutral-400  text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Signature Pad Component */}
+          <SignaturePad 
+            ref={signaturePadRef}
+            initialSignature={isEditing && editingDiario?.assinatura ? editingDiario.assinatura : undefined}
+          />
+
+          <details className="rel-mais">
+            <summary>Mais detalhes (opcional): equipe, materiais, ocorrências</summary>
+            <div className="space-y-4 pt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  Equipe e Mão de Obra Presente
+                </label>
+                <textarea
+                  rows={2}
+                  value={equipe}
+                  onChange={(e) => setEquipe(e.target.value)}
+                  placeholder="Ex: 2 Pedreiros, 4 Serventes, 1 Mestre de Obras."
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  Materiais e Equipamentos (recebidos/utilizados)
+                </label>
+                <textarea
+                  rows={2}
+                  value={materiais}
+                  onChange={(e) => setMateriais(e.target.value)}
+                  placeholder="Ex: 50 sacos de cimento CP-II, 2m³ de areia grossa."
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  Ocorrências / Imprevistos / Acidentes
+                </label>
+                <textarea
+                  rows={2}
+                  value={ocorrencias}
+                  onChange={(e) => setOcorrencias(e.target.value)}
+                  placeholder="Ex: Chuva intensa no período da tarde paralisou trabalhos por 2 horas."
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
+                  Observações Gerais
+                </label>
+                <textarea
+                  rows={2}
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  placeholder="Informações adicionais relevantes para o diário..."
+                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
+                />
+              </div>
+            </div>
+            </div>
+          </details>
+
+          <details className="rel-mais">
+            <summary>Data, horário, GPS e clima (já preenchidos)</summary>
+            <div className="pt-3">
           {/* Section: Metadata (Data, Hora, Clima, GPS) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 border-b border-[#D1D1D1]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-2">
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -615,207 +826,8 @@ export default function DiarioForm() {
             </div>
           </div>
 
-          {/* Section: Main details */}
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                  Atividades Executadas (Progresso do Dia) *
-                </label>
-                <button
-                  type="button"
-                  onClick={handleMelhorarTexto}
-                  disabled={!atividades.trim() || melhorandoTexto || melhoriaEsgotada}
-                  title={melhoriaEsgotada ? 'Franquia de melhorias do mês esgotada' : undefined}
-                  className="flex items-center gap-1 text-[10px] font-bold text-[#FF6F00] hover:text-[#FF6F00] disabled:opacity-40 cursor-pointer transition-all"
-                >
-                  {melhorandoTexto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                  Melhorar texto
-                </button>
-              </div>
-              <textarea
-                required
-                rows={4}
-                value={atividades}
-                onChange={(e) => setAtividades(e.target.value)}
-                placeholder="Ex: Concretagem de vigas concluída. Alvenaria do 2º pavimento iniciada."
-                className="w-full px-4 py-3.5 nb-input  placeholder-neutral-400  text-sm leading-relaxed"
-              />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                  Equipe e Mão de Obra Presente
-                </label>
-                <textarea
-                  rows={2}
-                  value={equipe}
-                  onChange={(e) => setEquipe(e.target.value)}
-                  placeholder="Ex: 2 Pedreiros, 4 Serventes, 1 Mestre de Obras."
-                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                  Materiais e Equipamentos (recebidos/utilizados)
-                </label>
-                <textarea
-                  rows={2}
-                  value={materiais}
-                  onChange={(e) => setMateriais(e.target.value)}
-                  placeholder="Ex: 50 sacos de cimento CP-II, 2m³ de areia grossa."
-                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                  Ocorrências / Imprevistos / Acidentes
-                </label>
-                <textarea
-                  rows={2}
-                  value={ocorrencias}
-                  onChange={(e) => setOcorrencias(e.target.value)}
-                  placeholder="Ex: Chuva intensa no período da tarde paralisou trabalhos por 2 horas."
-                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2">
-                  Observações Gerais
-                </label>
-                <textarea
-                  rows={2}
-                  value={observacoes}
-                  onChange={(e) => setObservacoes(e.target.value)}
-                  placeholder="Informações adicionais relevantes para o diário..."
-                  className="w-full px-4 py-3 nb-input  placeholder-neutral-400  text-sm resize-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Photographs */}
-          <div className="pt-6 border-t border-[#D1D1D1] space-y-4">
-            <div>
-              <h4 className="text-xs font-bold text-neutral-600 uppercase tracking-wider flex items-center gap-2">
-                <Camera className="w-4 h-4 text-[#FF6F00]" />
-                Fotografias de Registro
-                <span className="text-[10px] text-neutral-500 normal-case tracking-normal font-semibold">
-                  {fotosNoRelatorio}/{limites.fotosPorRelatorio}
-                </span>
-              </h4>
-              <p className="text-xs text-neutral-500 mt-1">
-                Capture fotos diretamente pela câmera ou faça upload da galeria do seu celular/computador.
-              </p>
-            </div>
-
-            {/* Upload Zone: câmera direta + galeria */}
-            <div className="flex flex-wrap items-center gap-3">
-              <label className={`py-3 px-5 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                <Camera className="w-4 h-4 stroke-[2.5]" />
-                Tirar Foto
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleImageFile}
-                  disabled={fotosEsgotadas || uploadingImage}
-                  className="hidden"
-                />
-              </label>
-              <label className={`py-3 px-5 bg-white border-2 border-[#111111] hover:bg-[#F4F4F4] text-[#111111] font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs ${fotosEsgotadas ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
-                <ImageIcon className="w-4 h-4 stroke-[2.5]" />
-                Galeria
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageFile}
-                  disabled={fotosEsgotadas || uploadingImage}
-                  className="hidden"
-                />
-              </label>
-              {fotosEsgotadas && (
-                <span className="text-[10px] text-neutral-500 w-full">
-                  Limite de fotos deste relatório atingido no seu plano.
-                </span>
-              )}
-            </div>
-
-            {/* Fotos já salvas (Modo Edição) */}
-            {isEditing && fotosExistentes.length > 0 && (
-              <div className="space-y-2 pt-2 pb-4">
-                <h5 className="text-xs font-bold text-neutral-600 uppercase tracking-wider">Fotos já salvas</h5>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {fotosExistentes.map((foto) => (
-                    <div key={foto.id} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const confirmado = await dialog.confirm({ title: 'Excluir esta foto?', message: 'A foto será removida deste diário.', confirmLabel: 'Excluir', danger: true });
-                          if (confirmado) deleteFoto(editingDiario.id, foto.id);
-                        }}
-                        className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all cursor-pointer z-10"
-                        aria-label="Excluir foto"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                      
-                      <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
-                        <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
-                      </div>
-
-                      {foto.legenda && (
-                        <p className="text-xs text-[#222222] italic mt-2.5 px-1">{foto.legenda}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Photo Preview Grid */}
-            {uploadedPhotos.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-                {uploadedPhotos.map((photo, index) => (
-                  <div key={index} className="bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl overflow-hidden p-3 relative flex flex-col justify-between">
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(index)}
-                      aria-label="Remover foto"
-                      className="absolute top-2 right-2 p-1 bg-red-500 hover:bg-red-600 text-[#111111] rounded-full transition-all cursor-pointer z-10"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                    
-                    <div className="aspect-video w-full overflow-hidden rounded-xl bg-white relative">
-                      <img src={photo.url} alt="Uploaded" className="w-full h-full object-cover" />
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="Legenda da foto..."
-                      value={photo.legenda}
-                      onChange={(e) => updatePhotoLegend(index, e.target.value)}
-                      className="w-full mt-3 px-3 py-1.5 nb-input  placeholder-neutral-400  text-xs"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Signature Pad Component */}
-          <SignaturePad 
-            ref={signaturePadRef}
-            initialSignature={isEditing && editingDiario?.assinatura ? editingDiario.assinatura : undefined}
-          />
+          </details>
 
           {/* Bottom Save Button - Ensures there is a Save button right before the support block */}
           <div className="pt-6 border-t border-[#D1D1D1] flex justify-end">
