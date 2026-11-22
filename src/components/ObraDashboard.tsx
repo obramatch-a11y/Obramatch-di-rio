@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { getContextualRecommendations } from '../lib/ecosystemData';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
+import { dataLocalISO } from '../lib/dataLocal';
 
 export default function ObraDashboard() {
   const { 
@@ -102,10 +103,10 @@ export default function ObraDashboard() {
     const dates = Array.from(new Set(diarios.map(d => d.data))).sort((a, b) => (b as string).localeCompare(a as string));
     
     let streak = 0;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = dataLocalISO();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = dataLocalISO(yesterday);
     
     // If the most recent entry is not today or yesterday, streak is 0
     if (dates[0] !== todayStr && dates[0] !== yesterdayStr) {

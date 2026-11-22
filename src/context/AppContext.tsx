@@ -27,6 +27,7 @@ import {
   type FinancialAccessInput,
   type FinancialAccessState,
 } from '../lib/financialAccess';
+import { dataLocalISO } from '../lib/dataLocal';
 
 interface AppContextType {
   user: User | null;
@@ -582,7 +583,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             obraId: selectedObra.id,
             url,
             legenda: photo.legenda,
-            data: diarioData.data || new Date().toISOString().split('T')[0],
+            data: diarioData.data || dataLocalISO(),
             horario: diarioData.horario || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
             gps: photo.gps || diarioData.gps || null,
             ownerId: user.uid,

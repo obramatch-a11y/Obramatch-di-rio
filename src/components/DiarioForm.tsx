@@ -40,6 +40,7 @@ import type { ClimaOficialInfo } from '../types';
 import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
 import { useDialog } from './dialog/dialogContext';
+import { dataLocalISO } from '../lib/dataLocal';
 
 const CLIMA_OPTIONS = [
   { value: 'Ensolarado', label: 'Ensolarado', icon: Sun, color: 'text-[#FF6F00] bg-[#FF6F00]/10 border-[#FF6F00]' },
@@ -121,7 +122,7 @@ export default function DiarioForm() {
     } else {
       // Automatic values
       const now = new Date();
-      setData(now.toISOString().split('T')[0]);
+      setData(dataLocalISO(now));
       setHorario(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       
       // Auto trigger GPS on create
@@ -166,7 +167,7 @@ export default function DiarioForm() {
     const base = selectedObra?.gps || coordsAparelho || gps;
     if (!base) return;
     setBuscandoClima(true);
-    const hoje = data || new Date().toISOString().split('T')[0];
+    const hoje = data || dataLocalISO();
     const resultado = await buscarClima(base.latitude, base.longitude, hoje);
     setBuscandoClima(false);
     if (resultado) {

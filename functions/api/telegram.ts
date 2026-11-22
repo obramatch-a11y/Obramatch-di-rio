@@ -271,10 +271,18 @@ async function processarRelato(
   await mostrarPrevia(env, chatId, pend);
 }
 
+// Comparação de tempo constante (evita descobrir o segredo pelo tempo de resposta).
+function segredoConfere(recebido: string | null, esperado: string | undefined): boolean {
+  if (!recebido || !esperado || recebido.length !== esperado.length) return false;
+  let diff = 0;
+  for (let i = 0; i < esperado.length; i++) diff |= recebido.charCodeAt(i) ^ esperado.charCodeAt(i);
+  return diff === 0;
+}
+
 export const onRequestPost = async (ctx: { request: Request; env: Env }): Promise<Response> => {
   const { request, env } = ctx;
 
-  if (request.headers.get('X-Telegram-Bot-Api-Secret-Token') !== env.TELEGRAM_SECRET) {
+  if (!segredoConfere(request.headers.get('X-Telegram-Bot-Api-Secret-Token'), env.TELEGRAM_SECRET)) {
     return new Response('unauthorized', { status: 401 });
   }
 
