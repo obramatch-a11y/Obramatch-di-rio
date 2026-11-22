@@ -11,6 +11,8 @@ export interface Obra {
   arquivada?: boolean;            // Obra arquivada não conta no limite do plano
   lockedByPlan?: boolean;
   lockedByAdmin?: boolean;
+  /** Presente quando a obra pertence a uma empresa da Central (atribuída ao executante). */
+  empresa?: { empresaId: string; empresaNome: string; obraId: string };
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp

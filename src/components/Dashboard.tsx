@@ -13,6 +13,7 @@ import TelegramConnect from './TelegramConnect';
 import NovaObraModal from './NovaObraModal';
 import PlanoUsoCard from './PlanoUsoCard';
 import GravarAgora from './GravarAgora';
+import { listarObrasDaEmpresa, type ObraDaEmpresa } from '../lib/central';
 import '../styles/campo/app-dashboard-v3.css';
 import '../styles/campo/campo-web.css';
 import '../styles/campo/rdo-alertas.css';
@@ -37,12 +38,33 @@ export default function Dashboard() {
     try { return localStorage.getItem('om_obra_atual') || ''; } catch { return ''; }
   });
 
+  const [obrasEmpresa, setObrasEmpresa] = useState<ObraDaEmpresa[]>([]);
+  const [erroEmpresa, setErroEmpresa] = useState('');
+  useEffect(() => {
+    if (!user || !online) return;
+    const controle = new AbortController();
+    setErroEmpresa('');
+    listarObrasDaEmpresa(controle.signal)
+      .then(setObrasEmpresa)
+      .catch((e: unknown) => { if (!controle.signal.aborted) setErroEmpresa(e instanceof Error ? e.message : 'Não foi possível consultar as obras da empresa.'); });
+    return () => controle.abort();
+  }, [user, online]);
+  // Obras da empresa viram "obras" do App para o executante: mesma escolha, mesmo botão de gravar.
+  const obrasDaEmpresa: Obra[] = obrasEmpresa
+    .filter((o) => o.capabilities?.canRegister !== false)
+    .map((o) => ({
+      id: `empresa:${o.empresaId}:${o.obraId}`, nome: o.obraNome, cliente: o.empresaNome, endereco: '',
+      responsavelTecnico: '', dataInicio: '', observacoes: '', ownerId: user?.uid ?? '', createdAt: null, updatedAt: null,
+      empresa: { empresaId: o.empresaId, empresaNome: o.empresaNome, obraId: o.obraId },
+    }));
+
   const nome = user?.email?.split('@')[0] || 'Profissional';
   const obrasAtivas = obras.filter((o) => !o.arquivada);
   const obrasArquivadas = obras.filter((o) => o.arquivada);
-  const obraAtual: Obra | undefined = obrasAtivas.length === 1
-    ? obrasAtivas[0]
-    : obrasAtivas.find((o) => o.id === (obraEscolhida || selectedObra?.id));
+  const obrasParaRdo = [...obrasAtivas, ...obrasDaEmpresa];
+  const obraAtual: Obra | undefined = obrasParaRdo.length === 1
+    ? obrasParaRdo[0]
+    : obrasParaRdo.find((o) => o.id === (obraEscolhida || selectedObra?.id));
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuAberto(false); };
@@ -174,7 +196,7 @@ export default function Dashboard() {
               <p role="status" className="campo-web-escolher-obra"><CloudOff size={16} aria-hidden="true" /> Sem internet. Os registros aguardam a conexão voltar.</p>
             )}
 
-            {!carregandoObras && obrasAtivas.length === 0 && (
+            {!carregandoObras && obrasParaRdo.length === 0 && (
               <section className="campo-web-start-guide" aria-labelledby="campo-guia-titulo">
                 <h2 id="campo-guia-titulo">Por onde começar?</h2>
                 <ul>
@@ -187,19 +209,20 @@ export default function Dashboard() {
               </section>
             )}
 
-            {!carregandoObras && obrasAtivas.length > 0 && (
+            {!carregandoObras && obrasParaRdo.length > 0 && (
               <form className="campo-web-entry" onSubmit={(e) => { e.preventDefault(); abrirManual(); }}>
-                {obrasAtivas.length === 1 && obraAtual && (
+                {obrasParaRdo.length === 1 && obraAtual && (
                   <p className="campo-web-current">
                     <HardHat size={22} aria-hidden="true" />
-                    <span><small>Obra atual</small><strong>{obraAtual.nome}</strong></span>
+                    <span><small>Obra atual</small><strong>{obraAtual.nome}</strong>{obraAtual.empresa && <small>Empresa · {obraAtual.empresa.empresaNome}</small>}</span>
                   </p>
                 )}
-                {obrasAtivas.length > 1 && (
+                {obrasParaRdo.length > 1 && (
                   <label htmlFor="campo-web-obra">Obra atual
                     <select id="campo-web-obra" value={obraAtual?.id ?? ''} onChange={(e) => escolher(e.target.value)} required>
                       <option value="">Selecione a obra</option>
-                      {obrasAtivas.map((o) => <option key={o.id} value={o.id}>{o.nome}</option>)}
+                      {obrasAtivas.length > 0 && <optgroup label="Minhas obras">{obrasAtivas.map((o) => <option key={o.id} value={o.id}>{o.nome}</option>)}</optgroup>}
+                      {obrasDaEmpresa.length > 0 && <optgroup label="Obras da empresa">{obrasDaEmpresa.map((o) => <option key={o.id} value={o.id}>{o.nome} · {o.empresa?.empresaNome}</option>)}</optgroup>}
                     </select>
                   </label>
                 )}
@@ -211,7 +234,7 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <div className="campo-web-shortcuts" role="group" aria-label="Relatórios">
-                  <button type="button" disabled={!obraAtual} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}>
+                  <button type="button" disabled={!obraAtual || Boolean(obraAtual.empresa)} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}>
                     <ClipboardList size={22} aria-hidden="true" /> Meus relatórios
                   </button>
                 </div>
@@ -242,6 +265,25 @@ export default function Dashboard() {
                 <button key={v} type="button" className={filtroObras === v ? 'is-active' : ''} aria-pressed={filtroObras === v} onClick={() => setFiltroObras(v)}>{l}</button>
               ))}
             </div>
+
+            {obrasDaEmpresa.length > 0 && filtroObras !== 'arquivadas' && (
+              <section aria-labelledby="obras-empresa-titulo">
+                <div className="app-works-heading"><h3 id="obras-empresa-titulo">Obras da empresa</h3></div>
+                <div className="app-works-list">
+                  {obrasDaEmpresa.map((o) => (
+                    <article key={o.id} className="app-work-card" onClick={() => { escolher(o.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ cursor: 'pointer' }}>
+                      <span className="app-work-icon" aria-hidden="true"><HardHat size={21} /></span>
+                      <div className="app-work-copy">
+                        <div className="app-work-title"><h3>{o.nome}</h3></div>
+                        <div className="app-work-meta"><span><small>Empresa</small><strong>{o.empresa?.empresaNome}</strong></span></div>
+                      </div>
+                      <button type="button" className="campo-web-open" aria-label={`Usar obra ${o.nome}`}><ChevronRight size={22} aria-hidden="true" /></button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+            {erroEmpresa && <p role="status" className="campo-web-escolher-obra">{erroEmpresa}</p>}
 
             {carregandoObras ? (
               <div className="app-empty-state" role="status">Carregando obras...</div>

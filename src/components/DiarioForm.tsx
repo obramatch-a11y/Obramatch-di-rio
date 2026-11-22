@@ -34,6 +34,7 @@ import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import SignaturePad, { SignaturePadRef } from './SignaturePad';
 import { buscarClima } from '../lib/clima';
 import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
+import { enviarRdoParaCentral } from '../lib/central';
 import type { ClimaOficialInfo } from '../types';
 import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
@@ -57,6 +58,8 @@ export default function DiarioForm() {
 
   // Signature pad ref
   const signaturePadRef = useRef<SignaturePadRef>(null);
+  // Identificador estável do envio à Central: reenviar após falha de rede não duplica o RDO.
+  const idEnvioCentral = useRef(crypto.randomUUID());
 
   // Success modal states
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -336,6 +339,8 @@ export default function DiarioForm() {
     setUploadedPhotos(prev => prev.map((photo, i) => i === index ? { ...photo, legenda: val } : photo));
   };
 
+  const voltarDoForm = () => (selectedObra?.empresa ? setView('dashboard', null) : setView('obra-dashboard', selectedObra));
+
   // Submit report
   const handleSaveReport = async () => {
     if (!atividades) return;
@@ -362,7 +367,14 @@ export default function DiarioForm() {
 
     setSaveError(null);
     try {
-      if (isEditing && editingDiario) {
+      if (selectedObra?.empresa) {
+        // Obra de empresa: o RDO vai para a Central (revisão), igual ao envio pela Web.
+        if (uploadedPhotos.length > 10) throw new Error('LIMITE_FOTOS');
+        const { climaOficial: _clima, ...paraCentral } = reportData;
+        await enviarRdoParaCentral(selectedObra.empresa.empresaId, selectedObra.empresa.obraId, paraCentral, uploadedPhotos, idEnvioCentral.current);
+        setSavedReport({ id: idEnvioCentral.current, ...reportData, fotos: uploadedPhotos });
+        setShowSuccessModal(true);
+      } else if (isEditing && editingDiario) {
         await updateDiario(editingDiario.id, reportData, uploadedPhotos);
         const completeReport = { id: editingDiario.id, ...editingDiario, ...reportData, fotos: uploadedPhotos };
         setSavedReport(completeReport);
@@ -376,6 +388,8 @@ export default function DiarioForm() {
     } catch (err: any) {
       console.error(err);
       const detalhe = String(err?.message || err);
+      if (detalhe === 'LIMITE_FOTOS') { setSaveError('Obras de empresa aceitam até 10 fotos por RDO. Remova algumas e envie de novo.'); return; }
+      if (selectedObra?.empresa) { setSaveError(detalhe.slice(0, 200)); return; }
       if (detalhe.includes('permission') || detalhe.includes('PERMISSION_DENIED') || detalhe.includes('insufficient')) {
         setSaveError('O banco de dados recusou o registro (permissão negada). Detalhe técnico: ' + detalhe.slice(0, 160));
       } else if (detalhe.includes('unavailable') || detalhe.includes('network') || detalhe.includes('offline')) {
@@ -394,7 +408,7 @@ export default function DiarioForm() {
       <header className="nb-topbar sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between w-full">
           <button
-            onClick={() => setView('obra-dashboard', selectedObra)}
+            onClick={voltarDoForm}
             className="flex items-center gap-2 text-blue-100 hover:text-[#FFB347] font-semibold transition-all cursor-pointer text-sm"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -846,7 +860,9 @@ export default function DiarioForm() {
                     Diário Registrado com Sucesso!
                   </h3>
                   <p className="text-neutral-600 text-xs mt-1">
-                    {navigator.onLine 
+                    {selectedObra?.empresa
+                      ? "O relatório foi enviado para a Central da empresa e aguarda a revisão."
+                      : navigator.onLine 
                       ? "O relatório foi consolidado e armazenado na nuvem de forma segura."
                       : "O relatório foi salvo no seu aparelho e será sincronizado com a nuvem automaticamente quando a internet voltar."}
                   </p>
@@ -860,18 +876,18 @@ export default function DiarioForm() {
                 {/* Navigation Actions */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-[#D1D1D1]">
                   <button
-                    onClick={() => setView('obra-dashboard', selectedObra)}
+                    onClick={voltarDoForm}
                     className="w-full sm:flex-1 py-3 px-4 border border-[#D1D1D1] hover:bg-[#F4F4F4] text-[#222222] hover:text-[#111111] font-semibold rounded-xl transition-all cursor-pointer text-xs"
                   >
-                    Voltar para Obra
+                    {selectedObra?.empresa ? 'Voltar ao início' : 'Voltar para Obra'}
                   </button>
-                  <button
+                  {!selectedObra?.empresa && <button
                     onClick={() => setView('diario-detail', selectedObra, savedReport)}
                     className="w-full sm:flex-1 bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3 px-4 rounded-xl transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
                   >
                     <FileText className="w-4 h-4" />
                     Ver Detalhes & PDF
-                  </button>
+                  </button>}
                 </div>
               </motion.div>
             </div>
