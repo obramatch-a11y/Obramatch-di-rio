@@ -108,3 +108,9 @@ img, svg, video, canvas { max-width: 100%; }
 .campo-web-anexos small { color: #5d6678; }
 .campo-web-passo { margin: 4px 0; color: #3f4859; font-size: 14px; line-height: 1.5; }
 .campo-web-passo b { color: #ff6f00; }
+.rel-mais { border: 1px solid #d7deea; border-radius: 16px; background: #f9fbff; padding: 0 14px; }
+.rel-mais > summary { min-height: 52px; display: flex; align-items: center; cursor: pointer; color: #0a3d91; font-weight: 800; font-size: 14px; list-style: none; }
+.rel-mais > summary::-webkit-details-marker { display: none; }
+.rel-mais > summary::after { content: '+'; margin-left: auto; font-size: 22px; }
+.rel-mais[open] > summary::after { content: '–'; }
+.rel-mais[open] { padding-bottom: 14px; }
