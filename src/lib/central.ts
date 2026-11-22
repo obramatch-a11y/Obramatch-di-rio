@@ -156,3 +156,7 @@ export const reenviarRdoDaCentral = (empresaId: string, obraId: string, rdoId: s
   escreverCentral({ action: 'resubmit_field_rdo', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, report: relatorio });
 
 export const registrarAparelhoNaCentral = (pushToken: string) => escreverCentral({ action: 'register_push_token', pushToken });
+
+/** Reenvio de um RDO enviado a partir do Diário pessoal, depois de corrigido o original. */
+export const reenviarRdoDoDiario = (empresaId: string, obraId: string, rdoId: string) =>
+  escreverCentral({ action: 'resubmit_rdo', companyId: empresaId, workId: obraId, rdoId });

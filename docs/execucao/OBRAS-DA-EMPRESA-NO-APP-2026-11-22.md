@@ -29,3 +29,9 @@ Reversão: reativar a versão anterior no Cloudflare (Implantações).
 - Aviso no celular: `public/firebase-messaging-sw.js` + `src/lib/push.ts` (mesma chave VAPID e mesmo registro da Web, via ponte). O toque no aviso abre a tela inicial. Depende de o Chrome/TWA permitir notificações para o app instalado.
 - Ponte: POST liberado também para `request_correction`, `accept_document`, `register_push_token`, `unregister_push_token`; GET com `alertStatus`. Demais ações: 404 (testado com Central simulada).
 - Não verificado com conta real nesta data: envio/recebimento do push, aceite/devolução e reenvio de ponta a ponta.
+
+## 4ª rodada: correção de RDO devolvido, qualquer origem
+- RDO do Campo: edição e `resubmit_field_rdo` (já existia).
+- RDO enviado do Diário pessoal: o App localiza o original nas obras da própria conta pelo `hashIntegridadeOrigem` do snapshot (`src/lib/origemDiario.ts`), grava a correção com novo hash e chama `resubmit_rdo`. O servidor continua validando dono e hash.
+- Ponte: `resubmit_rdo` liberado no POST (teste com Central simulada: aceito; `submit_rdo` segue bloqueado).
+- Limite: se o original não estiver na conta logada (apagado ou de outra conta), o App avisa e pede para corrigir onde foi criado.
