@@ -106,3 +106,5 @@ img, svg, video, canvas { max-width: 100%; }
 .campo-web-anexo img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: 1px solid #d7deea; }
 .campo-web-anexo button { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border: 0; border-radius: 999px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 18px; line-height: 1; }
 .campo-web-anexos small { color: #5d6678; }
+.campo-web-passo { margin: 4px 0; color: #3f4859; font-size: 14px; line-height: 1.5; }
+.campo-web-passo b { color: #ff6f00; }
