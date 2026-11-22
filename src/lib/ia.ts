@@ -3,6 +3,20 @@
 
 import { auth } from '../firebase';
 
+/** A IA às vezes devolve lista ou objeto em vez de texto; isso derrubava a tela inteira. */
+export function comoTexto(valor: unknown): string {
+  if (valor == null) return '';
+  if (typeof valor === 'string') return valor;
+  if (typeof valor === 'number' || typeof valor === 'boolean') return String(valor);
+  if (Array.isArray(valor)) return valor.map(comoTexto).filter(Boolean).join('\n');
+  if (typeof valor === 'object') {
+    return Object.entries(valor as Record<string, unknown>)
+      .map(([k, v]) => { const t = comoTexto(v); return t ? `${k}: ${t}` : ''; })
+      .filter(Boolean).join('\n');
+  }
+  return '';
+}
+
 export interface RdoEstruturado {
   atividades: string;
   equipe: string;
@@ -48,12 +62,18 @@ export async function estruturarPorAudio(
   audioBase64: string,
   mimeType: string
 ): Promise<RdoEstruturado> {
-  const json = await chamarIa({ tipo: 'estruturar', audioBase64, mimeType });
-  return json as RdoEstruturado;
+  const json = (await chamarIa({ tipo: 'estruturar', audioBase64, mimeType })) ?? {};
+  return {
+    atividades: comoTexto(json.atividades),
+    equipe: comoTexto(json.equipe),
+    materiais: comoTexto(json.materiais),
+    ocorrencias: comoTexto(json.ocorrencias),
+    observacoes: comoTexto(json.observacoes),
+  };
 }
 
 /** Reescreve um texto como redação técnica de RDO (sem inventar fatos). */
 export async function melhorarTexto(texto: string): Promise<string> {
   const json = await chamarIa({ tipo: 'melhorar', texto });
-  return String(json.texto || texto);
+  return comoTexto(json?.texto) || texto;
 }

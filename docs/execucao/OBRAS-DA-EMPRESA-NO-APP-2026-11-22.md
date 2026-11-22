@@ -60,3 +60,8 @@ Relatório: RELATORIO_VARREDURA.md.
 
 ## Rodada 9 — relatório simples
 Ordem do formulário: Ditar → Atividades (texto principal) → Fotos → "Mais detalhes (opcional)" (equipe, materiais, ocorrências, observações) fechado → "Data, horário, GPS e clima" fechado → Enviar. Nenhum campo foi removido; apenas recolhido.
+
+## Rodada 10 — tela branca ao parar a gravação
+- Hipótese: a IA devolvia campo em formato não-texto (lista/objeto) e `atividades.trim()` derrubava a tela inteira. `estruturarPorAudio` agora converte tudo para texto (`comoTexto`).
+- `LimiteDeErro` no topo do app: em qualquer falha de tela mostra aviso com "Tentar de novo"/"Recarregar" e a mensagem do erro, em vez de tela branca.
+- Não reproduzido localmente (exige login Firebase); depende de reteste do usuário.
