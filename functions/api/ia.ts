@@ -110,6 +110,7 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
     return resposta(200, { texto });
   } catch (err: any) {
     console.error('Erro na IA:', err?.message || err);
-    return resposta(502, { erro: 'A IA está indisponível no momento. Tente novamente em instantes.' });
+    const causa = String(err?.message || err || '').replace(/\s+/g, ' ').slice(0, 110);
+    return resposta(502, { erro: `A IA está indisponível no momento. Tente novamente em instantes. (${causa})` });
   }
 };

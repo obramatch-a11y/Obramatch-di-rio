@@ -114,7 +114,7 @@ export async function estruturarRdo(
   const partes: ParteGemini[] = [{ text: PROMPT_ESTRUTURAR }];
   if (opts.audioBase64) {
     partes.push({
-      inline_data: { mime_type: opts.mimeType || 'audio/ogg', data: opts.audioBase64 },
+      inline_data: { mime_type: (opts.mimeType || 'audio/ogg').split(';')[0].trim(), data: opts.audioBase64 },
     });
   }
   if (opts.texto) partes.push({ text: `Relato: ${opts.texto}` });

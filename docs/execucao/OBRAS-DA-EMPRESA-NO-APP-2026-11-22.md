@@ -65,3 +65,7 @@ Ordem do formulário: Ditar → Atividades (texto principal) → Fotos → "Mais
 - Hipótese: a IA devolvia campo em formato não-texto (lista/objeto) e `atividades.trim()` derrubava a tela inteira. `estruturarPorAudio` agora converte tudo para texto (`comoTexto`).
 - `LimiteDeErro` no topo do app: em qualquer falha de tela mostra aviso com "Tentar de novo"/"Recarregar" e a mensagem do erro, em vez de tela branca.
 - Não reproduzido localmente (exige login Firebase); depende de reteste do usuário.
+
+## Rodada 11 — IA com áudio e tela branca no login
+- IA 502 ao enviar áudio gravado no celular: o servidor mandava o arquivo como `audio.ogg` com conteúdo webm e o mime com `;codecs=opus`. Agora o nome/extensão seguem o formato real e o mime é normalizado (cliente e servidor, Groq e Gemini). O erro 502 passou a mostrar a causa resumida entre parênteses para diagnóstico. Causa exata NÃO confirmada (sem acesso aos logs do Cloudflare).
+- Tela branca após login: `Dashboard` deixou de ser carregado sob demanda; o fallback agora é "Carregando…" com recarga automática (limpando cache) após 12 s e botão após 6 s; a rede de segurança do `main.tsx` tenta até 3 vezes e zera quando o app aparece.

@@ -62,7 +62,7 @@ export async function estruturarPorAudio(
   audioBase64: string,
   mimeType: string
 ): Promise<RdoEstruturado> {
-  const json = (await chamarIa({ tipo: 'estruturar', audioBase64, mimeType })) ?? {};
+  const json = (await chamarIa({ tipo: 'estruturar', audioBase64, mimeType: (mimeType || 'audio/webm').split(';')[0].trim() })) ?? {};
   return {
     atividades: comoTexto(json.atividades),
     equipe: comoTexto(json.equipe),
