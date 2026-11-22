@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import LimiteDeErro from './components/LimiteDeErro';
 
 // Registra listeners de PWA no nível mais alto do sistema (antes do React iniciar)
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -21,7 +22,9 @@ window.addEventListener('appinstalled', (e) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <LimiteDeErro>
+      <App />
+    </LimiteDeErro>
   </StrictMode>,
 );
 
