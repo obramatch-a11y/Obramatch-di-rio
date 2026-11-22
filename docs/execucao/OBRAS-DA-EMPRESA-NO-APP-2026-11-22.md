@@ -48,3 +48,8 @@ Relatório: RELATORIO_VARREDURA.md.
 - Telegram: segredo do webhook comparado em tempo constante.
 - `.env.example` atualizado; `meta description` no index.html.
 - Não aplicado de propósito: `npm audit fix --force` (rebaixaria o Firebase). Pendências: ESLint/teste de tela, validar plano no servidor, restringir chave web no Google Cloud.
+
+## Rodada 7 — tela inicial fluida
+- Fotos (tirar/escolher) ficam na tela inicial com miniaturas, remoção individual e "Remover todas"; só entram no relatório quando ele abre.
+- "Gravar RDO" grava na própria tela inicial (cronômetro, "Parar e continuar", "Cancelar"). Ao parar, abre o relatório e a IA já preenche os campos para edição.
+- `fotoPendente.ts` guarda fotos e áudio pendentes; `DiarioForm` os recolhe ao abrir (`processarAudio`).
