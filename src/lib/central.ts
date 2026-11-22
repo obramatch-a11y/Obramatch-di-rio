@@ -5,7 +5,7 @@ export interface ObraDaEmpresa {
   empresaNome: string;
   obraId: string;
   obraNome: string;
-  capabilities?: { canRegister?: boolean };
+  capabilities?: { canRegister?: boolean; canReview?: boolean; canManage?: boolean };
 }
 
 async function idToken(): Promise<string> {
@@ -70,6 +70,7 @@ export interface RdoDaCentral {
   submittedAt?: string;
   lastReason?: string;
   sourceType?: string;
+  submittedBy?: string;
 }
 
 async function lerCentral<T>(acao: string, params: Record<string, string>, signal?: AbortSignal): Promise<T> {
@@ -111,3 +112,47 @@ export async function fotoRdoDaCentral(empresaId: string, obraId: string, rdoId:
   const corpo = await lerCentral<{ dataUrl: string }>('get_rdo_photo', { companyId: empresaId, workId: obraId, rdoId, photoId, version: String(version) }, signal);
   return corpo.dataUrl;
 }
+
+export type StatusAviso = 'submitted' | 'needs_correction';
+export interface AvisoDaCentral extends RdoDaCentral { alertRead: boolean; submittedBy?: string }
+
+/** Avisos do usuário na obra: devolvidos para ele corrigir, ou aguardando a revisão dele. */
+export async function listarAvisosDaCentral(empresaId: string, obraId: string, status: StatusAviso, signal?: AbortSignal): Promise<AvisoDaCentral[]> {
+  const todos: AvisoDaCentral[] = [];
+  let pagina = '';
+  for (let i = 0; i < 5; i += 1) {
+    const params: Record<string, string> = { companyId: empresaId, workId: obraId, alertStatus: status };
+    if (pagina) params.pageToken = pagina;
+    const corpo = await lerCentral<{ rdos?: AvisoDaCentral[]; nextPageToken?: string }>('list_rdo_alerts', params, signal);
+    todos.push(...(corpo.rdos ?? []));
+    pagina = corpo.nextPageToken ?? '';
+    if (!pagina) break;
+  }
+  return todos;
+}
+
+async function escreverCentral(corpo: Record<string, unknown>): Promise<{ rdo?: { id: string; status?: string; latestVersion?: number } }> {
+  const token = await idToken();
+  const r = await fetch('/api/obras/dispatcher?scope=central', {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(corpo), cache: 'no-store',
+  });
+  const resposta = await r.json().catch(() => null) as { message?: string; rdo?: { id: string } } | null;
+  if (!r.ok) throw new Error(resposta?.message || `A Central recusou a operação (código ${r.status}).`);
+  return resposta ?? {};
+}
+
+export const marcarAvisoComoLido = (empresaId: string, obraId: string, rdoId: string, versao: number, status: StatusAviso) =>
+  escreverCentral({ action: 'mark_rdo_alert_read', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, alertStatus: status });
+
+export const devolverRdoDaCentral = (empresaId: string, obraId: string, rdoId: string, versao: number, motivo: string) =>
+  escreverCentral({ action: 'request_correction', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, reason: motivo });
+
+export const aceitarRdoDaCentral = (empresaId: string, obraId: string, rdoId: string, versao: number, nota = '') =>
+  escreverCentral({ action: 'accept_document', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, note: nota });
+
+/** Reenvio de um RDO devolvido (as fotos da versão anterior são mantidas pelo servidor). */
+export const reenviarRdoDaCentral = (empresaId: string, obraId: string, rdoId: string, versao: number, relatorio: RdoParaCentral) =>
+  escreverCentral({ action: 'resubmit_field_rdo', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, report: relatorio });
+
+export const registrarAparelhoNaCentral = (pushToken: string) => escreverCentral({ action: 'register_push_token', pushToken });

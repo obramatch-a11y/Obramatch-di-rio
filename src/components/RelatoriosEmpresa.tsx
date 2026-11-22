@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Camera, ClipboardList, Loader2 } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle2, ClipboardList, Loader2, Undo2 } from 'lucide-react';
+import { auth } from '../firebase';
 import {
-  detalharRdoDaCentral, fotoRdoDaCentral, listarRdosDaCentral,
-  type DetalheRdoCentral, type RdoDaCentral,
+  aceitarRdoDaCentral, detalharRdoDaCentral, devolverRdoDaCentral, fotoRdoDaCentral, listarRdosDaCentral,
+  marcarAvisoComoLido, reenviarRdoDaCentral,
+  type DetalheRdoCentral, type RdoDaCentral, type RdoParaCentral,
 } from '../lib/central';
 import type { Obra } from '../types';
 
@@ -23,11 +25,17 @@ const SECOES: [string, string][] = [
   ['ocorrencias', 'Ocorrências'], ['observacoes', 'Observações'],
 ];
 
-export default function RelatoriosEmpresa({ obra, onVoltar }: { obra: Obra; onVoltar: () => void }) {
+export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra: Obra; rdoInicial?: string; onVoltar: () => void }) {
   const empresa = obra.empresa!;
   const [rdos, setRdos] = useState<RdoDaCentral[] | null>(null);
   const [erro, setErro] = useState('');
-  const [aberto, setAberto] = useState<string | null>(null);
+  const [aberto, setAberto] = useState<string | null>(rdoInicial ?? null);
+  const [editando, setEditando] = useState<Record<string, string> | null>(null);
+  const [motivo, setMotivo] = useState('');
+  const [decidindo, setDecidindo] = useState<'' | 'devolver' | 'aceitar'>('');
+  const [processando, setProcessando] = useState(false);
+  const [mensagem, setMensagem] = useState('');
+  const meuUid = auth.currentUser?.uid ?? '';
   const [detalhe, setDetalhe] = useState<DetalheRdoCentral | null>(null);
   const [erroDetalhe, setErroDetalhe] = useState('');
   const [fotos, setFotos] = useState<Record<string, string>>({});
@@ -47,8 +55,15 @@ export default function RelatoriosEmpresa({ obra, onVoltar }: { obra: Obra; onVo
     if (!aberto) return;
     const c = new AbortController();
     setDetalhe(null); setErroDetalhe(''); setFotos({});
+    setEditando(null); setDecidindo(''); setMotivo(''); setMensagem('');
     detalharRdoDaCentral(empresa.empresaId, empresa.obraId, aberto, c.signal)
-      .then(setDetalhe)
+      .then((d) => {
+        setDetalhe(d);
+        // Melhor esforço: o aviso deixa de aparecer como "novo".
+        const status = d.rdo.status;
+        if (status === 'needs_correction' && d.rdo.submittedBy === meuUid) void marcarAvisoComoLido(empresa.empresaId, obra.empresa!.obraId, d.rdo.id, d.version, 'needs_correction').catch(() => {});
+        if (status === 'submitted' && empresa.podeRevisar && d.rdo.submittedBy !== meuUid) void marcarAvisoComoLido(empresa.empresaId, obra.empresa!.obraId, d.rdo.id, d.version, 'submitted').catch(() => {});
+      })
       .catch((e: unknown) => { if (!c.signal.aborted) setErroDetalhe(e instanceof Error ? e.message : 'Não foi possível abrir o relatório.'); });
     return () => c.abort();
   }, [aberto, empresa.empresaId, empresa.obraId]);
@@ -67,7 +82,38 @@ export default function RelatoriosEmpresa({ obra, onVoltar }: { obra: Obra; onVo
     } finally { setCarregandoFotos(false); }
   };
 
-  const voltar = () => (aberto ? setAberto(null) : onVoltar());
+  const voltar = () => { if (aberto) { setAberto(null); if (rdoInicial) onVoltar(); } else onVoltar(); };
+
+  const concluir = async (acao: () => Promise<unknown>, textoOk: string) => {
+    setProcessando(true); setErroDetalhe(''); setMensagem('');
+    try {
+      await acao();
+      setMensagem(textoOk);
+      setAberto(null); setEditando(null); setDecidindo(''); setMotivo('');
+      setTentativa((n) => n + 1);
+    } catch (e) {
+      setErroDetalhe(e instanceof Error ? e.message : 'Não foi possível concluir.');
+    } finally { setProcessando(false); }
+  };
+
+  const iniciarCorrecao = () => {
+    if (!detalhe) return;
+    const g = (k: string) => (typeof detalhe.snapshot[k] === 'string' ? (detalhe.snapshot[k] as string) : '');
+    setEditando({ atividades: g('atividades'), equipe: g('equipe'), materiais: g('materiais'), ocorrencias: g('ocorrencias'), observacoes: g('observacoes') });
+  };
+
+  const reenviar = () => {
+    if (!detalhe || !editando) return;
+    const g = (k: string) => (typeof detalhe.snapshot[k] === 'string' ? (detalhe.snapshot[k] as string) : '');
+    const relatorio: RdoParaCentral = {
+      data: g('data') || detalhe.rdo.data || '', horario: g('horario'), clima: g('clima'),
+      condicaoTrabalho: g('condicaoTrabalho') || undefined, assinatura: g('assinatura') || undefined,
+      gps: (detalhe.snapshot.gps as RdoParaCentral['gps']) ?? null,
+      equipe: editando.equipe, atividades: editando.atividades, materiais: editando.materiais,
+      ocorrencias: editando.ocorrencias, observacoes: editando.observacoes,
+    };
+    void concluir(() => reenviarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, relatorio), 'Relatório corrigido e reenviado para a revisão.');
+  };
 
   return (
     <div className="app-shell">
@@ -81,6 +127,7 @@ export default function RelatoriosEmpresa({ obra, onVoltar }: { obra: Obra; onVo
       </header>
       <main className="app-dashboard campo-web-dashboard" style={{ paddingBottom: 90 }}>
         <p className="campo-web-escolher-obra">Empresa · {empresa.empresaNome}</p>
+        {mensagem && <p role="status" className="campo-web-escolher-obra" style={{ fontWeight: 700 }}>{mensagem}</p>}
 
         {!aberto && (
           <>
@@ -121,6 +168,55 @@ export default function RelatoriosEmpresa({ obra, onVoltar }: { obra: Obra; onVo
                   {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.lastReason && <p style={{ marginTop: 8, fontWeight: 700 }}>Motivo da devolução: {detalhe.rdo.lastReason}</p>}
                   {(texto(detalhe.snapshot.horario) || texto(detalhe.snapshot.clima)) && <p style={{ marginTop: 8, color: '#555' }}>{[texto(detalhe.snapshot.horario), texto(detalhe.snapshot.clima)].filter(Boolean).join(' · ')}</p>}
                 </div>
+                {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.submittedBy === meuUid && detalhe.rdo.sourceType === 'campo' && !editando && (
+                  <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={iniciarCorrecao}>Corrigir e reenviar</button>
+                )}
+                {editando && (
+                  <div className="nb-card" style={{ padding: 16, display: 'grid', gap: 10 }}>
+                    <h3 style={{ margin: 0 }}>Corrigir relatório</h3>
+                    {SECOES.map(([chave, titulo]) => (
+                      <label key={chave} style={{ display: 'grid', gap: 4, fontWeight: 700 }}>{titulo}
+                        <textarea value={editando[chave]} rows={chave === 'atividades' ? 6 : 3} onChange={(e) => setEditando({ ...editando, [chave]: e.target.value })} style={{ border: '1px solid #bbb', borderRadius: 10, padding: 10, fontWeight: 400 }} />
+                      </label>
+                    ))}
+                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>As fotos já enviadas são mantidas.</p>
+                    <button type="button" className="campo-web-record" disabled={processando || !(editando.atividades.trim() || editando.ocorrencias.trim() || editando.observacoes.trim())} onClick={reenviar}>{processando ? 'Enviando…' : 'Reenviar para a revisão'}</button>
+                    <button type="button" className="campo-web-manual" disabled={processando} onClick={() => setEditando(null)}>Cancelar</button>
+                  </div>
+                )}
+                {detalhe.rdo.status === 'submitted' && empresa.podeRevisar && detalhe.rdo.submittedBy !== meuUid && (
+                  <div className="nb-card" style={{ padding: 16, display: 'grid', gap: 10 }}>
+                    <h3 style={{ margin: 0 }}>Sua decisão</h3>
+                    {decidindo === 'devolver' && (
+                      <>
+                        <label style={{ display: 'grid', gap: 4, fontWeight: 700 }}>Motivo da devolução (mínimo 10 letras)
+                          <textarea value={motivo} rows={4} onChange={(e) => setMotivo(e.target.value)} style={{ border: '1px solid #bbb', borderRadius: 10, padding: 10, fontWeight: 400 }} />
+                        </label>
+                        <button type="button" className="campo-web-record" disabled={processando || motivo.trim().length < 10}
+                          onClick={() => void concluir(() => devolverRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, motivo.trim()), 'Relatório devolvido para correção.')}>
+                          <Undo2 size={22} /> {processando ? 'Enviando…' : 'Devolver para correção'}
+                        </button>
+                        <button type="button" className="campo-web-manual" disabled={processando} onClick={() => setDecidindo('')}>Cancelar</button>
+                      </>
+                    )}
+                    {decidindo === 'aceitar' && (
+                      <>
+                        <p style={{ margin: 0 }}>Aceitar este relatório? A decisão fica registrada com o seu nome.</p>
+                        <button type="button" className="campo-web-record" disabled={processando}
+                          onClick={() => void concluir(() => aceitarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version), 'Relatório aceito.')}>
+                          <CheckCircle2 size={22} /> {processando ? 'Enviando…' : 'Confirmar aceite'}
+                        </button>
+                        <button type="button" className="campo-web-manual" disabled={processando} onClick={() => setDecidindo('')}>Cancelar</button>
+                      </>
+                    )}
+                    {!decidindo && (
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <button type="button" className="campo-web-record" onClick={() => setDecidindo('aceitar')}><CheckCircle2 size={22} /> Aceitar</button>
+                        <button type="button" className="campo-web-manual" onClick={() => setDecidindo('devolver')}><Undo2 size={20} /> Devolver para correção</button>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {SECOES.map(([chave, titulo]) => texto(detalhe.snapshot[chave]) && (
                   <div key={chave} className="nb-card" style={{ padding: 16 }}>
                     <h3 style={{ margin: '0 0 6px' }}>{titulo}</h3>

@@ -12,7 +12,7 @@ export interface Obra {
   lockedByPlan?: boolean;
   lockedByAdmin?: boolean;
   /** Presente quando a obra pertence a uma empresa da Central (atribuída ao executante). */
-  empresa?: { empresaId: string; empresaNome: string; obraId: string };
+  empresa?: { empresaId: string; empresaNome: string; obraId: string; podeRevisar?: boolean };
   ownerId: string;
   createdAt: any; // Timestamp
   updatedAt: any; // Timestamp

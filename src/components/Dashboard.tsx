@@ -14,6 +14,8 @@ import NovaObraModal from './NovaObraModal';
 import PlanoUsoCard from './PlanoUsoCard';
 import GravarAgora from './GravarAgora';
 import RelatoriosEmpresa from './RelatoriosEmpresa';
+import AvisosEmpresa, { type AvisoComObra } from './AvisosEmpresa';
+import LigarAvisos from './LigarAvisos';
 import { guardarFotosPendentes } from '../lib/fotoPendente';
 import { listarObrasDaEmpresa, type ObraDaEmpresa } from '../lib/central';
 import '../styles/campo/app-dashboard-v3.css';
@@ -41,6 +43,7 @@ export default function Dashboard() {
   });
 
   const [relatoriosEmpresaDe, setRelatoriosEmpresaDe] = useState<Obra | null>(null);
+  const [rdoInicial, setRdoInicial] = useState<string | undefined>();
   const [obrasEmpresa, setObrasEmpresa] = useState<ObraDaEmpresa[]>([]);
   const [erroEmpresa, setErroEmpresa] = useState('');
   const [consultandoEmpresa, setConsultandoEmpresa] = useState(false);
@@ -66,7 +69,7 @@ export default function Dashboard() {
     .map((o) => ({
       id: `empresa:${o.empresaId}:${o.obraId}`, nome: o.obraNome, cliente: o.empresaNome, endereco: '',
       responsavelTecnico: '', dataInicio: '', observacoes: '', ownerId: user?.uid ?? '', createdAt: null, updatedAt: null,
-      empresa: { empresaId: o.empresaId, empresaNome: o.empresaNome, obraId: o.obraId },
+      empresa: { empresaId: o.empresaId, empresaNome: o.empresaNome, obraId: o.obraId, podeRevisar: o.capabilities?.canReview === true },
     }));
 
   const nome = user?.email?.split('@')[0] || 'Profissional';
@@ -164,7 +167,14 @@ export default function Dashboard() {
   const abrirManual = () => { if (obraAtual) setView('diario-form', obraAtual, null); };
   const irParaObras = () => document.getElementById('campo-obras')?.scrollIntoView({ behavior: 'smooth' });
 
-  if (relatoriosEmpresaDe) return <RelatoriosEmpresa obra={relatoriosEmpresaDe} onVoltar={() => setRelatoriosEmpresaDe(null)} />;
+  const abrirAviso = ({ obra, rdo }: AvisoComObra) => {
+    const alvo = obrasDaEmpresa.find((o) => o.empresa?.empresaId === obra.empresaId && o.empresa?.obraId === obra.obraId)
+      ?? ({ id: `empresa:${obra.empresaId}:${obra.obraId}`, nome: obra.obraNome, cliente: obra.empresaNome, endereco: '', responsavelTecnico: '', dataInicio: '', observacoes: '', ownerId: user?.uid ?? '', createdAt: null, updatedAt: null, empresa: { empresaId: obra.empresaId, empresaNome: obra.empresaNome, obraId: obra.obraId, podeRevisar: obra.capabilities?.canReview === true } } as Obra);
+    setRdoInicial(rdo.id);
+    setRelatoriosEmpresaDe(alvo);
+  };
+
+  if (relatoriosEmpresaDe) return <RelatoriosEmpresa obra={relatoriosEmpresaDe} rdoInicial={rdoInicial} onVoltar={() => { setRelatoriosEmpresaDe(null); setRdoInicial(undefined); }} />;
 
   return (
     <div className="app-shell">
@@ -220,6 +230,9 @@ export default function Dashboard() {
                 : 'Nenhuma obra de empresa atribuída a esta conta.'}{' '}
               {!consultandoEmpresa && online && <button type="button" onClick={() => setTentativaEmpresa((n) => n + 1)} style={{ textDecoration: 'underline', fontWeight: 700 }}>Atualizar</button>}
             </p>
+
+            {user && obrasEmpresa.length > 0 && <LigarAvisos user={user} />}
+            <AvisosEmpresa obras={obrasEmpresa} onAbrir={abrirAviso} />
 
             {!online && (
               <p role="status" className="campo-web-escolher-obra"><CloudOff size={16} aria-hidden="true" /> Sem internet. Os registros aguardam a conexão voltar.</p>
