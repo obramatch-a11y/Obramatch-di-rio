@@ -35,7 +35,7 @@ import SignaturePad, { SignaturePadRef } from './SignaturePad';
 import { buscarClima } from '../lib/clima';
 import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
 import { enviarRdoParaCentral } from '../lib/central';
-import { tomarFotosPendentes } from '../lib/fotoPendente';
+import { tomarFotosPendentes, tomarAudioPendente } from '../lib/fotoPendente';
 import type { ClimaOficialInfo } from '../types';
 import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
@@ -182,6 +182,32 @@ export default function DiarioForm() {
     if (climaOficial && valor !== climaOficial.condicao) setClimaOficial(null);
   };
 
+  // Áudio -> IA -> campos do RDO (usado ao gravar aqui ou ao vir gravado da tela inicial)
+  const processarAudio = async (blob: Blob) => {
+    if (blob.size < 1000) { setErroIa('Áudio muito curto. Tente falar por alguns segundos.'); return; }
+    setErroIa('');
+    setProcessandoIa(true);
+    try {
+      const base64 = await new Promise<string>((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(String(reader.result).split(',')[1]);
+        reader.onerror = () => rej(new Error('Falha ao ler o áudio'));
+        reader.readAsDataURL(blob);
+      });
+      const rdo = await estruturarPorAudio(base64, blob.type || 'audio/webm');
+      if (rdo.atividades) setAtividades(rdo.atividades);
+      if (rdo.equipe) setEquipe(rdo.equipe);
+      if (rdo.materiais) setMateriais(rdo.materiais);
+      if (rdo.ocorrencias) setOcorrencias(rdo.ocorrencias);
+      if (rdo.observacoes) setObservacoes(rdo.observacoes);
+      setCamposIa(true);
+    } catch (err: any) {
+      setErroIa(err?.message || 'Não foi possível processar o áudio.');
+    } finally {
+      setProcessandoIa(false);
+    }
+  };
+
   // ✨ Ditar diário: grava áudio e a IA estrutura os campos do RDO
   const iniciarGravacao = async () => {
     setErroIa('');
@@ -193,27 +219,7 @@ export default function DiarioForm() {
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-        if (blob.size < 1000) { setErroIa('Áudio muito curto. Tente falar por alguns segundos.'); return; }
-        setProcessandoIa(true);
-        try {
-          const base64 = await new Promise<string>((res, rej) => {
-            const reader = new FileReader();
-            reader.onload = () => res(String(reader.result).split(',')[1]);
-            reader.onerror = () => rej(new Error('Falha ao ler o áudio'));
-            reader.readAsDataURL(blob);
-          });
-          const rdo = await estruturarPorAudio(base64, blob.type || 'audio/webm');
-          if (rdo.atividades) setAtividades(rdo.atividades);
-          if (rdo.equipe) setEquipe(rdo.equipe);
-          if (rdo.materiais) setMateriais(rdo.materiais);
-          if (rdo.ocorrencias) setOcorrencias(rdo.ocorrencias);
-          if (rdo.observacoes) setObservacoes(rdo.observacoes);
-          setCamposIa(true);
-        } catch (err: any) {
-          setErroIa(err?.message || 'Não foi possível processar o áudio.');
-        } finally {
-          setProcessandoIa(false);
-        }
+        await processarAudio(blob);
       };
       recorder.start();
       mediaRecorderRef.current = recorder;
@@ -223,16 +229,15 @@ export default function DiarioForm() {
     }
   };
 
-  // Vindo do botão "Gravar RDO de hoje" da tela inicial: já começa a gravar, sem mais um toque.
-  const gravacaoAutomaticaFeita = useRef(false);
+  // Vindo da tela inicial: recolhe as fotos escolhidas e o áudio gravado, e já gera o texto.
+  const entradaInicialFeita = useRef(false);
   useEffect(() => {
-    if (gravacaoAutomaticaFeita.current) return;
-    let pedido = false;
-    try { pedido = sessionStorage.getItem('om_gravar_ao_abrir') === '1'; sessionStorage.removeItem('om_gravar_ao_abrir'); } catch { /* sem armazenamento */ }
-    gravacaoAutomaticaFeita.current = true;
+    if (entradaInicialFeita.current) return;
+    entradaInicialFeita.current = true;
     const fotos = tomarFotosPendentes();
+    const audio = tomarAudioPendente();
     if (fotos.length > 0 && !isEditing) adicionarFotos(fotos);
-    if (pedido && !isEditing && !transcEsgotada) void iniciarGravacao();
+    if (audio && !isEditing && !transcEsgotada) void processarAudio(audio);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

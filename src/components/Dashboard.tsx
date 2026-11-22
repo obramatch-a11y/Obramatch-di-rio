@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useDialog } from './dialog/dialogContext';
 import { Obra, LIMITES_PLANO } from '../types';
@@ -16,7 +16,7 @@ import GravarAgora from './GravarAgora';
 import RelatoriosEmpresa from './RelatoriosEmpresa';
 import AvisosEmpresa, { type AvisoComObra } from './AvisosEmpresa';
 import LigarAvisos from './LigarAvisos';
-import { guardarFotosPendentes } from '../lib/fotoPendente';
+import { adicionarFotosPendentes, listarFotosPendentes, removerFotoPendente, limparFotosPendentes, guardarAudioPendente } from '../lib/fotoPendente';
 import { listarObrasDaEmpresa, type ObraDaEmpresa } from '../lib/central';
 import '../styles/campo/app-dashboard-v3.css';
 import '../styles/campo/campo-web.css';
@@ -156,14 +156,20 @@ export default function Dashboard() {
     return status && (!termo || o.nome.toLowerCase().includes(termo) || (o.cliente || '').toLowerCase().includes(termo));
   });
 
-  // Foto escolhida na tela inicial: abre o RDO da obra atual já com a foto anexada.
-  const abrirComFoto = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Fotos ficam aqui na tela inicial; só vão para o relatório quando ele for aberto.
+  const [fotosEscolhidas, setFotosEscolhidas] = useState<File[]>(() => listarFotosPendentes());
+  const previas = useMemo(() => fotosEscolhidas.map((f) => URL.createObjectURL(f)), [fotosEscolhidas]);
+  useEffect(() => () => previas.forEach((u) => URL.revokeObjectURL(u)), [previas]);
+  const anexarFotos = (event: React.ChangeEvent<HTMLInputElement>) => {
     const arquivos = Array.from(event.target.files ?? []) as File[];
     event.target.value = '';
-    if (!obraAtual || arquivos.length === 0) return;
-    guardarFotosPendentes(arquivos);
-    setView('diario-form', obraAtual, null);
+    if (arquivos.length === 0) return;
+    adicionarFotosPendentes(arquivos);
+    setFotosEscolhidas([...listarFotosPendentes()]);
   };
+  const tirarFoto = (indice: number) => { removerFotoPendente(indice); setFotosEscolhidas([...listarFotosPendentes()]); };
+  const limparFotos = () => { limparFotosPendentes(); setFotosEscolhidas([]); };
+  const audioGravado = (audio: Blob) => { if (!obraAtual) return; guardarAudioPendente(audio); setView('diario-form', obraAtual, null); };
   const abrirManual = () => { if (obraAtual) setView('diario-form', obraAtual, null); };
   const irParaObras = () => document.getElementById('campo-obras')?.scrollIntoView({ behavior: 'smooth' });
 
@@ -270,19 +276,30 @@ export default function Dashboard() {
                 )}
                 {!obraAtual && <p className="campo-web-escolher-obra">Escolha a obra para começar a gravação.</p>}
                 <div className="campo-web-actions">
-                  <GravarAgora disabled={!obraAtual} onGravar={() => obraAtual && setView('diario-form', obraAtual, null)} />
+                  <GravarAgora disabled={!obraAtual} onGravado={audioGravado} />
                   <button type="submit" className="campo-web-manual" disabled={!obraAtual}>
                     <FilePlus2 size={19} aria-hidden="true" /> Escrever RDO
                   </button>
                 </div>
+                {fotosEscolhidas.length > 0 && (
+                  <div className="campo-web-anexos" aria-label="Fotos anexadas">
+                    <div className="campo-web-anexos-topo"><strong>{fotosEscolhidas.length} foto{fotosEscolhidas.length > 1 ? 's' : ''} anexada{fotosEscolhidas.length > 1 ? 's' : ''}</strong><button type="button" onClick={limparFotos}>Remover todas</button></div>
+                    <div className="campo-web-anexos-grade">
+                      {previas.map((u, i) => (
+                        <div key={u} className="campo-web-anexo"><img src={u} alt={`Foto ${i + 1}`} /><button type="button" aria-label={`Remover foto ${i + 1}`} onClick={() => tirarFoto(i)}>×</button></div>
+                      ))}
+                    </div>
+                    <small>Elas entram no relatório quando você gravar ou escrever.</small>
+                  </div>
+                )}
                 <div className="campo-web-shortcuts" role="group" aria-label="Fotos e relatórios">
                   <label className="campo-web-photo-control">
                     <Camera size={22} aria-hidden="true" /> Tirar foto
-                    <input type="file" accept="image/*" capture="environment" disabled={!obraAtual} onChange={abrirComFoto} />
+                    <input type="file" accept="image/*" capture="environment" disabled={!obraAtual} onChange={anexarFotos} />
                   </label>
                   <label className="campo-web-photo-control">
                     <ImageIcon size={22} aria-hidden="true" /> Escolher foto
-                    <input type="file" accept="image/*" multiple disabled={!obraAtual} onChange={abrirComFoto} />
+                    <input type="file" accept="image/*" multiple disabled={!obraAtual} onChange={anexarFotos} />
                   </label>
                   <button type="button" disabled={!obraAtual} onClick={() => { if (!obraAtual) return; if (obraAtual.empresa) setRelatoriosEmpresaDe(obraAtual); else setView('obra-dashboard', obraAtual); }}>
                     <ClipboardList size={22} aria-hidden="true" /> {obraAtual?.empresa ? 'Relatórios da obra' : 'Meus relatórios'}
