@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Camera, CheckCircle2, ClipboardList, Loader2, Undo2 } from 'lucide-react';
 import { auth } from '../firebase';
+import { useApp } from '../context/AppContext';
+import { corrigirDiarioDeOrigem, localizarDiarioDeOrigem } from '../lib/origemDiario';
 import {
   aceitarRdoDaCentral, detalharRdoDaCentral, devolverRdoDaCentral, fotoRdoDaCentral, listarRdosDaCentral,
-  marcarAvisoComoLido, reenviarRdoDaCentral,
+  marcarAvisoComoLido, reenviarRdoDaCentral, reenviarRdoDoDiario,
   type DetalheRdoCentral, type RdoDaCentral, type RdoParaCentral,
 } from '../lib/central';
 import type { Obra } from '../types';
@@ -36,6 +38,7 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
   const [processando, setProcessando] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const meuUid = auth.currentUser?.uid ?? '';
+  const { obras: minhasObras } = useApp();
   const [detalhe, setDetalhe] = useState<DetalheRdoCentral | null>(null);
   const [erroDetalhe, setErroDetalhe] = useState('');
   const [fotos, setFotos] = useState<Record<string, string>>({});
@@ -112,7 +115,20 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
       equipe: editando.equipe, atividades: editando.atividades, materiais: editando.materiais,
       ocorrencias: editando.ocorrencias, observacoes: editando.observacoes,
     };
-    void concluir(() => reenviarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, relatorio), 'Relatório corrigido e reenviado para a revisão.');
+    if (detalhe.rdo.sourceType === 'campo') {
+      void concluir(() => reenviarRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, relatorio), 'Relatório corrigido e reenviado para a revisão.');
+      return;
+    }
+    // Enviado do Diário pessoal: corrige o RDO original e reenvia a nova versão.
+    void concluir(async () => {
+      const origem = await localizarDiarioDeOrigem(meuUid, minhasObras, typeof detalhe.snapshot.hashIntegridadeOrigem === 'string' ? detalhe.snapshot.hashIntegridadeOrigem : '');
+      if (!origem) throw new Error('Não encontrei o RDO original no Diário desta conta. Abra o Diário onde ele foi criado para corrigir.');
+      await corrigirDiarioDeOrigem(origem, {
+        atividades: editando.atividades, equipe: editando.equipe, materiais: editando.materiais,
+        ocorrencias: editando.ocorrencias, observacoes: editando.observacoes,
+      });
+      await reenviarRdoDoDiario(empresa.empresaId, empresa.obraId, detalhe.rdo.id);
+    }, 'Relatório corrigido e reenviado para a revisão.');
   };
 
   return (
@@ -168,7 +184,7 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                   {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.lastReason && <p style={{ marginTop: 8, fontWeight: 700 }}>Motivo da devolução: {detalhe.rdo.lastReason}</p>}
                   {(texto(detalhe.snapshot.horario) || texto(detalhe.snapshot.clima)) && <p style={{ marginTop: 8, color: '#555' }}>{[texto(detalhe.snapshot.horario), texto(detalhe.snapshot.clima)].filter(Boolean).join(' · ')}</p>}
                 </div>
-                {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.submittedBy === meuUid && detalhe.rdo.sourceType === 'campo' && !editando && (
+                {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.submittedBy === meuUid && !editando && (
                   <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={iniciarCorrecao}>Corrigir e reenviar</button>
                 )}
                 {editando && (
@@ -179,7 +195,7 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                         <textarea value={editando[chave]} rows={chave === 'atividades' ? 6 : 3} onChange={(e) => setEditando({ ...editando, [chave]: e.target.value })} style={{ border: '1px solid #bbb', borderRadius: 10, padding: 10, fontWeight: 400 }} />
                       </label>
                     ))}
-                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>As fotos já enviadas são mantidas.</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>As fotos já enviadas continuam como estavam.</p>
                     <button type="button" className="campo-web-record" disabled={processando || !(editando.atividades.trim() || editando.ocorrencias.trim() || editando.observacoes.trim())} onClick={reenviar}>{processando ? 'Enviando…' : 'Reenviar para a revisão'}</button>
                     <button type="button" className="campo-web-manual" disabled={processando} onClick={() => setEditando(null)}>Cancelar</button>
                   </div>
