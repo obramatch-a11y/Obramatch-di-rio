@@ -41,3 +41,10 @@ Reversão: reativar a versão anterior no Cloudflare (Implantações).
 - Atalhos de foto (Tirar foto / Escolher foto / Relatórios) em grade responsiva.
 - Formulários (Novo RDO, Nova obra): visual do Campo (bordas suaves, cantos arredondados, campos maiores, fonte 16px). Cabeçalho "Voltar / Novo RDO" para obras da empresa.
 - Relatório da empresa: status em português (inclui "Aceito"), data com fallback, chips, seções com destaque, grade de fotos, cartões de correção/decisão.
+
+## Rodada 6 — varredura (branch fix/varredura-2026-11-22)
+Relatório: RELATORIO_VARREDURA.md.
+- Datas em horário local (`src/lib/dataLocal.ts`): fim do "dia seguinte" após 21h em RDO, nova obra, painel, exportação e sincronização.
+- Telegram: segredo do webhook comparado em tempo constante.
+- `.env.example` atualizado; `meta description` no index.html.
+- Não aplicado de propósito: `npm audit fix --force` (rebaixaria o Firebase). Pendências: ESLint/teste de tela, validar plano no servidor, restringir chave web no Google Cloud.

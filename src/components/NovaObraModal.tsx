@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, X } from 'lucide-react';
+import { dataLocalISO } from '../lib/dataLocal';
 
 interface NovaObraModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export default function NovaObraModal({
   const [endereco, setEndereco] = useState('');
   const [gpsObra, setGpsObra] = useState<{ latitude: number; longitude: number } | null>(null);
   const [capturandoGps, setCapturandoGps] = useState(false);
-  const [dataInicio, setDataInicio] = useState(new Date().toISOString().split('T')[0]);
+  const [dataInicio, setDataInicio] = useState(dataLocalISO());
   const [observacoes, setObservacoes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export default function NovaObraModal({
       setCliente('');
       setEndereco('');
       setResponsavelTecnico('');
-      setDataInicio(new Date().toISOString().split('T')[0]);
+      setDataInicio(dataLocalISO());
       setObservacoes('');
       onClose();
     } catch (err: any) {

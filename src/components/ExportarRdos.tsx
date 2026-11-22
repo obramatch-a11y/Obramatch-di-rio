@@ -3,10 +3,11 @@ import { useApp } from '../context/AppContext';
 import { Diario } from '../types';
 import { ArrowLeft, FileDown, AlertTriangle, WifiOff } from 'lucide-react';
 import RdoPrintBlock from './RdoPrintBlock';
+import { dataLocalISO } from '../lib/dataLocal';
 
 function intervaloDoPeriodo(p: string, de: string, ate: string): { de: string; ate: string } | null {
   const hoje = new Date();
-  const iso = (d: Date) => d.toISOString().split('T')[0];
+  const iso = (d: Date) => dataLocalISO(d);
   if (p === 'este-mes') return { de: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), ate: iso(hoje) };
   if (p === 'mes-anterior') return { de: iso(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)), ate: iso(new Date(hoje.getFullYear(), hoje.getMonth(), 0)) };
   if (p === 'personalizado' && de && ate) return { de, ate };
