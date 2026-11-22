@@ -74,8 +74,10 @@ async function transcreverAudioGroq(
   mimeType: string
 ): Promise<string> {
   const binario = Uint8Array.from(atob(audioBase64), (c) => c.charCodeAt(0));
+  const base = (mimeType || 'audio/ogg').split(';')[0].trim().toLowerCase();
+  const extensao = base.includes('webm') ? 'webm' : base.includes('mp4') || base.includes('m4a') || base.includes('aac') ? 'm4a' : base.includes('mpeg') || base.includes('mp3') ? 'mp3' : base.includes('wav') ? 'wav' : 'ogg';
   const form = new FormData();
-  form.append('file', new Blob([binario], { type: mimeType }), 'audio.ogg');
+  form.append('file', new Blob([binario], { type: base }), `audio.${extensao}`);
   form.append('model', MODELO_AUDIO);
   form.append('language', 'pt');
   form.append('temperature', '0');

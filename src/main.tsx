@@ -29,14 +29,20 @@ createRoot(document.getElementById('root')!).render(
 );
 
 
-// Rede de segurança: se a tela continuar branca (ex.: atualização do aplicativo em andamento), recarrega uma única vez.
-window.setTimeout(() => {
+// Rede de segurança: se a tela continuar branca (ex.: atualização do aplicativo em andamento), limpa o cache antigo e recarrega.
+// Até 3 tentativas por sessão; o contador zera quando o app aparece normalmente.
+const CHAVE_BRANCA = 'om_tentativas_tela_branca';
+window.setTimeout(async () => {
   const raiz = document.getElementById('root');
-  if (raiz && raiz.childElementCount === 0) {
-    try {
-      if (sessionStorage.getItem('om_recarga_tela_branca') === '1') return;
-      sessionStorage.setItem('om_recarga_tela_branca', '1');
-    } catch { /* sem armazenamento */ }
-    window.location.reload();
-  }
-}, 6000);
+  try {
+    if (raiz && raiz.childElementCount > 0) { sessionStorage.removeItem(CHAVE_BRANCA); return; }
+    const n = Number(sessionStorage.getItem(CHAVE_BRANCA) || '0');
+    if (n >= 3) return;
+    sessionStorage.setItem(CHAVE_BRANCA, String(n + 1));
+  } catch { /* sem armazenamento */ }
+  try {
+    const nomes = await caches.keys();
+    await Promise.all(nomes.map((nome) => caches.delete(nome)));
+  } catch { /* melhor esforço */ }
+  window.location.reload();
+}, 5000);

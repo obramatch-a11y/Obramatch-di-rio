@@ -6,7 +6,7 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import Login from './components/Login';
-const Dashboard = lazy(() => import('./components/Dashboard'));
+import Dashboard from './components/Dashboard';
 const ObraDashboard = lazy(() => import('./components/ObraDashboard'));
 const DiarioForm = lazy(() => import('./components/DiarioForm'));
 const DiarioDetail = lazy(() => import('./components/DiarioDetail'));
@@ -17,6 +17,7 @@ import { HardHat, LockKeyhole } from 'lucide-react';
 import { selectFreePlan } from './lib/authoritativeApi';
 import DialogProvider from './components/dialog/DialogProvider';
 import { useDialog } from './components/dialog/dialogContext';
+import CarregandoTela from './components/CarregandoTela';
 
 function AppContent() {
   const dialog = useDialog();
@@ -108,7 +109,7 @@ function AppContent() {
           <button className="mt-4 rounded-lg bg-black px-5 py-3 text-white" onClick={() => setView('dashboard')}>Voltar às obras</button>
         </section></main>
       ) : (
-        <Suspense fallback={<div className="flex-1" />}>
+        <Suspense fallback={<CarregandoTela />}>
           <div className="flex-1 flex flex-col">
             <AnimatePresence mode="wait">
               <motion.div
