@@ -1,634 +1,327 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { useDialog } from './dialog/dialogContext';
 import { Obra, LIMITES_PLANO } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Plus, 
-  Search, 
-  MapPin, 
-  User, 
-  Calendar, 
-  FileText, 
-  LogOut, 
-  CloudOff, 
-  CheckCircle2, 
-  ChevronRight,
-  HardHat,
-  X,
-  FileSpreadsheet,
-  Download,
-  Smartphone,
-  Check,
-  Bot,
-  Sparkles,
-  BookOpen,
-  Star,
-  ArrowRight,
-  Mic
+import {
+  Archive, ArchiveRestore, Bot, ChevronDown, ChevronRight, ClipboardList, CloudOff, CreditCard,
+  FilePlus2, HardHat, Home, LogOut, Menu, MoreVertical, Search, Settings, Trash2, X,
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
-import ObraMatchSoftPromo from './ObraMatchSoftPromo';
-import InstallButton from './InstallButton';
 import PerfilBadge from './PerfilBadge';
 import TelegramConnect from './TelegramConnect';
 import NovaObraModal from './NovaObraModal';
 import PlanoUsoCard from './PlanoUsoCard';
+import GravarAgora from './GravarAgora';
+import '../styles/campo/app-dashboard-v3.css';
+import '../styles/campo/campo-web.css';
+import '../styles/campo/rdo-alertas.css';
 
-const ECOSYSTEM_SLIDES = [
-  {
-    type: 'blog',
-    title: 'Blog ObraMatch',
-    tagline: 'Cura do Concreto: Evitar Fissuras',
-    description: 'Procedimentos fundamentais de hidratação e proteção para concretagem perfeita de lajes.',
-    actionLabel: 'Acessar Blog Oficial',
-    link: 'https://obramatchof.blogspot.com/',
-    icon: BookOpen,
-    color: 'border-[#2E6DEB] bg-[#2E6DEB]/10 text-[#2E6DEB]'
-  },
-  {
-    type: 'agent',
-    title: 'Agentes Match AI',
-    tagline: 'Fale com o especialista de NBR',
-    description: 'Dúvidas rápidas sobre normas reguladoras da ABNT, incluindo NBR 15575 e acessibilidade.',
-    actionLabel: 'Abrir Agentes Match',
-    link: 'https://agentes.obramatch.com.br/',
-    icon: Bot,
-    color: 'border-[#FF6F00] bg-[#FF6F00]/10 text-[#FF6F00]'
-  },
-  {
-    type: 'news',
-    title: 'Novidades do Ecossistema',
-    tagline: 'Laudos de Patologias',
-    description: 'Gere relatórios completos de vistorias técnicas integrados com as fotos do diário de obra.',
-    actionLabel: 'Conhecer Soluções',
-    link: 'https://obramatch.com.br/',
-    icon: Sparkles,
-    color: 'border-[#0A3D91] bg-[#0A3D91]/10 text-[#0A3D91]'
-  }
-];
+type FiltroObras = 'ativas' | 'arquivadas' | 'todas';
+
+const formatarDataObra = (data?: string) =>
+  data?.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1') || 'Não informada';
 
 export default function Dashboard() {
-  const { obras, createObra, setView, online, user, openAgentesModal, carregandoObras, limiteObrasAtingido, arquivarObra, plano } = useApp();
-  const [mostrarArquivadas, setMostrarArquivadas] = useState(false);
+  const dialog = useDialog();
+  const { obras, createObra, deleteObra, arquivarObra, setView, online, user, carregandoObras, limiteObrasAtingido, plano, selectedObra } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtroObras, setFiltroObras] = useState<FiltroObras>('ativas');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLimiteModal, setShowLimiteModal] = useState(false);
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [obraAtualId, setObraAtualId] = useState(() => {
+  const [loading, setLoading] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [contaAberta, setContaAberta] = useState(false);
+  const [obraEmAtualizacao, setObraEmAtualizacao] = useState<string | null>(null);
+  const [obraEscolhida, setObraEscolhida] = useState(() => {
     try { return localStorage.getItem('om_obra_atual') || ''; } catch { return ''; }
   });
 
-  // Auto rotate ecosystem card
+  const nome = user?.email?.split('@')[0] || 'Profissional';
+  const obrasAtivas = obras.filter((o) => !o.arquivada);
+  const obrasArquivadas = obras.filter((o) => o.arquivada);
+  const obraAtual: Obra | undefined = obrasAtivas.length === 1
+    ? obrasAtivas[0]
+    : obrasAtivas.find((o) => o.id === (obraEscolhida || selectedObra?.id));
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % ECOSYSTEM_SLIDES.length);
-    }, 6000);
-    return () => clearInterval(timer);
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuAberto(false); };
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
   }, []);
 
-  // Close modal on ESC key
-  useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showAddModal) {
-        setShowAddModal(false);
-      }
-    };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [showAddModal]);
-
-  // Form states
-  const [loading, setLoading] = useState(false);
-
-  // Connection offline transition states
-  const [wasOffline, setWasOffline] = useState(!online);
-  const [showSyncSuccess, setShowSyncSuccess] = useState(false);
-
-  useEffect(() => {
-    if (online) {
-      if (wasOffline) {
-        setShowSyncSuccess(true);
-        const timer = setTimeout(() => {
-          setShowSyncSuccess(false);
-        }, 5000);
-        setWasOffline(false);
-        return () => clearTimeout(timer);
-      }
-    } else {
-      setWasOffline(true);
-      setShowSyncSuccess(false);
-    }
-  }, [online, wasOffline]);
-
-  // PWA states
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [showPwaBanner, setShowPwaBanner] = useState(true);
-
-  useEffect(() => {
-    const checkWindowPWAProperties = () => {
-      const hasPrompt = (window as any).__deferredPrompt;
-      if (hasPrompt) {
-        setDeferredPrompt(hasPrompt);
-      }
-    };
-
-    checkWindowPWAProperties();
-
-    const handleGlobalPrompt = (e: any) => {
-      setDeferredPrompt(e.detail || (window as any).__deferredPrompt);
-    };
-
-    window.addEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
-
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      (window as any).__deferredPrompt = e;
-      setDeferredPrompt(e);
-      console.log('beforeinstallprompt event captured');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    const checkStandalone = () => {
-      const isStandaloneMode = 
-        window.matchMedia('(display-mode: standalone)').matches || 
-        (window.navigator as any).standalone === true ||
-        (window as any).__appInstalled === true;
-      setIsStandalone(isStandaloneMode);
-    };
-
-    const detectIOS = () => {
-      const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      setIsIOS(isIOSDevice);
-    };
-
-    checkStandalone();
-    detectIOS();
-
-    const handleAppInstalled = () => {
-      setIsStandalone(true);
-      setDeferredPrompt(null);
-      (window as any).__deferredPrompt = null;
-      console.log('App successfully installed!');
-    };
-
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt_global_received', handleGlobalPrompt as any);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    try {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response to install prompt: ${outcome}`);
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        (window as any).__deferredPrompt = null;
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const escolher = (id: string) => {
+    setObraEscolhida(id);
+    try { localStorage.setItem('om_obra_atual', id); } catch { /* sem armazenamento */ }
   };
 
-  const handleSignOut = async () => {
-    // Limpa qualquer resíduo de cache antigo do navegador antes de sair,
-    // para nunca reaparecerem obras/diários já apagados.
+  const sair = async () => {
+    setMenuAberto(false);
+    // Limpa resíduo de cache antigo do navegador para nunca reaparecerem obras já apagadas.
     try {
       const bancos = await (indexedDB as any).databases?.();
-      if (bancos) {
-        for (const b of bancos) {
-          if (b.name && b.name.includes('firestore')) indexedDB.deleteDatabase(b.name);
-        }
-      }
-    } catch {
-      // navegador sem suporte a listagem — segue normalmente
-    }
+      if (bancos) for (const b of bancos) if (b.name && b.name.includes('firestore')) indexedDB.deleteDatabase(b.name);
+    } catch { /* navegador sem suporte */ }
     await signOut(auth);
   };
 
-  const handleModalSubmit = async (data: {
-    nome: string;
-    cliente: string;
-    responsavelTecnico: string;
-    endereco: string;
-    gps: { latitude: number; longitude: number } | null;
-    dataInicio: string;
-    observacoes: string;
+  const criarObra = async (data: {
+    nome: string; cliente: string; responsavelTecnico: string; endereco: string;
+    gps: { latitude: number; longitude: number } | null; dataInicio: string; observacoes: string;
   }) => {
     setLoading(true);
     try {
-      await createObra({
-        nome: data.nome,
-        cliente: data.cliente,
-        endereco: data.endereco,
-        responsavelTecnico: data.responsavelTecnico,
-        dataInicio: data.dataInicio,
-        observacoes: data.observacoes,
-        gps: data.gps,
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+      await createObra({ nome: data.nome, cliente: data.cliente, endereco: data.endereco, responsavelTecnico: data.responsavelTecnico, dataInicio: data.dataInicio, observacoes: data.observacoes, gps: data.gps });
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
-  const escolherObraAtual = (id: string) => {
-    setObraAtualId(id);
-    try { localStorage.setItem('om_obra_atual', id); } catch { /* navegador sem armazenamento */ }
+  const novaObra = () => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true));
+
+  const abrirObra = (obra: Obra) => {
+    if ((obra as any).lockedByPlan) {
+      void dialog.alert('Esta obra está bloqueada pelo limite do plano Free. Renove o Plano Pro para desbloqueá-la ou exclua-a pelo menu da obra.', 'Obra bloqueada');
+      return;
+    }
+    setView('obra-dashboard', obra);
   };
-  const milissegundos = (v: any): number => {
-    if (!v) return 0;
-    if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
-    if (typeof v?.toDate === 'function') { try { return v.toDate().getTime(); } catch { return 0; } }
-    const t = new Date(v).getTime();
-    return Number.isNaN(t) ? 0 : t;
+
+  const alternarArquivada = async (event: React.MouseEvent, obra: Obra) => {
+    event.stopPropagation();
+    if (obraEmAtualizacao) return;
+    const arquivar = !obra.arquivada;
+    const ok = await dialog.confirm({
+      title: arquivar ? 'Arquivar obra?' : 'Reativar obra?',
+      message: arquivar
+        ? `Arquivar a obra “${obra.nome}”? Os RDOs, fotos e PDFs serão preservados, mas novos registros ficam bloqueados até a reativação.`
+        : `Reativar a obra “${obra.nome}”? Ela voltará a permitir novos RDOs e edições.`,
+      confirmLabel: arquivar ? 'Arquivar' : 'Reativar',
+    });
+    if (!ok) return;
+    setObraEmAtualizacao(obra.id);
+    try { await arquivarObra(obra.id, arquivar); } catch (e) { console.error(e); } finally { setObraEmAtualizacao(null); }
   };
-  // Obra de hoje: a escolhida pela pessoa; se não houver, a mexida mais recentemente.
-  const obrasAtivas = obras.filter((o) => !o.arquivada);
-  const obraAtual = obrasAtivas.find((o) => o.id === obraAtualId)
-    || [...obrasAtivas].sort((x, y) => milissegundos(y.updatedAt) - milissegundos(x.updatedAt))[0];
-  const obrasVisiveis = obras.filter((o) => (mostrarArquivadas ? o.arquivada : !o.arquivada));
-  const totalArquivadas = obras.filter((o) => o.arquivada).length;
-  const filteredObras = obrasVisiveis.filter(obra => 
-    obra.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    obra.cliente.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  const excluir = async (event: React.MouseEvent, obra: Obra) => {
+    event.stopPropagation();
+    if (obraEmAtualizacao) return;
+    const ok = await dialog.confirmTyping({
+      title: 'Excluir obra definitivamente?',
+      message: `Todos os RDOs e fotos da obra “${obra.nome}” serão apagados. Esta ação não poderá ser desfeita.`,
+      expected: obra.nome, confirmLabel: 'Excluir obra', danger: true,
+    });
+    if (!ok) return;
+    setObraEmAtualizacao(obra.id);
+    try { await deleteObra(obra.id); } catch (e) { console.error(e); } finally { setObraEmAtualizacao(null); }
+  };
+
+  const lista = obras.filter((o) => {
+    const status = filtroObras === 'todas' || (filtroObras === 'ativas' ? !o.arquivada : Boolean(o.arquivada));
+    const termo = searchTerm.trim().toLowerCase();
+    return status && (!termo || o.nome.toLowerCase().includes(termo) || (o.cliente || '').toLowerCase().includes(termo));
+  });
+
+  const abrirManual = () => { if (obraAtual) setView('diario-form', obraAtual, null); };
+  const irParaObras = () => document.getElementById('campo-obras')?.scrollIntoView({ behavior: 'smooth' });
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-12">
-      {/* Top Navbar */}
-      <header className="nb-topbar sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#FF6F00] border-2 border-black rounded-lg flex items-center justify-center">
-              <HardHat className="w-6 h-6 text-white stroke-[2.5]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-white font-sans">
-                Obra<span className="text-[#FFB347]">Match</span>
-              </h1>
-              <p className="text-xs text-blue-100 font-medium">Diário</p>
-            </div>
+    <div className="app-shell">
+      <header className="app-shell-header">
+        <div className="app-shell-header-inner">
+          <button type="button" className="app-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="ObraMatch Diário, ir para minhas obras">
+            <span className="app-brand-mark" aria-hidden="true"><HardHat size={22} /></span>
+            <span>ObraMatch <strong>Diário</strong></span>
+          </button>
+          <div className="app-shell-user app-desktop-actions">
+            <span><small>Conta conectada</small><strong>{nome}</strong></span>
+            <button type="button" onClick={sair}><LogOut size={18} /> Sair</button>
           </div>
-
-          <div className="flex items-center gap-4">
-            {!online && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#FF6F00] border-2 border-black text-white rounded-md text-xs font-semibold">
-                <CloudOff className="w-3.5 h-3.5" />
-                Offline
-              </div>
-            )}
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-semibold text-white">{user?.email?.split('@')[0] || 'Usuário'}</span>
-              <span className="text-xs text-blue-200">{user?.email}</span>
-            </div>
-            <button 
-              onClick={handleSignOut}
-              className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-              aria-label="Sair da conta"
-              title="Sair"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
+          <button type="button" className="app-mobile-menu" aria-label="Abrir menu" aria-expanded={menuAberto} onClick={() => setMenuAberto(true)}>
+            <Menu size={25} />
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full pt-8">
-        {/* Connection Status Banners */}
-        <AnimatePresence mode="popLayout">
-          {!online && (
-            <motion.div
-              key="offline-banner"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-6 bg-white border border-[#FF6F00] rounded-xl p-4 flex items-center justify-between gap-4 overflow-hidden relative"
-            >
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-[#FF6F00]/10 rounded-md blur-xl" />
-              <div className="flex items-start sm:items-center gap-3.5 relative z-10">
-                <div className="p-2.5 bg-[#FF6F00]/10 border border-[#FF6F00] text-[#FF6F00] rounded-xl shrink-0">
-                  <CloudOff className="w-5 h-5 animate-pulse" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-[#111111] flex items-center gap-2">
-                    Modo Offline Ativo
-                    <span className="w-2 h-2 rounded-full bg-[#FF6F00] animate-ping" />
-                  </h4>
-                  <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Você está sem internet. Alguns registros podem aguardar sincronização; confira-os depois que a conexão voltar.
-                  </p>
-                </div>
+      {menuAberto && (
+        <div className="app-drawer-backdrop" onClick={() => setMenuAberto(false)}>
+          <aside className="app-drawer" role="dialog" aria-modal="true" aria-label="Menu do aplicativo" onClick={(e) => e.stopPropagation()}>
+            <div className="app-drawer-heading">
+              <span><small>Conta conectada</small><strong>{nome}</strong></span>
+              <button type="button" aria-label="Fechar menu" onClick={() => setMenuAberto(false)}><X size={22} /></button>
+            </div>
+            <nav>
+              <button type="button" onClick={() => { setMenuAberto(false); irParaObras(); }}><HardHat size={20} /> Minhas obras</button>
+              <button type="button" onClick={() => { setMenuAberto(false); window.open('/planos.html', '_blank', 'noopener'); }}><CreditCard size={20} /> Plano e assinatura</button>
+              <button type="button" onClick={() => { setMenuAberto(false); setContaAberta(true); setTimeout(() => document.getElementById('conta-limites')?.scrollIntoView({ behavior: 'smooth' }), 50); }}><Settings size={20} /> Conta e limites</button>
+              <button type="button" onClick={() => { setMenuAberto(false); setContaAberta(true); }}><Bot size={20} /> Assistente Telegram</button>
+            </nav>
+            <button type="button" className="app-drawer-logout" onClick={sair}><LogOut size={20} /> Sair</button>
+          </aside>
+        </div>
+      )}
+
+      <main className="app-dashboard campo-web-dashboard" id="campo-inicio">
+        <section className="app-dashboard-intro">
+          <div>
+            <div className="campo-web-welcome">
+              <div>
+                <h1>ObraMatch Campo</h1>
+                <p>Registre por áudio e revise o RDO antes de salvar.</p>
               </div>
-            </motion.div>
-          )}
+              <img className="campo-web-mascot" src="/img/campo-web-mascote.webp" width="320" height="320" alt="" />
+            </div>
 
-          {showSyncSuccess && (
-            <motion.div
-              key="online-success-banner"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="mb-6 bg-white border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between gap-4 overflow-hidden relative"
-            >
-              <div className="hidden" />
-              <div className="flex items-start sm:items-center gap-3.5 relative z-10">
-                <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-xl shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-[#111111] flex items-center gap-2">
-                    Conexão Restaurada!
-                  </h4>
-                  <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
-                    Sua conexão com a internet foi restabelecida. Confira se os registros e fotos aparecem antes de sair do aplicativo.
+            {!online && (
+              <p role="status" className="campo-web-escolher-obra"><CloudOff size={16} aria-hidden="true" /> Sem internet. Os registros aguardam a conexão voltar.</p>
+            )}
+
+            {!carregandoObras && obrasAtivas.length === 0 && (
+              <section className="campo-web-start-guide" aria-labelledby="campo-guia-titulo">
+                <h2 id="campo-guia-titulo">Por onde começar?</h2>
+                <ul>
+                  <li>
+                    <strong>Cadastre sua primeira obra</strong>
+                    <span>Depois é só tocar em gravar e falar o que foi feito no dia. O App organiza o relatório e você confere antes de salvar.</span>
+                    <button type="button" onClick={novaObra}>Cadastrar minha obra</button>
+                  </li>
+                </ul>
+              </section>
+            )}
+
+            {!carregandoObras && obrasAtivas.length > 0 && (
+              <form className="campo-web-entry" onSubmit={(e) => { e.preventDefault(); abrirManual(); }}>
+                {obrasAtivas.length === 1 && obraAtual && (
+                  <p className="campo-web-current">
+                    <HardHat size={22} aria-hidden="true" />
+                    <span><small>Obra atual</small><strong>{obraAtual.nome}</strong></span>
                   </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSyncSuccess(false)}
-                className="p-1.5 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-lg transition-all cursor-pointer relative z-10"
-                aria-label="Fechar notificação"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* PWA Install Banner */}
-        <AnimatePresence>
-          {showPwaBanner && !isStandalone && (deferredPrompt || isIOS) && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mb-6 bg-white border border-[#FF6F00] rounded-xl p-5 relative overflow-hidden"
-            >
-              {/* Subtle accent background glow */}
-              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-36 h-36 bg-[#FF6F00]/10 rounded-md blur-2xl" />
-              
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 bg-[#FF6F00]/10 border border-[#FF6F00] text-[#FF6F00] rounded-xl shrink-0">
-                    <Smartphone className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-[#111111] flex items-center gap-1.5">
-                      Instalar ObraMatch Diário
-                      <span className="text-xs bg-[#FF6F00]/10 text-[#FF6F00] font-semibold px-2 py-0.5 rounded-md">PWA</span>
-                    </h4>
-                    <p className="text-xs text-neutral-600 mt-1 max-w-2xl leading-relaxed">
-                      {isIOS 
-                        ? "Para instalar no seu iPhone ou iPad, toque no ícone de Compartilhar no navegador Safari e selecione 'Adicionar à Tela de Início'."
-                        : "Instale o aplicativo na sua tela inicial para acesso instantâneo de alta performance e funcionamento offline completo!"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 w-full sm:w-auto self-end sm:self-center shrink-0">
-                  {!isIOS && (
-                    <InstallButton variant="dashboard" />
-                  )}
-                  <button
-                    onClick={() => setShowPwaBanner(false)}
-                    className="p-2 hover:bg-[#ECECEC] text-neutral-600 hover:text-[#111111] rounded-xl transition-all cursor-pointer shrink-0 ml-auto"
-                    title="Fechar"
-                    aria-label="Fechar"
-                  >
-                    <X className="w-4 h-4" />
+                )}
+                {obrasAtivas.length > 1 && (
+                  <label htmlFor="campo-web-obra">Obra atual
+                    <select id="campo-web-obra" value={obraAtual?.id ?? ''} onChange={(e) => escolher(e.target.value)} required>
+                      <option value="">Selecione a obra</option>
+                      {obrasAtivas.map((o) => <option key={o.id} value={o.id}>{o.nome}</option>)}
+                    </select>
+                  </label>
+                )}
+                {!obraAtual && <p className="campo-web-escolher-obra">Escolha a obra para começar a gravação.</p>}
+                <div className="campo-web-actions">
+                  <GravarAgora disabled={!obraAtual} onGravar={() => obraAtual && setView('diario-form', obraAtual, null)} />
+                  <button type="submit" className="campo-web-manual" disabled={!obraAtual}>
+                    <FilePlus2 size={19} aria-hidden="true" /> Escrever RDO
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Início focado no executante: obra atual + gravar RDO; o resto fica por perto, sem competir */}
-        <div className="space-y-6">
-          {carregandoObras ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-[#D1D1D1] rounded-2xl text-center px-4" role="status">
-              <div className="w-10 h-10 border-4 border-[#D1D1D1] border-t-[#FF6F00] rounded-full animate-spin mb-4" aria-hidden="true"></div>
-              <p className="text-neutral-500 text-sm font-semibold">Carregando suas obras...</p>
-            </div>
-          ) : !mostrarArquivadas && !obraAtual ? (
-            <section className="nb-card nb-shadow p-6 text-center" aria-labelledby="primeiro-passo">
-              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-[#0A3D91] border-2 border-black">
-                <HardHat className="h-8 w-8 text-[#FFB347] stroke-[2.5]" />
-              </div>
-              <h2 id="primeiro-passo" className="text-2xl font-display font-black text-[#111]">Vamos começar?</h2>
-              <p className="mt-2 text-sm text-neutral-600">Cadastre sua obra. Depois é só tocar em Gravar RDO e falar o que foi feito hoje.</p>
-              <button
-                onClick={() => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true))}
-                className="nb-btn nb-btn-primary mt-5 w-full min-h-14 py-4 px-5 flex items-center justify-center gap-2 text-base"
-              >
-                <Plus className="w-6 h-6" />
-                Cadastrar minha obra
-              </button>
-            </section>
-          ) : !mostrarArquivadas && obraAtual ? (
-            <section className="nb-card nb-shadow overflow-hidden" aria-labelledby="obra-atual-titulo">
-              <div className="bg-[#0A3D91] px-5 py-3 text-blue-100 text-xs font-bold uppercase tracking-wider">Obra de hoje</div>
-              <div className="p-5">
-                <h2 id="obra-atual-titulo" className="text-2xl font-display font-black text-[#111] leading-tight">{obraAtual.nome}</h2>
-                <p className="mt-1 text-sm text-neutral-600 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 shrink-0 text-neutral-500" aria-hidden="true" />
-                  <span className="truncate">{obraAtual.endereco || obraAtual.cliente || 'Sem endereço registrado'}</span>
-                </p>
-                <button
-                  onClick={() => {
-                    try { sessionStorage.setItem('om_gravar_ao_abrir', '1'); } catch { /* sem armazenamento */ }
-                    setView('diario-form', obraAtual, null);
-                  }}
-                  className="nb-btn nb-btn-primary mt-5 w-full min-h-16 py-4 px-5 flex items-center justify-center gap-3 text-lg"
-                >
-                  <Mic className="w-7 h-7" aria-hidden="true" />
-                  Gravar RDO de hoje
-                </button>
-                <p className="mt-2 text-center text-xs text-neutral-500">Fale o que foi feito. O app organiza o relatório e você confere antes de salvar.</p>
-                <button
-                  onClick={() => setView('obra-dashboard', obraAtual)}
-                  className="nb-btn nb-btn-ghost mt-4 w-full min-h-12 py-3 px-4 flex items-center justify-center gap-2 text-sm"
-                >
-                  <FileText className="w-4 h-4" aria-hidden="true" />
-                  Ver relatórios desta obra
-                </button>
-              </div>
-            </section>
-          ) : null}
-
-          <section aria-labelledby="minhas-obras-titulo" className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="minhas-obras-titulo" className="text-lg font-display font-black text-[#111]">
-                {mostrarArquivadas ? 'Obras arquivadas' : 'Minhas obras'}
-              </h2>
-              {!mostrarArquivadas && obrasVisiveis.length > 0 && (
-                <button
-                  onClick={() => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true))}
-                  className="nb-btn nb-btn-ghost min-h-11 py-2 px-4 flex items-center gap-1.5 text-sm"
-                >
-                  <Plus className="w-4 h-4" aria-hidden="true" />
-                  Nova obra
-                </button>
-              )}
-            </div>
-            {limiteObrasAtingido && !mostrarArquivadas && (
-              <p className="text-xs text-neutral-500">Limite de obras ativas do plano atingido. Arquive uma obra concluída para liberar espaço.</p>
+                <div className="campo-web-shortcuts" role="group" aria-label="Relatórios">
+                  <button type="button" disabled={!obraAtual} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}>
+                    <ClipboardList size={22} aria-hidden="true" /> Meus relatórios
+                  </button>
+                </div>
+              </form>
             )}
+          </div>
+          <div className="app-dashboard-summary" aria-label="Resumo das obras">
+            <span><strong>{carregandoObras ? '—' : obrasAtivas.length}</strong><small>ativas</small></span>
+            <span><strong>{carregandoObras ? '—' : obrasArquivadas.length}</strong><small>arquivadas</small></span>
+          </div>
+        </section>
 
-            {obrasVisiveis.length > 5 && (
-              <div className="relative">
-                <Search className="absolute left-4 top-3.5 h-5 w-5 text-neutral-500" aria-hidden="true" />
-                <input
-                  type="search"
-                  aria-label="Pesquisar obra"
-                  placeholder="Pesquisar obra ou cliente"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 nb-input text-sm"
-                />
-              </div>
+        <div className="app-dashboard-grid">
+          <section className="app-works-panel" id="campo-obras" aria-labelledby="works-title">
+            <div className="app-works-heading">
+              <div><span className="app-section-label">Canteiros</span><h2 id="works-title">Minhas obras</h2></div>
+              <button type="button" className="campo-web-manual" onClick={novaObra}>Nova obra</button>
+            </div>
+            {limiteObrasAtingido && filtroObras !== 'arquivadas' && (
+              <p className="campo-web-escolher-obra">Limite de obras ativas do plano atingido. Arquive uma obra concluída para liberar espaço.</p>
             )}
+            <div className="app-search-field">
+              <Search size={20} aria-hidden="true" />
+              <input type="search" placeholder="Pesquisar obra..." aria-label="Pesquisar obra" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <div className="app-filter-chips" aria-label="Filtrar obras">
+              {([['ativas', `Ativas ${obrasAtivas.length}`], ['arquivadas', `Arquivadas ${obrasArquivadas.length}`], ['todas', `Todas ${obras.length}`]] as [FiltroObras, string][]).map(([v, l]) => (
+                <button key={v} type="button" className={filtroObras === v ? 'is-active' : ''} aria-pressed={filtroObras === v} onClick={() => setFiltroObras(v)}>{l}</button>
+              ))}
+            </div>
 
-            {filteredObras.length === 0 ? (
-              obrasVisiveis.length > 0 || mostrarArquivadas ? (
-                <p className="rounded-xl border border-dashed border-[#D1D1D1] bg-white p-6 text-center text-sm text-neutral-500">
-                  {searchTerm ? 'Nenhuma obra encontrada com essa busca.' : 'Nenhuma obra arquivada.'}
-                </p>
-              ) : null
+            {carregandoObras ? (
+              <div className="app-empty-state" role="status">Carregando obras...</div>
+            ) : lista.length === 0 ? (
+              <div className="app-empty-state app-empty-bordered"><HardHat size={42} /><h3>Nenhuma obra aqui</h3><p>{searchTerm ? 'Nenhuma obra corresponde à busca.' : 'Cadastre uma obra para começar.'}</p></div>
             ) : (
-              <ul className="space-y-2">
-                {filteredObras.map((obra) => {
-                  const ehAtual = !mostrarArquivadas && obraAtual?.id === obra.id;
+              <div className="app-works-list">
+                {lista.map((obra) => {
+                  const atualizando = obraEmAtualizacao === obra.id;
                   return (
-                    <li key={obra.id}>
-                      <button
-                        onClick={() => {
-                          if (mostrarArquivadas) { setView('obra-dashboard', obra); return; }
-                          escolherObraAtual(obra.id);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        aria-current={ehAtual ? 'true' : undefined}
-                        className={`w-full min-h-16 text-left nb-card p-4 flex items-center gap-3 cursor-pointer ${ehAtual ? 'border-[#0A3D91] bg-[#0A3D91]/5' : ''}`}
-                      >
-                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 border-black ${ehAtual ? 'bg-[#FF6F00] text-white' : 'bg-white text-[#0A3D91]'}`}>
-                          <HardHat className="w-5 h-5" aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-display font-extrabold text-[#111]">{obra.nome}</span>
-                          <span className="block truncate text-xs text-neutral-500">
-                            {ehAtual ? 'Obra de hoje' : mostrarArquivadas ? 'Toque para abrir' : 'Toque para usar hoje'}
-                            {obra.cliente ? ` · ${obra.cliente}` : ''}
-                          </span>
-                        </span>
-                        {mostrarArquivadas
-                          ? <ChevronRight className="w-5 h-5 text-neutral-500" aria-hidden="true" />
-                          : ehAtual
-                            ? <Check className="w-5 h-5 text-[#0A3D91]" aria-hidden="true" />
-                            : null}
-                      </button>
-                    </li>
+                    <article key={obra.id} className={`app-work-card ${obra.arquivada ? 'is-archived' : ''}`} onClick={() => abrirObra(obra)} style={{ opacity: atualizando ? 0.65 : 1, cursor: 'pointer' }}>
+                      <span className="app-work-icon" aria-hidden="true"><HardHat size={21} /></span>
+                      <div className="app-work-copy">
+                        <div className="app-work-title">
+                          <h3>{obra.nome}</h3>
+                          <span className={obra.arquivada ? 'is-muted' : 'is-active'}>{obra.arquivada ? 'Arquivada' : 'Ativa'}</span>
+                        </div>
+                        <div className="app-work-meta"><span><small>Cliente</small><strong>{obra.cliente || 'Não informado'}</strong></span><span><small>Início</small><strong>{formatarDataObra(obra.dataInicio)}</strong></span></div>
+                      </div>
+                      <div className="app-work-actions">
+                        <details onClick={(e) => e.stopPropagation()}>
+                          <summary aria-label={`Mais opções para ${obra.nome}`}><MoreVertical size={20} /></summary>
+                          <div>
+                            <button type="button" onClick={(e) => alternarArquivada(e, obra)} disabled={Boolean(obraEmAtualizacao)}>
+                              {obra.arquivada ? <ArchiveRestore size={17} /> : <Archive size={17} />}{obra.arquivada ? 'Reativar obra' : 'Arquivar obra'}
+                            </button>
+                            <button type="button" className="danger" onClick={(e) => excluir(e, obra)} disabled={Boolean(obraEmAtualizacao)}><Trash2 size={17} /> Excluir obra</button>
+                          </div>
+                        </details>
+                        <button type="button" className="campo-web-open" aria-label={`Abrir obra ${obra.nome}`} onClick={(e) => { e.stopPropagation(); abrirObra(obra); }}>
+                          <ChevronRight size={22} aria-hidden="true" />
+                        </button>
+                      </div>
+                    </article>
                   );
                 })}
-              </ul>
-            )}
-
-            {(totalArquivadas > 0 || mostrarArquivadas) && (
-              <button
-                onClick={() => setMostrarArquivadas((v) => !v)}
-                className="min-h-11 text-sm font-display font-extrabold text-[#0A3D91] cursor-pointer"
-              >
-                {mostrarArquivadas ? '← Voltar às obras ativas' : `Ver arquivadas (${totalArquivadas})`}
-              </button>
+              </div>
             )}
           </section>
-
-          <details className="nb-card p-0 group">
-            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-5 py-3 font-display font-extrabold text-[#111]">
-              Meu plano, Telegram e perfil
-              <ChevronRight className="w-5 h-5 text-neutral-500 transition-transform group-open:rotate-90" aria-hidden="true" />
-            </summary>
-            <div className="space-y-4 border-t border-[#D1D1D1] p-4">
-              <PlanoUsoCard />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <PerfilBadge />
-                <TelegramConnect />
-              </div>
-              <ObraMatchSoftPromo variant="dashboard" />
-            </div>
-          </details>
         </div>
 
-        <footer className="max-w-7xl mx-auto px-4 py-6 w-full text-center text-[10px] text-neutral-500 space-x-3">
-          <a href="/termos-de-uso.html" target="_blank" rel="noopener" className="underline">Termos</a>
-          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener" className="underline">Privacidade</a>
-          <a href="/politica-de-ia.html" target="_blank" rel="noopener" className="underline">IA</a>
-          <a href="/planos.html" target="_blank" rel="noopener" className="underline">Planos</a>
-          <a href="/sobre.html" target="_blank" rel="noopener" className="underline">Sobre</a>
-          <a href="/excluir-conta.html" target="_blank" rel="noopener" className="underline">Excluir conta</a>
+        <section id="conta-limites" className={`app-mobile-account ${contaAberta ? 'is-open' : ''}`}>
+          <button type="button" aria-expanded={contaAberta} onClick={() => setContaAberta((o) => !o)}>
+            <span className="app-mobile-account-icon"><Settings size={20} /></span>
+            <span><strong>Conta e limites</strong><small>Plano {plano.plano.toUpperCase()}, IA, Telegram e perfil.</small></span>
+            <ChevronDown size={20} />
+          </button>
+          {contaAberta && (
+            <div className="app-mobile-account-content" style={{ display: 'grid', gap: 12 }}>
+              <PlanoUsoCard />
+              <PerfilBadge />
+              <TelegramConnect />
+            </div>
+          )}
+        </section>
+
+        <footer style={{ padding: '16px 0 84px', textAlign: 'center', fontSize: 11, color: '#777' }}>
+          <a href="/termos-de-uso.html" target="_blank" rel="noopener">Termos</a> · <a href="/politica-de-privacidade.html" target="_blank" rel="noopener">Privacidade</a> · <a href="/politica-de-ia.html" target="_blank" rel="noopener">IA</a> · <a href="/excluir-conta.html" target="_blank" rel="noopener">Excluir conta</a>
         </footer>
       </main>
 
-      {/* Modal for New Obra */}
-      <NovaObraModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleModalSubmit}
-        loading={loading}
-      />
+      <nav className="campo-web-bottom" aria-label="Navegação do Campo">
+        <a href="#campo-inicio"><Home size={21} aria-hidden="true" /> Início</a>
+        <a href="#campo-obras"><HardHat size={21} aria-hidden="true" /> Obras</a>
+        <button type="button" disabled={!obraAtual} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}><ClipboardList size={21} aria-hidden="true" /> Relatórios</button>
+        <button type="button" aria-expanded={menuAberto} onClick={() => setMenuAberto(true)}><MoreVertical size={21} aria-hidden="true" /> Mais</button>
+      </nav>
 
-      {/* Aviso de limite de obras atingido */}
-      <AnimatePresence>
-        {showLimiteModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowLimiteModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, y: 10 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 10 }}
-              onClick={(e) => e.stopPropagation()}
-              className="nb-card bg-white max-w-sm w-full p-6 space-y-4"
-            >
-              <h3 className="text-lg font-display font-black text-[#111]">Limite de obras atingido</h3>
-              <p className="text-sm text-neutral-600 leading-relaxed">
-                Seu plano {plano.plano === 'pro' ? 'PRO' : 'Gratuito'} permite {LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas ao mesmo tempo.
-                Para criar uma nova, <strong>arquive uma obra concluída</strong> — nenhum dado é perdido, e você pode desarquivar quando quiser.
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => { setShowLimiteModal(false); setMostrarArquivadas(false); }}
-                  className="nb-btn nb-btn-primary py-2.5 px-4 text-sm w-full"
-                >
-                  Entendi — vou arquivar uma obra
-                </button>
-                <button
-                  onClick={() => setShowLimiteModal(false)}
-                  className="nb-btn nb-btn-ghost py-2.5 px-4 text-sm w-full"
-                >
-                  Fechar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <NovaObraModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSubmit={criarObra} loading={loading} />
+
+      {showLimiteModal && (
+        <div className="app-drawer-backdrop" onClick={() => setShowLimiteModal(false)}>
+          <aside className="app-drawer" role="dialog" aria-modal="true" aria-label="Limite de obras" onClick={(e) => e.stopPropagation()} style={{ padding: 20, display: 'grid', gap: 12, alignContent: 'start' }}>
+            <h2 style={{ margin: 0 }}>Limite de obras atingido</h2>
+            <p>O plano {plano.plano === 'pro' ? 'PRO' : 'Gratuito'} permite {LIMITES_PLANO[plano.plano].obrasAtivas} obras ativas ao mesmo tempo. Para criar outra, <strong>arquive uma obra concluída</strong>. Nenhum dado é perdido.</p>
+            <button type="button" className="campo-web-manual" onClick={() => { setShowLimiteModal(false); setFiltroObras('ativas'); irParaObras(); }}>Entendi, vou arquivar uma</button>
+            <button type="button" onClick={() => setShowLimiteModal(false)}>Fechar</button>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
-

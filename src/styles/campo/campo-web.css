@@ -1,0 +1,436 @@
+.campo-web-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.campo-web-entry label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  width: min(100%, 300px);
+  color: #10294c;
+  font-weight: 700;
+}
+
+.campo-web-entry select,
+.campo-web-entry button {
+  min-height: 46px;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.campo-web-entry select {
+  width: 100%;
+  padding: 8px;
+  background: #fff;
+  color: #10294c;
+  border: 1px solid #adc4e2;
+}
+
+.campo-web-entry button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  border: 0;
+  background: #0a3d91;
+  color: #fff;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.campo-web-entry button:disabled {
+  opacity: .65;
+  cursor: default;
+}
+
+.campo-web-open {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  color: #0a3d91;
+}
+
+.campo-web-entry :focus-visible,
+.campo-web-open:focus-visible {
+  outline: 2px solid #0a3d91;
+  outline-offset: 3px;
+}
+
+.campo-web-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.campo-web-entry .campo-web-record {
+  background: #ff6f00;
+  color: #10294c;
+}
+
+@media (max-width: 640px) {
+  .campo-web-entry label,
+  .campo-web-actions {
+    width: 100%;
+  }
+
+  .campo-web-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .campo-web-actions button {
+    justify-content: center;
+  }
+
+  .campo-web-entry .campo-web-record,
+  .campo-web-voice-first .campo-web-start-record {
+    min-height: 60px;
+    font-size: 17px !important;
+  }
+
+  .campo-web-entry .campo-web-manual {
+    background: #fff;
+    border: 1px solid #adc4e2;
+    color: #0a3d91;
+  }
+}
+
+.campo-web-welcome .campo-web-mascot,
+.campo-web-shortcuts,
+.campo-web-bottom { display: none; }
+
+.campo-web-current,
+.campo-web-latest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #dce6f3;
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: #10294c;
+}
+.campo-web-current span,
+.campo-web-latest div { min-width: 0; overflow-wrap: anywhere; }
+.campo-web-current small,
+.campo-web-current strong,
+.campo-web-latest small,
+.campo-web-latest strong,
+.campo-web-record small { display: block; }
+.campo-web-latest { margin: 0 0 16px; }
+.campo-web-latest a { margin-left: auto; font-weight: 700; }
+.campo-web-record small { font-size: .78rem; font-weight: 600; }
+.campo-web-form > .nb-card {
+  border: 1px solid #dce6f3 !important;
+  box-shadow: 0 10px 30px #10294c12 !important;
+  border-radius: 21px;
+}
+#fotos-rdo, #campo-obras, #campo-inicio { scroll-margin-top: 80px; }
+
+@media (max-width: 640px) {
+  .campo-web-dashboard { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .campo-web-welcome {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(90px, 37%);
+    align-items: end;
+    gap: 4px;
+    isolation: isolate;
+    border-radius: 24px 24px 18px 18px;
+    overflow: hidden;
+    padding: 14px 10px 0 16px;
+    color: white;
+    background: radial-gradient(ellipse at 95% 80%, #126dcc, #0a3d91 55%, #10294c);
+  }
+  .campo-web-welcome > div { align-self: center; padding-bottom: 14px; }
+  .campo-web-dashboard .campo-web-welcome h1,
+  .campo-web-dashboard .campo-web-welcome p { color: #fff; }
+  .campo-web-dashboard .campo-web-welcome h1 { font-size: clamp(23px, 7vw, 31px); }
+  .campo-web-welcome .campo-web-mascot {
+    display: block;
+    width: 100%;
+    height: auto;
+    align-self: end;
+    animation: campo-web-aparecer .45s ease-out both;
+  }
+  @keyframes campo-web-aparecer {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .campo-web-dashboard .app-dashboard-summary { display: none; }
+  .campo-web-entry { gap: 10px; }
+  .campo-web-entry .campo-web-current { width: 100%; margin: 0; }
+  .campo-web-current > svg { color: #0a3d91; flex-shrink: 0; }
+  .campo-web-entry .campo-web-record {
+    min-height: 76px;
+    border-radius: 22px;
+    background: linear-gradient(115deg, #ffac31, #ff6f00 62%, #f25510);
+    box-shadow: 0 8px 20px #c750123d;
+  }
+  .campo-web-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .campo-web-shortcuts button {
+    flex-direction: column;
+    justify-content: center;
+    min-height: 68px;
+    background: #e5f1ff;
+    color: #0a3d91;
+  }
+  .campo-web-shortcuts button:last-child { background: #efeaff; color: #482788; }
+  .campo-web-bottom {
+    position: fixed;
+    z-index: 79;
+    inset: auto 10px 0;
+    display: flex;
+    justify-content: space-evenly;
+    border: 1px solid #dce6f3;
+    border-radius: 22px 22px 0 0;
+    background: #fff;
+    box-shadow: 0 -8px 22px #10294c14;
+    padding: 6px 4px max(5px, env(safe-area-inset-bottom));
+  }
+  .campo-web-bottom a,
+  .campo-web-bottom button {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 3px;
+    border: 0;
+    background: transparent;
+    color: #0a3d91;
+    font: inherit;
+    font-weight: 750;
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .campo-web-form > .nb-card { padding: 14px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campo-web-welcome .campo-web-mascot { animation: none; }
+}
+
+@media screen {
+  .campo-web-screen .nb-card {
+    border: 1px solid #dce6f3 !important;
+    border-radius: 18px;
+    box-shadow: 0 8px 26px #10294c12 !important;
+  }
+
+  .campo-web-screen .obra-hero {
+    background-image: linear-gradient(100deg, #0e2d55 15%, #0a3d91e8 56%, #0a3d91a8), url('/img/obramatch-canteiro-editorial.webp');
+    background-size: cover;
+    background-position: center, 75% 40%;
+    border-radius: 22px;
+  }
+
+  .campo-web-screen .obra-rdo-card,
+  .campo-web-dashboard .app-work-card {
+    border-radius: 16px;
+  }
+
+  .campo-web-screen .obra-empty-state,
+  .campo-web-dashboard .app-empty-bordered {
+    background: linear-gradient(135deg, #f7faff, #edf5ff);
+  }
+
+  .campo-web-screen a:focus-visible,
+  .campo-web-screen button:focus-visible,
+  .campo-web-bottom :focus-visible {
+    outline: 2px solid #0a3d91;
+    outline-offset: 3px;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .campo-web-screen { margin-block: 18px !important; }
+  .campo-web-bottom a:first-child {
+    color: #10294c;
+    background: #ffb25c;
+    border-radius: 12px;
+  }
+}
+
+@media screen {
+  .auth-page-v4 .auth-card-v4,
+  .central-start .central-start-panel {
+    border-radius: 22px;
+    box-shadow: 0 14px 38px #10294c12;
+  }
+
+  .central-start .central-start-header {
+    border-color: #dce6f3;
+    box-shadow: 0 3px 16px #10294c0b;
+  }
+}
+
+@media screen and (min-width: 1000px) {
+  .auth-page-v4 {
+    background: linear-gradient(95deg, #f4f8ff 46%, #0a3d914d),
+      url('/img/obramatch-canteiro-editorial.webp') center 42% / cover no-repeat;
+  }
+}
+
+/* RDO mobile accessibility: readable active states and compact navigation. */
+@media screen {
+  .campo-web-form .clima-grid .nb-btn-primary,
+  .campo-web-form .condicao-grid .nb-btn-primary,
+  .campo-web-form .clima-grid .nb-btn-primary *,
+  .campo-web-form .condicao-grid .nb-btn-primary * {
+    color: #fff !important;
+    fill: none;
+  }
+  .campo-web-form .clima-grid .nb-btn-primary,
+  .campo-web-form .condicao-grid .nb-btn-primary {
+    background: #0a3d91 !important;
+    border-color: #0a3d91 !important;
+  }
+  .campo-web-form .clima-grid .nb-btn,
+  .campo-web-form .condicao-grid .nb-btn {
+    min-height: 48px;
+    font-size: .875rem !important;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .campo-web-form .nb-btn:focus-visible {
+    outline: 3px solid #ff6f00;
+    outline-offset: 3px;
+  }
+  .rdo-form-header {
+    gap: 10px;
+    min-width: 0;
+  }
+  .rdo-form-header h1 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 1rem !important;
+  }
+}
+@media screen and (max-width: 640px) {
+  .site-header:has(.rdo-form-header) {
+    border-bottom: 1px solid #dce6f3 !important;
+  }
+  .rdo-form-header {
+    height: auto !important;
+    min-height: 62px;
+    padding: 8px 12px;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .rdo-form-header > .nb-btn {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 9px 12px !important;
+    box-shadow: none !important;
+    border-radius: 12px;
+  }
+  .rdo-form-header > .nb-btn:first-child span { display: none; }
+  .rdo-form-header > .nb-btn:first-child svg { width: 21px; height: 21px; }
+  .rdo-form-header > h1 { text-align: center; }
+  .campo-web-form .clima-grid,
+  .campo-web-form .condicao-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .campo-web-form .condicao-grid .nb-btn:last-child { grid-column: 1 / -1; }
+}
+
+.campo-web-entry .campo-web-escolher-obra {
+  flex-basis: 100%;
+  margin: 0;
+  color: #334d69;
+  font-size: .875rem;
+}
+
+.campo-web-entry .campo-web-actions {
+  align-items: start;
+}
+
+.campo-web-entry .campo-web-record {
+  min-height: 56px;
+  color: #10294c;
+  background: #ffb25c;
+}
+
+.campo-web-recorder[data-gravando="true"] .campo-web-record {
+  color: #fff;
+  background: #a12822;
+}
+
+.campo-web-entry .campo-web-manual {
+  min-height: 44px;
+  border: 1px solid #adc4e2;
+  background: #fff;
+  color: #0a3d91;
+}
+
+.campo-web-entry .campo-web-shortcuts svg,
+.campo-web-entry .campo-web-actions svg {
+  flex-shrink: 0;
+}
+
+@media screen and (max-width: 640px) {
+  .campo-web-entry .campo-web-current {
+    padding: 8px 12px;
+  }
+
+  .campo-web-entry .campo-web-record {
+    width: 100%;
+    min-height: 58px;
+    border-radius: 14px;
+    box-shadow: none;
+  }
+
+  .campo-web-entry .campo-web-manual {
+    justify-self: start;
+    align-self: start;
+  }
+}
+
+/* Orientação de primeiro acesso: aparece só quando ainda não há obra para registrar. */
+.campo-web-start-guide {
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid #dce6f3;
+  border-radius: 16px;
+  background: #fff;
+  color: #10294c;
+}
+.campo-web-start-guide h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.campo-web-start-guide ul { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.campo-web-start-guide li {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f4f8ff;
+}
+.campo-web-start-guide li span { color: #41546f; font-size: 0.95rem; line-height: 1.45; }
+.campo-web-start-guide li button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #0a3d91;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+@media screen and (min-width: 720px) {
+  .campo-web-start-guide ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
