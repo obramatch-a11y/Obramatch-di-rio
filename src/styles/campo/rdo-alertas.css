@@ -1,0 +1,93 @@
+.rdo-alertas {
+  color: #70350f;
+  background: #fffbeb;
+  border: 1px solid #b45309;
+  border-radius: 14px;
+  padding: 14px;
+  margin-block: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rdo-alertas :is(h2, h3) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: #70350f;
+  font-size: 17px;
+}
+
+.rdo-alertas :is(h2, h3) svg {
+  flex: 0 0 auto;
+}
+
+.rdo-alertas p {
+  margin: 0 0 8px;
+}
+
+.rdo-alertas ul {
+  display: grid;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rdo-alertas li {
+  display: grid;
+  gap: 6px;
+  padding-block: 10px;
+  border-top: 1px solid #e8c891;
+}
+
+.rdo-alerta-cabecalho,
+.rdo-alerta-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rdo-alerta-lido,
+.rdo-alerta-nao-lido {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.rdo-alerta-lido {
+  color: #294461;
+  background: #e6eef8;
+}
+
+.rdo-alerta-nao-lido {
+  color: #71360e;
+  background: #fee7ac;
+}
+
+.rdo-alertas :is(button, a) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #70350f;
+  font: inherit;
+  font-weight: 700;
+}
+
+.rdo-alertas button {
+  padding: 6px 10px;
+  border: 1px solid #b45309;
+  border-radius: 8px;
+  background: #fff;
+  text-align: left;
+}
+
+.rdo-alertas a {
+  text-decoration: underline;
+}
+
+.rdo-alertas :is(a, button):focus-visible {
+  outline: 2px solid #0a3d91;
+  outline-offset: 3px;
+}
