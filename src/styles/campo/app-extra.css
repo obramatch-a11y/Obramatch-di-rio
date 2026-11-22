@@ -1,0 +1,95 @@
+/* Correções de responsivo e formulários no estilo do ObraMatch Campo (Web). */
+
+/* Nada pode alargar a página: era isso que empurrava menu e formulários para fora da tela. */
+html, body, #root { max-width: 100%; overflow-x: hidden; }
+img, svg, video, canvas { max-width: 100%; }
+
+/* Fotos na tela inicial: o campo de arquivo fica invisível sobre o botão. */
+.campo-web-photo-control {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 68px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #e5f1ff;
+  color: #0a3d91;
+  font-weight: 800;
+  font-size: 15px;
+  text-align: center;
+  cursor: pointer;
+}
+.campo-web-photo-control input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 0;
+  cursor: pointer;
+}
+.campo-web-photo-control:has(input:disabled) { opacity: .5; }
+.campo-web-shortcuts { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.campo-web-shortcuts > :last-child { grid-column: 1 / -1; }
+.campo-web-shortcuts button { min-height: 60px; }
+
+/* Formulários (novo RDO, nova obra) */
+.form-campo-pagina { background: #f5f7fb !important; }
+.form-campo { overflow-x: hidden; }
+.form-campo .nb-topbar { border-bottom: 0; box-shadow: 0 8px 22px rgba(6, 39, 95, .2); }
+.form-campo .nb-card {
+  border: 1px solid #d7deea;
+  border-radius: 22px;
+  box-shadow: 0 14px 34px rgba(6, 39, 95, .08);
+}
+.form-campo .nb-shadow, .form-campo .nb-shadow-sm, .form-campo .nb-shadow-blue { box-shadow: 0 10px 24px rgba(6, 39, 95, .12); }
+.form-campo .nb-input, .form-campo input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .form-campo select, .form-campo textarea {
+  min-height: 52px;
+  border: 1px solid #cbd4e2;
+  border-radius: 14px;
+  background: #f9fbff;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.form-campo textarea { min-height: 96px; line-height: 1.5; }
+.form-campo .nb-input:focus, .form-campo input:focus, .form-campo select:focus, .form-campo textarea:focus {
+  outline: none;
+  border-color: #0a3d91;
+  box-shadow: 0 0 0 4px rgba(10, 61, 145, .12);
+}
+.form-campo .nb-btn { border: 0; border-radius: 14px; box-shadow: 0 8px 18px rgba(6, 39, 95, .14); }
+.form-campo .border-black, .form-campo [class*="border-black"] { border-color: #d7deea !important; }
+.form-campo .border-2 { border-width: 1px !important; }
+.form-campo .border-l-4 { border-left-width: 5px !important; }
+.form-campo label, .form-campo h4 { letter-spacing: .06em; }
+.form-campo button { min-height: 44px; }
+.form-campo button[class*="rounded"] { border-radius: 14px; }
+.form-campo main { padding-bottom: 96px; }
+
+/* Relatório da empresa: lista e detalhe */
+.rel-chip { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .03em; }
+.rel-chip.ok { background: #e6f8ed; color: #087a36; }
+.rel-chip.aviso { background: #fff1e0; color: #b45500; }
+.rel-chip.info { background: #e6efff; color: #0a3d91; }
+.rel-hero { padding: 18px; border-radius: 22px; color: #fff; background: linear-gradient(135deg, #06275f, #0a3d91 60%, #2e6deb); box-shadow: 0 14px 34px rgba(6, 39, 95, .18); }
+.rel-hero small { color: #cfe0ff; font-weight: 700; }
+.rel-hero h2 { margin: 4px 0 10px; font-size: 28px; line-height: 1.1; }
+.rel-hero .rel-chip { background: rgba(255, 255, 255, .16); color: #fff; }
+.rel-hero .rel-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.rel-secao { padding: 16px 16px 16px 18px; border: 1px solid #d7deea; border-left: 5px solid #ff6f00; border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(6, 39, 95, .06); }
+.rel-secao h3 { margin: 0 0 8px; color: #0a3d91; font-size: 13px; text-transform: uppercase; letter-spacing: .09em; }
+.rel-secao p { margin: 0; color: #283142; font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rel-motivo { padding: 14px 16px; border-radius: 16px; background: #fff1e0; color: #7a3a00; font-weight: 700; line-height: 1.5; }
+.rel-fotos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.rel-fotos figure { margin: 0; }
+.rel-fotos img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 14px; border: 1px solid #d7deea; }
+.rel-fotos figcaption { margin-top: 4px; color: #5d6678; font-size: 12px; }
+.rel-acoes { display: grid; gap: 10px; padding: 16px; border: 1px solid #d7deea; border-radius: 20px; background: #fff; box-shadow: 0 8px 20px rgba(6, 39, 95, .06); }
+.rel-acoes h3 { margin: 0; color: #0a3d91; }
+.rel-acoes label { display: grid; gap: 6px; color: #283142; font-size: 13px; font-weight: 800; }
+.rel-acoes textarea { border: 1px solid #cbd4e2; border-radius: 14px; background: #f9fbff; padding: 12px; font: inherit; font-size: 16px; font-weight: 400; min-height: 96px; box-sizing: border-box; width: 100%; }
+.rel-acoes textarea:focus { outline: none; border-color: #0a3d91; box-shadow: 0 0 0 4px rgba(10, 61, 145, .12); }

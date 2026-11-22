@@ -11,13 +11,17 @@ import {
 import type { Obra } from '../types';
 
 const ROTULO_STATUS: Record<string, string> = {
-  submitted: 'Enviado, aguardando revisão',
+  submitted: 'Aguardando revisão',
   needs_correction: 'Devolvido para correção',
   resubmitted: 'Reenviado',
   accepted: 'Aceito',
+  accepted_documentally: 'Aceito',
   document_accepted: 'Aceito',
   finalized: 'Finalizado',
 };
+const rotulo = (status: string) => ROTULO_STATUS[status] || 'Em andamento';
+const tom = (status: string) => (status === 'needs_correction' ? 'aviso' : status.startsWith('accepted') || status === 'finalized' ? 'ok' : 'info');
+const dataDoRdo = (r: { data?: string; submittedAt?: string }) => (r.data || r.submittedAt || '').slice(0, 10);
 
 const formatarData = (v?: string) => (v ? v.replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, '$3/$2/$1') : 'Sem data');
 const texto = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -157,13 +161,11 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                     <span className="app-work-icon" aria-hidden="true"><ClipboardList size={21} /></span>
                     <div className="app-work-copy">
                       <div className="app-work-title">
-                        <h3>RDO {formatarData(r.data)}</h3>
-                        <span className={r.status === 'needs_correction' ? 'is-muted' : 'is-active'}>{ROTULO_STATUS[r.status] || r.status}</span>
+                        <h3>RDO {formatarData(dataDoRdo(r))}</h3>
                       </div>
-                      <div className="app-work-meta">
-                        <span><small>Enviado por</small><strong>{r.submittedByName || 'Equipe'}</strong></span>
-                      </div>
-                      {r.status === 'needs_correction' && r.lastReason && <p style={{ margin: '8px 0 0', fontSize: 13, fontWeight: 700 }}>Motivo: {r.lastReason}</p>}
+                      <div style={{ marginTop: 8 }}><span className={`rel-chip ${tom(r.status)}`}>{rotulo(r.status)}</span></div>
+                      {r.submittedByName && <div className="app-work-meta"><span><small>Enviado por</small><strong>{r.submittedByName}</strong></span></div>}
+                      {r.status === 'needs_correction' && r.lastReason && <p className="rel-motivo" style={{ margin: '10px 0 0' }}>Motivo: {r.lastReason}</p>}
                     </div>
                   </article>
                 ))}
@@ -178,21 +180,27 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
             {!detalhe && !erroDetalhe && <p role="status" className="campo-web-escolher-obra"><Loader2 size={16} /> Abrindo relatório…</p>}
             {detalhe && (
               <>
-                <div className="nb-card" style={{ padding: 16 }}>
-                  <h2 style={{ margin: 0 }}>RDO {formatarData(texto(detalhe.snapshot.data) || detalhe.rdo.data)}</h2>
-                  <p style={{ margin: '6px 0 0' }}>{ROTULO_STATUS[detalhe.rdo.status] || detalhe.rdo.status}{detalhe.rdo.submittedByName ? ` · ${detalhe.rdo.submittedByName}` : ''}</p>
-                  {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.lastReason && <p style={{ marginTop: 8, fontWeight: 700 }}>Motivo da devolução: {detalhe.rdo.lastReason}</p>}
-                  {(texto(detalhe.snapshot.horario) || texto(detalhe.snapshot.clima)) && <p style={{ marginTop: 8, color: '#555' }}>{[texto(detalhe.snapshot.horario), texto(detalhe.snapshot.clima)].filter(Boolean).join(' · ')}</p>}
+                <div className="rel-hero">
+                  <small>Relatório diário de obra</small>
+                  <h2>RDO {formatarData(texto(detalhe.snapshot.data) || dataDoRdo(detalhe.rdo))}</h2>
+                  <div className="rel-chips">
+                    <span className="rel-chip">{rotulo(detalhe.rdo.status)}</span>
+                    {texto(detalhe.snapshot.horario) && <span className="rel-chip">{texto(detalhe.snapshot.horario)}</span>}
+                    {texto(detalhe.snapshot.clima) && <span className="rel-chip">{texto(detalhe.snapshot.clima)}</span>}
+                    {texto(detalhe.snapshot.condicaoTrabalho) && <span className="rel-chip">{texto(detalhe.snapshot.condicaoTrabalho)}</span>}
+                  </div>
+                  {detalhe.rdo.submittedByName && <p style={{ margin: '12px 0 0', color: '#cfe0ff', fontSize: 13 }}>Enviado por {detalhe.rdo.submittedByName}</p>}
                 </div>
+                {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.lastReason && <p className="rel-motivo">Motivo da devolução: {detalhe.rdo.lastReason}</p>}
                 {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.submittedBy === meuUid && !editando && (
                   <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={iniciarCorrecao}>Corrigir e reenviar</button>
                 )}
                 {editando && (
-                  <div className="nb-card" style={{ padding: 16, display: 'grid', gap: 10 }}>
-                    <h3 style={{ margin: 0 }}>Corrigir relatório</h3>
+                  <div className="rel-acoes">
+                    <h3>Corrigir relatório</h3>
                     {SECOES.map(([chave, titulo]) => (
-                      <label key={chave} style={{ display: 'grid', gap: 4, fontWeight: 700 }}>{titulo}
-                        <textarea value={editando[chave]} rows={chave === 'atividades' ? 6 : 3} onChange={(e) => setEditando({ ...editando, [chave]: e.target.value })} style={{ border: '1px solid #bbb', borderRadius: 10, padding: 10, fontWeight: 400 }} />
+                      <label key={chave}>{titulo}
+                        <textarea value={editando[chave]} rows={chave === 'atividades' ? 6 : 3} onChange={(e) => setEditando({ ...editando, [chave]: e.target.value })} />
                       </label>
                     ))}
                     <p style={{ margin: 0, fontSize: 12, color: '#666' }}>As fotos já enviadas continuam como estavam.</p>
@@ -201,12 +209,12 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                   </div>
                 )}
                 {detalhe.rdo.status === 'submitted' && empresa.podeRevisar && detalhe.rdo.submittedBy !== meuUid && (
-                  <div className="nb-card" style={{ padding: 16, display: 'grid', gap: 10 }}>
-                    <h3 style={{ margin: 0 }}>Sua decisão</h3>
+                  <div className="rel-acoes">
+                    <h3>Sua decisão</h3>
                     {decidindo === 'devolver' && (
                       <>
-                        <label style={{ display: 'grid', gap: 4, fontWeight: 700 }}>Motivo da devolução (mínimo 10 letras)
-                          <textarea value={motivo} rows={4} onChange={(e) => setMotivo(e.target.value)} style={{ border: '1px solid #bbb', borderRadius: 10, padding: 10, fontWeight: 400 }} />
+                        <label>Motivo da devolução (mínimo 10 letras)
+                          <textarea value={motivo} rows={4} onChange={(e) => setMotivo(e.target.value)} />
                         </label>
                         <button type="button" className="campo-web-record" disabled={processando || motivo.trim().length < 10}
                           onClick={() => void concluir(() => devolverRdoDaCentral(empresa.empresaId, empresa.obraId, detalhe.rdo.id, detalhe.version, motivo.trim()), 'Relatório devolvido para correção.')}>
@@ -234,26 +242,26 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                   </div>
                 )}
                 {SECOES.map(([chave, titulo]) => texto(detalhe.snapshot[chave]) && (
-                  <div key={chave} className="nb-card" style={{ padding: 16 }}>
-                    <h3 style={{ margin: '0 0 6px' }}>{titulo}</h3>
-                    <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{texto(detalhe.snapshot[chave])}</p>
-                  </div>
+                  <section key={chave} className="rel-secao">
+                    <h3>{titulo}</h3>
+                    <p>{texto(detalhe.snapshot[chave])}</p>
+                  </section>
                 ))}
                 {detalhe.photos.length > 0 && (
-                  <div className="nb-card" style={{ padding: 16 }}>
-                    <h3 style={{ margin: '0 0 8px' }}><Camera size={18} /> Fotos ({detalhe.photos.length})</h3>
+                  <section className="rel-secao">
+                    <h3><Camera size={16} style={{ verticalAlign: '-3px' }} /> Fotos ({detalhe.photos.length})</h3>
                     {Object.keys(fotos).length < detalhe.photos.length && (
                       <button type="button" className="campo-web-manual" disabled={carregandoFotos} onClick={carregarFotos}>{carregandoFotos ? 'Carregando fotos…' : 'Ver fotos'}</button>
                     )}
-                    <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+                    <div className="rel-fotos">
                       {detalhe.photos.map((f) => fotos[f.id] && (
-                        <figure key={f.id} style={{ margin: 0 }}>
-                          <img src={fotos[f.id]} alt={f.legenda || 'Foto do relatório'} style={{ width: '100%', borderRadius: 12 }} />
-                          {f.legenda && <figcaption style={{ fontSize: 13, color: '#555' }}>{f.legenda}</figcaption>}
+                        <figure key={f.id}>
+                          <img src={fotos[f.id]} alt={f.legenda || 'Foto do relatório'} />
+                          {f.legenda && <figcaption>{f.legenda}</figcaption>}
                         </figure>
                       ))}
                     </div>
-                  </div>
+                  </section>
                 )}
               </>
             )}

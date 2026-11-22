@@ -35,3 +35,9 @@ Reversão: reativar a versão anterior no Cloudflare (Implantações).
 - RDO enviado do Diário pessoal: o App localiza o original nas obras da própria conta pelo `hashIntegridadeOrigem` do snapshot (`src/lib/origemDiario.ts`), grava a correção com novo hash e chama `resubmit_rdo`. O servidor continua validando dono e hash.
 - Ponte: `resubmit_rdo` liberado no POST (teste com Central simulada: aceito; `submit_rdo` segue bloqueado).
 - Limite: se o original não estiver na conta logada (apagado ou de outra conta), o App avisa e pede para corrigir onde foi criado.
+
+## Rodada 5 — responsivo e layout (branch fix/layout-responsivo-20261122)
+- Causa raiz do corte de menu/modais: o campo de arquivo mostrava o texto nativo e alargava a página. Agora o input fica invisível sobre o botão e a página não rola na horizontal.
+- Atalhos de foto (Tirar foto / Escolher foto / Relatórios) em grade responsiva.
+- Formulários (Novo RDO, Nova obra): visual do Campo (bordas suaves, cantos arredondados, campos maiores, fonte 16px). Cabeçalho "Voltar / Novo RDO" para obras da empresa.
+- Relatório da empresa: status em português (inclui "Aceito"), data com fallback, chips, seções com destaque, grade de fotos, cartões de correção/decisão.
