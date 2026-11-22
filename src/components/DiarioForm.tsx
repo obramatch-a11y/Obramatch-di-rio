@@ -218,6 +218,17 @@ export default function DiarioForm() {
     }
   };
 
+  // Vindo do botão "Gravar RDO de hoje" da tela inicial: já começa a gravar, sem mais um toque.
+  const gravacaoAutomaticaFeita = useRef(false);
+  useEffect(() => {
+    if (gravacaoAutomaticaFeita.current) return;
+    let pedido = false;
+    try { pedido = sessionStorage.getItem('om_gravar_ao_abrir') === '1'; sessionStorage.removeItem('om_gravar_ao_abrir'); } catch { /* sem armazenamento */ }
+    gravacaoAutomaticaFeita.current = true;
+    if (pedido && !isEditing && !transcEsgotada) void iniciarGravacao();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pararGravacao = () => {
     mediaRecorderRef.current?.stop();
     setGravando(false);

@@ -23,7 +23,8 @@ import {
   Sparkles,
   BookOpen,
   Star,
-  ArrowRight
+  ArrowRight,
+  Mic
 } from 'lucide-react';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -74,6 +75,9 @@ export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLimiteModal, setShowLimiteModal] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [obraAtualId, setObraAtualId] = useState(() => {
+    try { return localStorage.getItem('om_obra_atual') || ''; } catch { return ''; }
+  });
 
   // Auto rotate ecosystem card
   useEffect(() => {
@@ -238,6 +242,21 @@ export default function Dashboard() {
     }
   };
 
+  const escolherObraAtual = (id: string) => {
+    setObraAtualId(id);
+    try { localStorage.setItem('om_obra_atual', id); } catch { /* navegador sem armazenamento */ }
+  };
+  const milissegundos = (v: any): number => {
+    if (!v) return 0;
+    if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
+    if (typeof v?.toDate === 'function') { try { return v.toDate().getTime(); } catch { return 0; } }
+    const t = new Date(v).getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+  // Obra de hoje: a escolhida pela pessoa; se não houver, a mexida mais recentemente.
+  const obrasAtivas = obras.filter((o) => !o.arquivada);
+  const obraAtual = obrasAtivas.find((o) => o.id === obraAtualId)
+    || [...obrasAtivas].sort((x, y) => milissegundos(y.updatedAt) - milissegundos(x.updatedAt))[0];
   const obrasVisiveis = obras.filter((o) => (mostrarArquivadas ? o.arquivada : !o.arquivada));
   const totalArquivadas = obras.filter((o) => o.arquivada).length;
   const filteredObras = obrasVisiveis.filter(obra => 
@@ -396,139 +415,159 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Single-column Layout for Obras & ObraMatch Ecosystem underneath */}
-        <div className="space-y-8">
-          <PlanoUsoCard />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <PerfilBadge />
-            <TelegramConnect />
-          </div>
-          <div className="space-y-6">
-            {/* Welcome Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#111111] font-sans">
-                  Minhas Obras
-                </h2>
-                <p className="text-neutral-600 text-sm mt-1">
-                  Selecione uma obra para gerenciar ou registrar o diário de hoje.
-                </p>
+        {/* Início focado no executante: obra atual + gravar RDO; o resto fica por perto, sem competir */}
+        <div className="space-y-6">
+          {carregandoObras ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-[#D1D1D1] rounded-2xl text-center px-4" role="status">
+              <div className="w-10 h-10 border-4 border-[#D1D1D1] border-t-[#FF6F00] rounded-full animate-spin mb-4" aria-hidden="true"></div>
+              <p className="text-neutral-500 text-sm font-semibold">Carregando suas obras...</p>
+            </div>
+          ) : !mostrarArquivadas && !obraAtual ? (
+            <section className="nb-card nb-shadow p-6 text-center" aria-labelledby="primeiro-passo">
+              <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-[#0A3D91] border-2 border-black">
+                <HardHat className="h-8 w-8 text-[#FFB347] stroke-[2.5]" />
               </div>
+              <h2 id="primeiro-passo" className="text-2xl font-display font-black text-[#111]">Vamos começar?</h2>
+              <p className="mt-2 text-sm text-neutral-600">Cadastre sua obra. Depois é só tocar em Gravar RDO e falar o que foi feito hoje.</p>
+              <button
+                onClick={() => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true))}
+                className="nb-btn nb-btn-primary mt-5 w-full min-h-14 py-4 px-5 flex items-center justify-center gap-2 text-base"
+              >
+                <Plus className="w-6 h-6" />
+                Cadastrar minha obra
+              </button>
+            </section>
+          ) : !mostrarArquivadas && obraAtual ? (
+            <section className="nb-card nb-shadow overflow-hidden" aria-labelledby="obra-atual-titulo">
+              <div className="bg-[#0A3D91] px-5 py-3 text-blue-100 text-xs font-bold uppercase tracking-wider">Obra de hoje</div>
+              <div className="p-5">
+                <h2 id="obra-atual-titulo" className="text-2xl font-display font-black text-[#111] leading-tight">{obraAtual.nome}</h2>
+                <p className="mt-1 text-sm text-neutral-600 flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 shrink-0 text-neutral-500" aria-hidden="true" />
+                  <span className="truncate">{obraAtual.endereco || obraAtual.cliente || 'Sem endereço registrado'}</span>
+                </p>
+                <button
+                  onClick={() => {
+                    try { sessionStorage.setItem('om_gravar_ao_abrir', '1'); } catch { /* sem armazenamento */ }
+                    setView('diario-form', obraAtual, null);
+                  }}
+                  className="nb-btn nb-btn-primary mt-5 w-full min-h-16 py-4 px-5 flex items-center justify-center gap-3 text-lg"
+                >
+                  <Mic className="w-7 h-7" aria-hidden="true" />
+                  Gravar RDO de hoje
+                </button>
+                <p className="mt-2 text-center text-xs text-neutral-500">Fale o que foi feito. O app organiza o relatório e você confere antes de salvar.</p>
+                <button
+                  onClick={() => setView('obra-dashboard', obraAtual)}
+                  className="nb-btn nb-btn-ghost mt-4 w-full min-h-12 py-3 px-4 flex items-center justify-center gap-2 text-sm"
+                >
+                  <FileText className="w-4 h-4" aria-hidden="true" />
+                  Ver relatórios desta obra
+                </button>
+              </div>
+            </section>
+          ) : null}
 
-              <div className="flex flex-col items-stretch sm:items-end gap-1">
+          <section aria-labelledby="minhas-obras-titulo" className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="minhas-obras-titulo" className="text-lg font-display font-black text-[#111]">
+                {mostrarArquivadas ? 'Obras arquivadas' : 'Minhas obras'}
+              </h2>
+              {!mostrarArquivadas && obrasVisiveis.length > 0 && (
                 <button
                   onClick={() => (limiteObrasAtingido ? setShowLimiteModal(true) : setShowAddModal(true))}
-                  className="nb-btn nb-btn-primary py-3 px-5 flex items-center justify-center gap-2 text-sm"
+                  className="nb-btn nb-btn-ghost min-h-11 py-2 px-4 flex items-center gap-1.5 text-sm"
                 >
-                  <Plus className="w-5 h-5" />
-                  Nova Obra
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                  Nova obra
                 </button>
-                {limiteObrasAtingido && !mostrarArquivadas && (
-                  <p className="text-[10px] text-neutral-500 sm:text-right max-w-[240px]">
-                    Limite de obras ativas do plano atingido — arquive uma obra concluída para liberar espaço.
-                  </p>
-                )}
-              </div>
+              )}
             </div>
+            {limiteObrasAtingido && !mostrarArquivadas && (
+              <p className="text-xs text-neutral-500">Limite de obras ativas do plano atingido. Arquive uma obra concluída para liberar espaço.</p>
+            )}
+
+            {obrasVisiveis.length > 5 && (
+              <div className="relative">
+                <Search className="absolute left-4 top-3.5 h-5 w-5 text-neutral-500" aria-hidden="true" />
+                <input
+                  type="search"
+                  aria-label="Pesquisar obra"
+                  placeholder="Pesquisar obra ou cliente"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 nb-input text-sm"
+                />
+              </div>
+            )}
+
+            {filteredObras.length === 0 ? (
+              obrasVisiveis.length > 0 || mostrarArquivadas ? (
+                <p className="rounded-xl border border-dashed border-[#D1D1D1] bg-white p-6 text-center text-sm text-neutral-500">
+                  {searchTerm ? 'Nenhuma obra encontrada com essa busca.' : 'Nenhuma obra arquivada.'}
+                </p>
+              ) : null
+            ) : (
+              <ul className="space-y-2">
+                {filteredObras.map((obra) => {
+                  const ehAtual = !mostrarArquivadas && obraAtual?.id === obra.id;
+                  return (
+                    <li key={obra.id}>
+                      <button
+                        onClick={() => {
+                          if (mostrarArquivadas) { setView('obra-dashboard', obra); return; }
+                          escolherObraAtual(obra.id);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        aria-current={ehAtual ? 'true' : undefined}
+                        className={`w-full min-h-16 text-left nb-card p-4 flex items-center gap-3 cursor-pointer ${ehAtual ? 'border-[#0A3D91] bg-[#0A3D91]/5' : ''}`}
+                      >
+                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border-2 border-black ${ehAtual ? 'bg-[#FF6F00] text-white' : 'bg-white text-[#0A3D91]'}`}>
+                          <HardHat className="w-5 h-5" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-display font-extrabold text-[#111]">{obra.nome}</span>
+                          <span className="block truncate text-xs text-neutral-500">
+                            {ehAtual ? 'Obra de hoje' : mostrarArquivadas ? 'Toque para abrir' : 'Toque para usar hoje'}
+                            {obra.cliente ? ` · ${obra.cliente}` : ''}
+                          </span>
+                        </span>
+                        {mostrarArquivadas
+                          ? <ChevronRight className="w-5 h-5 text-neutral-500" aria-hidden="true" />
+                          : ehAtual
+                            ? <Check className="w-5 h-5 text-[#0A3D91]" aria-hidden="true" />
+                            : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
 
             {(totalArquivadas > 0 || mostrarArquivadas) && (
               <button
                 onClick={() => setMostrarArquivadas((v) => !v)}
-                className="text-xs font-display font-extrabold text-[#0A3D91] cursor-pointer"
+                className="min-h-11 text-sm font-display font-extrabold text-[#0A3D91] cursor-pointer"
               >
                 {mostrarArquivadas ? '← Voltar às obras ativas' : `Ver arquivadas (${totalArquivadas})`}
               </button>
             )}
+          </section>
 
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-4 top-3.5 h-5 w-5 text-neutral-500" />
-              <input
-                type="text"
-                placeholder="Pesquisar por nome da obra ou cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 nb-input focus:ring-1 focus:ring-[#FF6F00]/40  placeholder-neutral-400  text-sm"
-              />
+          <details className="nb-card p-0 group">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between px-5 py-3 font-display font-extrabold text-[#111]">
+              Meu plano, Telegram e perfil
+              <ChevronRight className="w-5 h-5 text-neutral-500 transition-transform group-open:rotate-90" aria-hidden="true" />
+            </summary>
+            <div className="space-y-4 border-t border-[#D1D1D1] p-4">
+              <PlanoUsoCard />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <PerfilBadge />
+                <TelegramConnect />
+              </div>
+              <ObraMatchSoftPromo variant="dashboard" />
             </div>
-
-            {/* Obras Grid */}
-            {carregandoObras ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
-                <div className="w-10 h-10 border-4 border-[#D1D1D1] border-t-[#FF6F00] rounded-full animate-spin mb-4" aria-hidden="true"></div>
-                <p className="text-neutral-500 text-sm font-semibold">Carregando suas obras...</p>
-              </div>
-            ) : filteredObras.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
-                <FileSpreadsheet className="w-16 h-16 text-[#222222] stroke-[1.5] mb-4" />
-                <h3 className="text-lg font-bold text-[#222222]">Nenhuma obra cadastrada</h3>
-                <p className="text-neutral-500 text-sm mt-1 max-w-sm">
-                  {searchTerm ? 'Nenhuma obra corresponde aos termos pesquisados.' : 'Comece cadastrando sua primeira obra tocando no botão "Nova Obra".'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {filteredObras.map((obra) => {
-                  // Format last update or set placeholder
-                  const formatarData = (v: any): string => {
-                    if (!v) return 'Não disponível';
-                    if (typeof v === 'object' && typeof v.seconds === 'number') return new Date(v.seconds * 1000).toLocaleDateString('pt-BR');
-                    if (typeof v === 'string') { const d = new Date(v); return isNaN(d.getTime()) ? 'Não disponível' : d.toLocaleDateString('pt-BR'); }
-                    if (typeof v?.toDate === 'function') { try { return v.toDate().toLocaleDateString('pt-BR'); } catch { return 'Não disponível'; } }
-                    return 'Não disponível';
-                  };
-                  const lastUpdated = formatarData(obra.updatedAt);
-
-                  return (
-                    <motion.div
-                      key={obra.id}
-                      whileHover={{ y: -4 }}
-                      onClick={() => setView('obra-dashboard', obra)}
-                      className="nb-card nb-shadow hover:bg-[#F4F4F4] p-6 cursor-pointer flex flex-col justify-between transition-colors group"
-                    >
-                      <div>
-                        <div className="flex items-start justify-between mb-4">
-                          <span className="nb-chip nb-chip-orange">
-                            Ativa
-                          </span>
-                          <ChevronRight className="w-5 h-5 text-neutral-500 group-hover:text-[#FF6F00] group-hover:translate-x-1 transition-all" />
-                        </div>
-
-                        <h3 className="text-lg font-display font-extrabold text-[#111111] group-hover:text-[#0A3D91] transition-colors">
-                          {obra.nome}
-                        </h3>
-                        <p className="text-neutral-600 text-sm mt-1 mb-4 flex items-center gap-1.5">
-                          <User className="w-4 h-4 text-neutral-500" />
-                          Cliente: {obra.cliente}
-                        </p>
-
-                        <div className="space-y-2 pt-4 border-t border-[#D1D1D1]">
-                          <div className="flex items-center gap-2 text-xs text-neutral-500">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span className="truncate">{obra.endereco || 'Sem endereço registrado'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-neutral-500">
-                            <Calendar className="w-3.5 h-3.5" />
-                            <span>Início: {(() => { const d = new Date(obra.dataInicio + 'T12:00:00'); return isNaN(d.getTime()) ? (obra.dataInicio || 'Não informado') : d.toLocaleDateString('pt-BR'); })()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#D1D1D1] text-xs text-neutral-500">
-                        <div className="flex items-center gap-1">
-                          <FileText className="w-3.5 h-3.5 text-neutral-600" />
-                          <span>Atualizado: {lastUpdated}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Single, non-repetitive ObraMatch promo block below the main list as requested */}
-          <ObraMatchSoftPromo variant="dashboard" className="mt-8" />
+          </details>
         </div>
 
         <footer className="max-w-7xl mx-auto px-4 py-6 w-full text-center text-[10px] text-neutral-500 space-x-3">
