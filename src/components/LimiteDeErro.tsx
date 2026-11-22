@@ -1,9 +1,11 @@
-import React from 'react';
+import { Component, type ReactNode } from 'react';
 
 interface Estado { erro: Error | null }
 
 // Rede de segurança: se alguma tela falhar, mostra um aviso com saída em vez de tela branca.
-export default class LimiteDeErro extends React.Component<{ children: React.ReactNode }, Estado> {
+export default class LimiteDeErro extends Component<{ children: ReactNode }, Estado> {
+  declare props: { children: ReactNode };
+  declare setState: (novo: Estado) => void;
   state: Estado = { erro: null };
   static getDerivedStateFromError(erro: Error): Estado { return { erro }; }
   componentDidCatch(erro: Error) { console.error('Falha de tela:', erro); }
