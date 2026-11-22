@@ -406,7 +406,7 @@ export default function DiarioForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-16">
+    <div className="form-campo form-campo-pagina min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-16">
       {/* Top Navbar */}
       <header className="nb-topbar sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between w-full">
@@ -415,11 +415,11 @@ export default function DiarioForm() {
             className="flex items-center gap-2 text-blue-100 hover:text-[#FFB347] font-semibold transition-all cursor-pointer text-sm"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Voltar para Obra</span>
+            <span>{selectedObra?.empresa ? 'Voltar' : 'Voltar para Obra'}</span>
           </button>
 
           <span className="text-sm font-extrabold text-white">
-            {isEditing ? 'Editar Diário' : 'Novo Diário'}
+            {isEditing ? 'Editar Diário' : selectedObra?.empresa ? 'Novo RDO' : 'Novo Diário'}
           </span>
 
           <button
