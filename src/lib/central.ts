@@ -152,8 +152,11 @@ export const aceitarRdoDaCentral = (empresaId: string, obraId: string, rdoId: st
   escreverCentral({ action: 'accept_document', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, note: nota });
 
 /** Reenvio de um RDO devolvido (as fotos da versão anterior são mantidas pelo servidor). */
-export const reenviarRdoDaCentral = (empresaId: string, obraId: string, rdoId: string, versao: number, relatorio: RdoParaCentral) =>
-  escreverCentral({ action: 'resubmit_field_rdo', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, report: relatorio });
+export const reenviarRdoDaCentral = (empresaId: string, obraId: string, rdoId: string, versao: number, relatorio: RdoParaCentral, fotos?: { url: string; legenda?: string }[]) =>
+  escreverCentral({
+    action: 'resubmit_field_rdo', companyId: empresaId, workId: obraId, rdoId, expectedVersion: versao, report: relatorio,
+    ...(fotos ? { photos: fotos.map((f) => ({ dataUrl: f.url, legenda: f.legenda || '' })) } : {}),
+  });
 
 export const registrarAparelhoNaCentral = (pushToken: string) => escreverCentral({ action: 'register_push_token', pushToken });
 
