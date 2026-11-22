@@ -83,7 +83,10 @@ export async function proxyAuthoritativePost(request: Request, upstreamPath: str
 }
 
 
-const CENTRAL_ACOES = new Set(['list_assigned_works', 'submit_field_rdo', 'resubmit_field_rdo']);
+const CENTRAL_ACOES_GET = new Set(['list_assigned_works', 'list_rdos', 'list_own_rdos', 'get_rdo', 'get_rdo_photo', 'list_rdo_alerts', 'list_rdo_events']);
+const CENTRAL_ACOES_POST = new Set(['submit_field_rdo', 'resubmit_field_rdo', 'mark_rdo_alert_read']);
+// Parâmetros de consulta aceitos na leitura (tudo o mais é descartado).
+const CENTRAL_PARAMS_GET = ['companyId', 'workId', 'rdoId', 'photoId', 'version', 'status', 'pageToken'];
 
 /** Ponte restrita para a Central: o executante consulta suas obras atribuídas e envia RDOs. */
 export async function proxyCentral(request: Request): Promise<Response> {
@@ -104,7 +107,8 @@ export async function proxyCentral(request: Request): Promise<Response> {
   } else {
     return json(405, { message: 'Método não permitido.' });
   }
-  if (url.searchParams.get('scope') !== 'central' || !CENTRAL_ACOES.has(acao)) {
+  const permitida = request.method === 'GET' ? CENTRAL_ACOES_GET.has(acao) : CENTRAL_ACOES_POST.has(acao);
+  if (url.searchParams.get('scope') !== 'central' || !permitida) {
     return json(404, { message: 'Ação da Central não reconhecida.' });
   }
 
@@ -112,8 +116,10 @@ export async function proxyCentral(request: Request): Promise<Response> {
   destino.searchParams.set('scope', 'central');
   if (request.method === 'GET') {
     destino.searchParams.set('action', acao);
-    const pagina = url.searchParams.get('pageToken');
-    if (pagina) destino.searchParams.set('pageToken', pagina.slice(0, 2000));
+    for (const nome of CENTRAL_PARAMS_GET) {
+      const valor = url.searchParams.get(nome);
+      if (valor) destino.searchParams.set(nome, valor.slice(0, 2000));
+    }
   }
   try {
     const upstream = await fetch(destino.toString(), {

@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { useDialog } from './dialog/dialogContext';
 import { Obra, LIMITES_PLANO } from '../types';
 import {
-  Archive, ArchiveRestore, Bot, ChevronDown, ChevronRight, ClipboardList, CloudOff, CreditCard,
+  Archive, ArchiveRestore, Bot, Camera, Image as ImageIcon, ChevronDown, ChevronRight, ClipboardList, CloudOff, CreditCard,
   FilePlus2, HardHat, Home, LogOut, Menu, MoreVertical, Search, Settings, Trash2, X,
 } from 'lucide-react';
 import { auth } from '../firebase';
@@ -13,6 +13,8 @@ import TelegramConnect from './TelegramConnect';
 import NovaObraModal from './NovaObraModal';
 import PlanoUsoCard from './PlanoUsoCard';
 import GravarAgora from './GravarAgora';
+import RelatoriosEmpresa from './RelatoriosEmpresa';
+import { guardarFotosPendentes } from '../lib/fotoPendente';
 import { listarObrasDaEmpresa, type ObraDaEmpresa } from '../lib/central';
 import '../styles/campo/app-dashboard-v3.css';
 import '../styles/campo/campo-web.css';
@@ -38,6 +40,7 @@ export default function Dashboard() {
     try { return localStorage.getItem('om_obra_atual') || ''; } catch { return ''; }
   });
 
+  const [relatoriosEmpresaDe, setRelatoriosEmpresaDe] = useState<Obra | null>(null);
   const [obrasEmpresa, setObrasEmpresa] = useState<ObraDaEmpresa[]>([]);
   const [erroEmpresa, setErroEmpresa] = useState('');
   const [consultandoEmpresa, setConsultandoEmpresa] = useState(false);
@@ -150,8 +153,18 @@ export default function Dashboard() {
     return status && (!termo || o.nome.toLowerCase().includes(termo) || (o.cliente || '').toLowerCase().includes(termo));
   });
 
+  // Foto escolhida na tela inicial: abre o RDO da obra atual já com a foto anexada.
+  const abrirComFoto = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivos = Array.from(event.target.files ?? []) as File[];
+    event.target.value = '';
+    if (!obraAtual || arquivos.length === 0) return;
+    guardarFotosPendentes(arquivos);
+    setView('diario-form', obraAtual, null);
+  };
   const abrirManual = () => { if (obraAtual) setView('diario-form', obraAtual, null); };
   const irParaObras = () => document.getElementById('campo-obras')?.scrollIntoView({ behavior: 'smooth' });
+
+  if (relatoriosEmpresaDe) return <RelatoriosEmpresa obra={relatoriosEmpresaDe} onVoltar={() => setRelatoriosEmpresaDe(null)} />;
 
   return (
     <div className="app-shell">
@@ -249,9 +262,17 @@ export default function Dashboard() {
                     <FilePlus2 size={19} aria-hidden="true" /> Escrever RDO
                   </button>
                 </div>
-                <div className="campo-web-shortcuts" role="group" aria-label="Relatórios">
-                  <button type="button" disabled={!obraAtual || Boolean(obraAtual.empresa)} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}>
-                    <ClipboardList size={22} aria-hidden="true" /> Meus relatórios
+                <div className="campo-web-shortcuts" role="group" aria-label="Fotos e relatórios">
+                  <label className="campo-web-photo-control">
+                    <Camera size={22} aria-hidden="true" /> Tirar foto
+                    <input type="file" accept="image/*" capture="environment" disabled={!obraAtual} onChange={abrirComFoto} />
+                  </label>
+                  <label className="campo-web-photo-control">
+                    <ImageIcon size={22} aria-hidden="true" /> Escolher foto
+                    <input type="file" accept="image/*" multiple disabled={!obraAtual} onChange={abrirComFoto} />
+                  </label>
+                  <button type="button" disabled={!obraAtual} onClick={() => { if (!obraAtual) return; if (obraAtual.empresa) setRelatoriosEmpresaDe(obraAtual); else setView('obra-dashboard', obraAtual); }}>
+                    <ClipboardList size={22} aria-hidden="true" /> {obraAtual?.empresa ? 'Relatórios da obra' : 'Meus relatórios'}
                   </button>
                 </div>
               </form>
@@ -363,7 +384,7 @@ export default function Dashboard() {
       <nav className="campo-web-bottom" aria-label="Navegação do Campo">
         <a href="#campo-inicio"><Home size={21} aria-hidden="true" /> Início</a>
         <a href="#campo-obras"><HardHat size={21} aria-hidden="true" /> Obras</a>
-        <button type="button" disabled={!obraAtual} onClick={() => obraAtual && setView('obra-dashboard', obraAtual)}><ClipboardList size={21} aria-hidden="true" /> Relatórios</button>
+        <button type="button" disabled={!obraAtual} onClick={() => { if (!obraAtual) return; if (obraAtual.empresa) setRelatoriosEmpresaDe(obraAtual); else setView('obra-dashboard', obraAtual); }}><ClipboardList size={21} aria-hidden="true" /> Relatórios</button>
         <button type="button" aria-expanded={menuAberto} onClick={() => setMenuAberto(true)}><MoreVertical size={21} aria-hidden="true" /> Mais</button>
       </nav>
 

@@ -13,3 +13,11 @@ Correção (aditiva):
 
 Fora do escopo desta etapa: aviso de RDO devolvido, reenvio após devolução e papel de revisor no App.
 Reversão: reativar a versão anterior no Cloudflare (Implantações).
+
+## Correções do mesmo dia (2ª rodada)
+- "Gravar RDO" não abria em obra de empresa: o `AppContext` devolvia ao início qualquer obra fora da coleção `obras` do usuário. Obras com `empresa` agora são preservadas.
+- Botões "Tirar foto" e "Escolher foto" na tela inicial (foto segue para o RDO aberto; `src/lib/fotoPendente.ts`).
+- Relatórios da obra de empresa (`RelatoriosEmpresa`): lista e detalhe lidos da Central (`list_rdos`, `get_rdo`, `get_rdo_photo`); a autorização é do servidor.
+- Ponte da Central: leituras de RDO liberadas com parâmetros em lista fechada.
+- Tela branca ao abrir: se `#root` seguir vazio após 6 s, recarrega uma única vez.
+- Pendente: corrigir e reenviar RDO devolvido, aviso de devolvido, papel de revisor no App.

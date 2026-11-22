@@ -25,3 +25,15 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
+
+// Rede de segurança: se a tela continuar branca (ex.: atualização do aplicativo em andamento), recarrega uma única vez.
+window.setTimeout(() => {
+  const raiz = document.getElementById('root');
+  if (raiz && raiz.childElementCount === 0) {
+    try {
+      if (sessionStorage.getItem('om_recarga_tela_branca') === '1') return;
+      sessionStorage.setItem('om_recarga_tela_branca', '1');
+    } catch { /* sem armazenamento */ }
+    window.location.reload();
+  }
+}, 6000);

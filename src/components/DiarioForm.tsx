@@ -35,6 +35,7 @@ import SignaturePad, { SignaturePadRef } from './SignaturePad';
 import { buscarClima } from '../lib/clima';
 import { estruturarPorAudio, melhorarTexto } from '../lib/ia';
 import { enviarRdoParaCentral } from '../lib/central';
+import { tomarFotosPendentes } from '../lib/fotoPendente';
 import type { ClimaOficialInfo } from '../types';
 import { LIMITES_PLANO } from '../types';
 import { Mic, Square, Loader2, ShieldCheck, Wand2 } from 'lucide-react';
@@ -228,6 +229,8 @@ export default function DiarioForm() {
     let pedido = false;
     try { pedido = sessionStorage.getItem('om_gravar_ao_abrir') === '1'; sessionStorage.removeItem('om_gravar_ao_abrir'); } catch { /* sem armazenamento */ }
     gravacaoAutomaticaFeita.current = true;
+    const fotos = tomarFotosPendentes();
+    if (fotos.length > 0 && !isEditing) adicionarFotos(fotos);
     if (pedido && !isEditing && !transcEsgotada) void iniciarGravacao();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -253,8 +256,8 @@ export default function DiarioForm() {
   };
 
   // Image upload and client-side compression
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => adicionarFotos(e.target.files);
+  const adicionarFotos = (files: ArrayLike<File> | null | undefined) => {
     if (!files || files.length === 0) return;
     if (fotosEsgotadas || uploadingImage) return;
 
