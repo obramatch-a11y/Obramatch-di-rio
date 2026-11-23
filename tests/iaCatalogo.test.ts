@@ -125,8 +125,8 @@ await test('análise gerencial: Free é barrado (403) sem chamar a IA e sem cons
   assert.equal(writes.length, 0);
 });
 
-await test('análise gerencial: Pro recebe o texto, o prompt exige só dados fornecidos, e consome 1 melhoria', async () => {
-  const r = await ia('tok-pro', { tipo: 'analise_gerencial', resumo });
+await test('análise gerencial: Empresa recebe o texto, o prompt exige só dados fornecidos, e consome 1 melhoria', async () => {
+  const r = await ia('tok-empresa', { tipo: 'analise_gerencial', resumo });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.match(r.body.texto, /Resumo executivo/);
   assert.equal(groqCalls.length, 1);
@@ -134,22 +134,26 @@ await test('análise gerencial: Pro recebe o texto, o prompt exige só dados for
   assert.match(system, /EXCLUSIVAMENTE os dados fornecidos/);
   assert.match(system, /hipótese/);
   assert.match(groqCalls[0].messages[1].content, /Obra A: 20 dias sem RDO/);
-  const uso = writes.find(([p]) => p.startsWith('uso_ia/u-pro_'))!;
+  const uso = writes.find(([p]) => p.startsWith('uso_ia/u-empresa_'))!;
   assert.equal(Number((uso[1].melhoriaDia as any).integerValue), 1);
 });
 
-await test('análise gerencial: recurso desligado no catálogo bloqueia até o Pro; ligado libera o Free', async () => {
-  docs.set('config_comercial_planos/pro', { status: S('active'), features: { mapValue: { fields: { relatoriosGerenciais: B(false) } } } });
-  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial', resumo })).status, 403);
+await test('análise gerencial: recurso desligado no catálogo vem só no Empresa; admin liga/desliga por plano', async () => {
+  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial', resumo })).status, 403, 'Pro não tem por padrão');
+  docs.set('config_comercial_planos/empresa', { status: S('active'), features: { mapValue: { fields: { relatoriosGerenciais: B(false) } } } });
+  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo })).status, 403);
+  docs.set('config_comercial_planos/pro', { status: S('active'), features: { mapValue: { fields: { relatoriosGerenciais: B(true) } } } });
+  limparCacheCatalogo();
+  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial', resumo })).status, 200);
   docs.set('config_comercial_planos/free', { status: S('active'), features: { mapValue: { fields: { relatoriosGerenciais: B(true) } } } });
   limparCacheCatalogo();
   assert.equal((await ia('tok-free', { tipo: 'analise_gerencial', resumo })).status, 200);
 });
 
 await test('análise gerencial: valida resumo (objeto) e tamanho máximo', async () => {
-  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial' })).status, 400);
-  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial', resumo: 'texto' })).status, 400);
-  assert.equal((await ia('tok-pro', { tipo: 'analise_gerencial', resumo: { x: 'a'.repeat(31_000) } })).status, 413);
+  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial' })).status, 400);
+  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo: 'texto' })).status, 400);
+  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo: { x: 'a'.repeat(31_000) } })).status, 413);
   assert.equal(groqCalls.length, 0);
 });
 

@@ -30,7 +30,7 @@ export function limparCacheCatalogo(): void {
 }
 
 const CAMPOS_LIMITE = ['obrasAtivas', 'fotosPorRelatorio', 'transcDia', 'transcMes', 'melhoriaDia', 'melhoriaMes'] as const;
-const RECURSO_PADRAO: Record<string, boolean> = { free: false, pro: true, equipe: true, empresa: true };
+const RECURSO_PADRAO: Record<string, boolean> = { free: false, pro: false, equipe: false, empresa: true };
 
 /** Promoção de lançamento ativa? Falha de leitura = false (não libera nada a mais). */
 export async function promocaoAtiva(env: Env): Promise<boolean> {
