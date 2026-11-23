@@ -18,6 +18,8 @@ const docs = new Map<string, Doc>();
 const tokens: Record<string, string> = { 'tok-free': 'u-free', 'tok-pro': 'u-pro', 'tok-equipe': 'u-equipe', 'tok-empresa': 'u-empresa' };
 let failPlanDocs = false;
 let groqCalls: any[] = [];
+let geminiCalls: any[] = [];
+let geminiFalha = false;
 const writes: Array<[string, Doc]> = [];
 
 const S = (v: string) => ({ stringValue: v });
@@ -31,6 +33,11 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   if (href.startsWith('https://identitytoolkit.googleapis.com/')) {
     const { idToken } = JSON.parse(String(init?.body));
     return tokens[idToken] ? json(200, { users: [{ localId: tokens[idToken] }] }) : json(400, {});
+  }
+  if (href.startsWith('https://generativelanguage.googleapis.com/')) {
+    geminiCalls.push(JSON.parse(String(init?.body)));
+    if (geminiFalha) return json(500, { error: 'gemini fora' });
+    return json(200, { candidates: [{ content: { parts: [{ text: 'Parecer técnico\nTexto de teste.' }] } }] });
   }
   if (href.startsWith('https://api.groq.com/openai/v1/chat/completions')) {
     groqCalls.push(JSON.parse(String(init?.body)));
@@ -57,7 +64,7 @@ const { limparCacheCatalogo } = await import('../functions/_lib/catalogoPlanos.t
 const dia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' });
 const future = new Date(Date.now() + 30 * 86_400_000).toISOString();
 const seed = () => {
-  docs.clear(); writes.length = 0; groqCalls = []; failPlanDocs = false; limparCacheCatalogo();
+  docs.clear(); writes.length = 0; groqCalls = []; geminiCalls = []; geminiFalha = false; failPlanDocs = false; limparCacheCatalogo();
   docs.set('planos/u-pro', { plano: S('pro'), validade: S(future) });
   docs.set('planos/u-equipe', { plano: S('pro'), validade: S(future), planoId: S('equipe') });
   docs.set('planos/u-empresa', { plano: S('pro'), validade: S(future), planoId: S('empresa') });
@@ -125,19 +132,29 @@ await test('análise gerencial: Free é barrado (403) sem chamar a IA e sem cons
   assert.equal(writes.length, 0);
 });
 
-await test('análise gerencial: Empresa recebe o texto, o prompt exige só dados fornecidos, e consome 1 melhoria', async () => {
+await test('análise gerencial: Empresa recebe o parecer do Gemini (lê os RDOs), sem Groq, e consome 1 melhoria', async () => {
   const r = await ia('tok-empresa', { tipo: 'analise_gerencial', resumo });
   assert.equal(r.status, 200, JSON.stringify(r.body));
-  assert.match(r.body.texto, /Resumo executivo/);
-  assert.equal(groqCalls.length, 1);
-  const system = groqCalls[0].messages[0].content as string;
-  assert.match(system, /LER cada RDO/);
-  assert.match(system, /Todo FATO deve vir dos RDOs/);
-  assert.equal((groqCalls[0] as any).max_tokens, 4096);
-  assert.match(system, /hipótese/);
-  assert.match(groqCalls[0].messages[1].content, /Obra A: 20 dias sem RDO/);
+  assert.match(r.body.texto, /Parecer técnico/);
+  assert.equal(geminiCalls.length, 1);
+  assert.equal(groqCalls.length, 0);
+  const partes = geminiCalls[0].contents[0].parts;
+  assert.match(partes[0].text, /DIAGNOSTICAR/);
+  assert.match(partes[0].text, /Plano de ação priorizado/);
+  assert.match(partes[0].text, /FATOS vêm só dos RDOs/);
+  assert.match(partes[1].text, /Obra A: 20 dias sem RDO/);
+  assert.equal(geminiCalls[0].generationConfig.maxOutputTokens, 8192);
   const uso = writes.find(([p]) => p.startsWith('uso_ia/u-empresa_'))!;
   assert.equal(Number((uso[1].melhoriaDia as any).integerValue), 1);
+});
+
+await test('análise gerencial: se o Gemini falhar, o Groq escreve o parecer (4096 tokens)', async () => {
+  geminiFalha = true;
+  const r = await ia('tok-empresa', { tipo: 'analise_gerencial', resumo });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(groqCalls.length, 1);
+  assert.equal((groqCalls[0] as any).max_tokens, 4096);
+  assert.match(groqCalls[0].messages[0].content, /DIAGNOSTICAR/);
 });
 
 await test('análise gerencial: recurso desligado no catálogo vem só no Empresa; admin liga/desliga por plano', async () => {

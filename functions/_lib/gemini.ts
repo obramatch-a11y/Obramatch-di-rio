@@ -68,7 +68,8 @@ interface ParteGemini {
 export async function chamarGemini(
   env: Env,
   partes: ParteGemini[],
-  jsonMode: boolean
+  jsonMode: boolean,
+  maxTokens = 2048
 ): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${env.GEMINI_API_KEY}`,
@@ -79,7 +80,7 @@ export async function chamarGemini(
         contents: [{ role: 'user', parts: partes }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 2048,
+          maxOutputTokens: maxTokens,
           ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
         },
       }),

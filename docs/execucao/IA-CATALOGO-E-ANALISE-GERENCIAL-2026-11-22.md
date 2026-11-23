@@ -14,3 +14,6 @@ Com a promoção de lançamento ativa, usuários Free passam a ter as franquias 
 
 ## 2026-11-23 — A IA passa a ler o texto dos RDOs
 Prompt reescrito: parecer técnico de engenheiro sênior a partir de "documentos" (texto dos RDOs) + indicadores; fatos só dos RDOs, interpretação marcada como "avaliação técnica"/"hipótese". Limite do resumo 30 mil → 70 mil caracteres; saída até 4096 tokens. Falta validar em produção.
+
+## 2026-11-23 (2) — Parecer de engenheiro sênior mais profundo
+Prompt reescrito para DIAGNOSTICAR (cronologia, causa raiz, segurança/NR, inconsistências do diário, comparativo, plano de ação com prazo e responsável, perguntas para a obra). Gemini 2.5 Flash passa a ser o principal da análise gerencial (8192 tokens); Groq/Llama fica de reserva (4096). Falta avaliar a qualidade em produção.
