@@ -1,10 +1,10 @@
 // POST /api/ia — IA do app com a chave protegida no servidor.
-// Body: { tipo: 'estruturar' | 'melhorar', texto?, audioBase64?, mimeType? }
+// Body: { tipo: 'estruturar' | 'melhorar' | 'analise_gerencial', texto?, audioBase64?, mimeType?, resumo? }
 // Auth: header "Authorization: Bearer <Firebase ID token>"
 
 import { Env } from '../_lib/google';
 import { fsGet, fsSet } from '../_lib/firestore';
-import { estruturarRdo, melhorarTextoRdo } from '../_lib/groq';
+import { analisarGerencialRdo, estruturarRdo, melhorarTextoRdo } from '../_lib/groq';
 import { lerEstadoUso, dentroDaFranquia, consumirFranquia, mensagemFranquia, TipoUsoIa } from '../_lib/uso';
 
 function resposta(status: number, body: Record<string, unknown>): Response {
@@ -56,8 +56,8 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
     return resposta(400, { erro: 'JSON inválido.' });
   }
   const tipo = body?.tipo;
-  if (tipo !== 'estruturar' && tipo !== 'melhorar') {
-    return resposta(400, { erro: "Campo 'tipo' deve ser 'estruturar' ou 'melhorar'." });
+  if (tipo !== 'estruturar' && tipo !== 'melhorar' && tipo !== 'analise_gerencial') {
+    return resposta(400, { erro: "Campo 'tipo' deve ser 'estruturar', 'melhorar' ou 'analise_gerencial'." });
   }
 
   // Franquia por plano (servidor). Checa antes; consome SÓ após sucesso.
@@ -70,12 +70,17 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
     return resposta(502, { erro: 'Falha ao verificar sua franquia. Tente novamente.' });
   }
 
+  // Análise gerencial: recurso do plano (catálogo). Cada análise consome 1 unidade da franquia de melhorias.
+  if (tipo === 'analise_gerencial' && !estado.recursos.relatoriosGerenciais) {
+    return resposta(403, { erro: 'Seu plano não inclui o Relatório gerencial com IA.' });
+  }
+
   if (!dentroDaFranquia(estado, tipoUso)) {
     return resposta(429, { erro: mensagemFranquia(estado, tipoUso) });
   }
 
   if (body.audioBase64 && String(body.audioBase64).length > estado.limites.audioMaxBase64) {
-    const minutos = estado.plano === 'pro' ? '5 minutos' : '1 minuto e meio';
+    const minutos = estado.limites.audioMaxBase64 >= 5_400_000 ? '5 minutos' : '1 minuto e meio';
     return resposta(413, { erro: `Áudio muito longo para o seu plano. Grave até ${minutos}.` });
   }
 
@@ -99,6 +104,18 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
       });
       await consumirFranquia(env, uid, estado, 'transc');
       return resposta(200, rdo as any);
+    }
+
+    if (tipo === 'analise_gerencial') {
+      const resumo = body.resumo;
+      if (!resumo || typeof resumo !== 'object' || Array.isArray(resumo)) {
+        return resposta(400, { erro: 'Envie o resumo do período para a análise.' });
+      }
+      const resumoJson = JSON.stringify(resumo);
+      if (resumoJson.length > 30_000) return resposta(413, { erro: 'Resumo muito grande para a análise.' });
+      const texto = await analisarGerencialRdo(env, resumoJson);
+      await consumirFranquia(env, uid, estado, 'melhoria');
+      return resposta(200, { texto });
     }
 
     // melhorar
