@@ -142,6 +142,9 @@ await test('análise gerencial: Empresa recebe o parecer do Gemini (lê os RDOs)
   assert.match(partes[0].text, /DIAGNOSTICAR/);
   assert.match(partes[0].text, /Plano de ação priorizado/);
   assert.match(partes[0].text, /FATOS vêm só dos RDOs/);
+  assert.match(partes[0].text, /QUANTIFIQUE/);
+  assert.match(partes[0].text, /NÃO extrapole o tipo de evento/);
+  assert.match(partes[0].text, /AGRUPE itens/);
   assert.match(partes[1].text, /Obra A: 20 dias sem RDO/);
   assert.equal(geminiCalls[0].generationConfig.maxOutputTokens, 16384);
   assert.equal(geminiCalls[0].generationConfig.thinkingConfig.thinkingBudget, 1024, 'raciocínio limitado para não cortar o texto');
