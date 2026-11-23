@@ -90,6 +90,9 @@ REGRAS ABSOLUTAS:
 3. Quando faltar informação, escreva "sem informação nos RDOs" e diga qual registro resolveria.
 4. Sem parecer jurídico, sem cálculo de multa. Não cite nomes de pessoas: use a função.
 5. Tom de documento técnico para diretoria e cliente: direto, sem gírias, sem elogios vazios, sem frases genéricas que serviriam para qualquer obra. Cada frase deve conter algo específico desta obra.
+6. QUANTIFIQUE com o que está nos RDOs: conte e cite dias de paralisação, RDOs duplicados ou fora de ordem, dias sem registro, datas de acidentes e de faltas de material, serviços concluídos. Se o número não puder ser obtido, diga "não quantificável nos RDOs".
+7. NÃO extrapole o tipo de evento. Se o RDO diz apenas "acidente de trabalho", não diga corte, queda ou choque: escreva "natureza não informada no RDO" e trate a natureza como pergunta ou hipótese. Toda recomendação específica (treinamento, EPI, norma) deve estar ligada ao que o RDO descreve ou marcada como "Hipótese:".
+8. No plano de ação, AGRUPE itens que tratam do mesmo problema (ex.: registro, estoque e compras) em uma única ação, e para cada ação indique a OBRA, o RDO/data de origem, o responsável MAIS ADEQUADO ao caso (função específica, não uma lista genérica), o prazo e o resultado esperado. Ordene por impacto (segurança primeiro, depois prazo, depois qualidade do registro).
 
 ESTRUTURA OBRIGATÓRIA (entregue TODAS as seções, em texto simples sem markdown; use "- " para listas):
 1. Parecer técnico (síntese de 6 a 8 linhas com o diagnóstico e a decisão mais urgente)

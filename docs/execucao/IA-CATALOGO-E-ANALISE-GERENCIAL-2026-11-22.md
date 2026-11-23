@@ -20,3 +20,6 @@ Prompt reescrito para DIAGNOSTICAR (cronologia, causa raiz, segurança/NR, incon
 
 ## 2026-11-23 (3) — Parecer cortado
 Causa: Gemini 2.5 gasta o limite de saída "pensando". Correção: thinkingBudget 1024, saída 16384, e resposta com finishReason MAX_TOKENS cai no Groq em vez de ser mostrada cortada.
+
+## 2026-11-23 (4) — Rigor do parecer
+Prompt exige quantificar (dias de paralisação, RDOs duplicados, datas), não extrapolar o tipo de evento (acidente sem natureza informada), agrupar ações repetidas e indicar obra, RDO de origem, responsável específico, prazo e resultado esperado.
