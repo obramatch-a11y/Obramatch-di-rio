@@ -69,7 +69,8 @@ export async function chamarGemini(
   env: Env,
   partes: ParteGemini[],
   jsonMode: boolean,
-  maxTokens = 2048
+  maxTokens = 2048,
+  thinkingBudget?: number
 ): Promise<string> {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${env.GEMINI_API_KEY}`,
@@ -81,6 +82,8 @@ export async function chamarGemini(
         generationConfig: {
           temperature: 0.2,
           maxOutputTokens: maxTokens,
+          // Gemini 2.5 gasta parte do limite "pensando"; sem teto, o texto final sai cortado.
+          ...(thinkingBudget !== undefined ? { thinkingConfig: { thinkingBudget } } : {}),
           ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
         },
       }),
@@ -92,6 +95,8 @@ export async function chamarGemini(
     ?.map((p: any) => p.text || '')
     .join('') || '';
   if (!texto) throw new Error('Gemini retornou resposta vazia');
+  // Resposta cortada por limite de tokens não pode virar parecer "sem sentido": falha para acionar a reserva.
+  if (maxTokens > 2048 && json?.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new Error('Gemini: resposta cortada por limite de tokens');
   return texto;
 }
 
