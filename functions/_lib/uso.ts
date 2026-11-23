@@ -6,7 +6,8 @@
 
 import { Env } from './google';
 import { fsGet, fsSet } from './firestore';
-import { limitesDoPlano, LimitesPlano } from './planos';
+import { LimitesPlano } from './planos';
+import { promocaoAtiva, resolverPlano } from './catalogoPlanos';
 
 const FUSO = 'America/Recife';
 
@@ -21,6 +22,9 @@ export type TipoUsoIa = 'transc' | 'melhoria';
 
 export interface EstadoUso {
   plano: 'free' | 'pro';
+  /** Plano do catálogo aplicado ('free', 'pro', 'equipe', ...). */
+  planoId: string;
+  recursos: { relatoriosGerenciais: boolean };
   limites: LimitesPlano;
   docId: string;
   transcDia: number;
@@ -32,11 +36,16 @@ export interface EstadoUso {
 /** Lê plano + uso do mês. Plano expirado (validade no passado) volta a free. */
 export async function lerEstadoUso(env: Env, uid: string): Promise<EstadoUso> {
   let plano: 'free' | 'pro' = 'free';
+  let planoId = 'free';
   try {
     const p = await fsGet(env, `planos/${uid}`);
     if (p?.data?.plano === 'pro') {
       const validade = p.data.validade ? Date.parse(String(p.data.validade)) : null;
-      if (!validade || validade > Date.now()) plano = 'pro';
+      if (!validade || validade > Date.now()) {
+        plano = 'pro';
+        // `plano` é o estado financeiro; `planoId` (opcional) escolhe o plano do catálogo. Ausente = Pro.
+        planoId = String(p.data.planoId || '') || 'pro';
+      }
     }
   } catch { /* sem doc = free */ }
 
@@ -54,7 +63,11 @@ export async function lerEstadoUso(env: Env, uid: string): Promise<EstadoUso> {
     }
   } catch { /* primeiro uso do mês */ }
 
-  return { plano, limites: limitesDoPlano(plano), docId, transcDia, transcMes, melhoriaDia, melhoriaMes };
+  const resolvido = await resolverPlano(env, plano === 'pro' ? planoId : 'free', await promocaoAtiva(env));
+  return {
+    plano, planoId: resolvido.id, recursos: { relatoriosGerenciais: resolvido.relatoriosGerenciais },
+    limites: resolvido.limites, docId, transcDia, transcMes, melhoriaDia, melhoriaMes,
+  };
 }
 
 /** true se o usuário AINDA TEM franquia para o tipo pedido. NÃO consome. */

@@ -10,6 +10,7 @@
 
 import { Env } from './google';
 import {
+  chamarGemini,
   RdoEstruturado,
   estruturarRdo as estruturarRdoGemini,
   melhorarTextoRdo as melhorarTextoRdoGemini,
@@ -66,6 +67,28 @@ Regras de redação técnica (obrigatórias):
 VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, horário e duração do texto original aparece no texto final, vinculada ao fato correto. Se uma quantidade foi dita, ela não pode ser omitida.
 
 Responda SOMENTE com o texto reescrito, sem comentários.`;
+
+const PROMPT_ANALISE_GERENCIAL = `Você é um engenheiro civil brasileiro sênior, com ampla experiência em gerenciamento e fiscalização de obras.
+Você receberá um JSON com métricas e alertas JÁ CALCULADOS a partir dos Relatórios Diários de Obra (RDO) de uma ou mais obras num período.
+
+Sua tarefa: escrever uma análise executiva em português do Brasil, para diretoria e cliente, usando EXCLUSIVAMENTE os dados fornecidos.
+
+REGRAS ABSOLUTAS:
+1. Não afirme nada que não esteja nos dados. Não invente causas, prazos, custos, valores, nomes, quantidades ou eventos.
+2. Cite sempre a obra, os números e as datas de origem (ex.: "Obra X: 20 dias sem RDO, último em 05/11").
+3. Quando faltar informação, escreva "sem informação nos RDOs".
+4. Separe fatos de hipóteses. Toda hipótese deve vir marcada com a palavra "hipótese".
+5. Não dê parecer jurídico, não calcule multas nem prazos contratuais.
+6. Tom técnico, objetivo e respeitoso. Sem gírias, sem opinião pessoal, sem elogios vazios.
+
+ESTRUTURA (use exatamente estes títulos, em texto simples, sem markdown):
+Resumo executivo (até 5 linhas)
+Avanço e regularidade dos registros
+Riscos e pontos de atenção
+Impacto do clima e das condições de trabalho
+Recomendações práticas (até 5 itens objetivos, numerados)
+
+Encerre com: "Análise de apoio à decisão, gerada a partir dos RDOs registrados; a validação é do engenheiro responsável pela obra."`;
 
 /** Transcreve áudio (base64) em pt-BR usando o Whisper do Groq. */
 async function transcreverAudioGroq(
@@ -169,6 +192,24 @@ export async function estruturarRdo(
     }
   }
   return estruturarRdoGemini(env, opts);
+}
+
+/**
+ * Análise gerencial dos RDOs (texto). Entrada: métricas já calculadas pelo app.
+ * Groq como principal; Gemini como reserva automática.
+ */
+export async function analisarGerencialRdo(env: Env, resumoJson: string): Promise<string> {
+  const entrada = `Dados do período (JSON):\n${resumoJson}`;
+  if (env.GROQ_API_KEY) {
+    try {
+      const resposta = await chamarLlamaGroq(env, PROMPT_ANALISE_GERENCIAL, entrada, false);
+      return resposta.trim();
+    } catch (e) {
+      console.error('Groq falhou em analisarGerencialRdo, usando Gemini como reserva:', e);
+    }
+  }
+  const resposta = await chamarGemini(env, [{ text: PROMPT_ANALISE_GERENCIAL }, { text: entrada }], false);
+  return resposta.trim();
 }
 
 /**
