@@ -131,7 +131,9 @@ await test('análise gerencial: Empresa recebe o texto, o prompt exige só dados
   assert.match(r.body.texto, /Resumo executivo/);
   assert.equal(groqCalls.length, 1);
   const system = groqCalls[0].messages[0].content as string;
-  assert.match(system, /EXCLUSIVAMENTE os dados fornecidos/);
+  assert.match(system, /LER cada RDO/);
+  assert.match(system, /Todo FATO deve vir dos RDOs/);
+  assert.equal((groqCalls[0] as any).max_tokens, 4096);
   assert.match(system, /hipótese/);
   assert.match(groqCalls[0].messages[1].content, /Obra A: 20 dias sem RDO/);
   const uso = writes.find(([p]) => p.startsWith('uso_ia/u-empresa_'))!;
@@ -153,7 +155,7 @@ await test('análise gerencial: recurso desligado no catálogo vem só no Empres
 await test('análise gerencial: valida resumo (objeto) e tamanho máximo', async () => {
   assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial' })).status, 400);
   assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo: 'texto' })).status, 400);
-  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo: { x: 'a'.repeat(31_000) } })).status, 413);
+  assert.equal((await ia('tok-empresa', { tipo: 'analise_gerencial', resumo: { x: 'a'.repeat(71_000) } })).status, 413);
   assert.equal(groqCalls.length, 0);
 });
 

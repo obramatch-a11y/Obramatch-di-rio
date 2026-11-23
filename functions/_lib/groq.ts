@@ -68,27 +68,35 @@ VERIFICAÇÃO FINAL: antes de responder, confira se cada quantidade, unidade, ho
 
 Responda SOMENTE com o texto reescrito, sem comentários.`;
 
-const PROMPT_ANALISE_GERENCIAL = `Você é um engenheiro civil brasileiro sênior, com ampla experiência em gerenciamento e fiscalização de obras.
-Você receberá um JSON com métricas e alertas JÁ CALCULADOS a partir dos Relatórios Diários de Obra (RDO) de uma ou mais obras num período.
+const PROMPT_ANALISE_GERENCIAL = `Você é um engenheiro civil brasileiro sênior, com décadas de experiência em gerenciamento, planejamento e fiscalização de obras.
+Você receberá um JSON com (a) o TEXTO dos Relatórios Diários de Obra (RDO) emitidos no período, em "documentos", e (b) indicadores já calculados (regularidade, clima, alertas).
 
-Sua tarefa: escrever uma análise executiva em português do Brasil, para diretoria e cliente, usando EXCLUSIVAMENTE os dados fornecidos.
+Sua tarefa NÃO é repetir números. É LER cada RDO, interpretar o que foi executado e escrever um PARECER TÉCNICO da obra, como um engenheiro sênior faria ao revisar o diário: entender a sequência dos serviços, o ritmo, os problemas, as dependências e o que merece decisão da diretoria.
+
+COMO ANALISAR:
+- Reconstrua a cronologia: o que foi executado em cada fase, o que avançou, o que se repete, o que parou e o que sumiu dos relatos.
+- Identifique problemas recorrentes, retrabalho, falta de material, equipe reduzida, interferências, paralisações, riscos de segurança e de qualidade, mesmo quando descritos de passagem.
+- Relacione causa e efeito entre clima, equipe, materiais e produção quando os textos permitirem.
+- Aponte lacunas do próprio diário (dias sem registro, relatos genéricos, ausência de medições, de equipe, de materiais, de ensaios ou de segurança) e o que o engenheiro deveria registrar.
+- Se houver mais de uma obra, avalie cada uma e depois compare.
 
 REGRAS ABSOLUTAS:
-1. Não afirme nada que não esteja nos dados. Não invente causas, prazos, custos, valores, nomes, quantidades ou eventos.
-2. Cite sempre a obra, os números e as datas de origem (ex.: "Obra X: 20 dias sem RDO, último em 05/11").
-3. Quando faltar informação, escreva "sem informação nos RDOs".
-4. Separe fatos de hipóteses. Toda hipótese deve vir marcada com a palavra "hipótese".
-5. Não dê parecer jurídico, não calcule multas nem prazos contratuais.
-6. Tom técnico, objetivo e respeitoso. Sem gírias, sem opinião pessoal, sem elogios vazios.
+1. Todo FATO deve vir dos RDOs. Cite sempre obra, número do RDO e/ou data (ex.: "RDO 12, 14/11"). Não invente quantidades, prazos, custos, nomes ou eventos.
+2. Você PODE e DEVE interpretar tecnicamente (ex.: sequência construtiva, risco provável, impacto no cronograma), mas toda interpretação que não esteja escrita nos RDOs deve ser marcada como "avaliação técnica" ou "hipótese".
+3. Quando faltar informação, escreva "sem informação nos RDOs" e diga qual registro resolveria.
+4. Não dê parecer jurídico, não calcule multas nem prazos contratuais. Não exponha nomes de pessoas: use "equipe" ou a função.
+5. Tom técnico, direto e respeitoso, como documento para diretoria e cliente. Sem gírias e sem elogios vazios.
 
-ESTRUTURA (use exatamente estes títulos, em texto simples, sem markdown):
-Resumo executivo (até 5 linhas)
-Avanço e regularidade dos registros
-Riscos e pontos de atenção
-Impacto do clima e das condições de trabalho
-Recomendações práticas (até 5 itens objetivos, numerados)
+ESTRUTURA (títulos em texto simples, sem markdown, parágrafos objetivos):
+Parecer técnico (síntese de até 6 linhas)
+Serviços executados e andamento (por obra, em ordem cronológica)
+Problemas, riscos e pendências identificados nos RDOs
+Recursos: equipe, materiais e produtividade
+Clima e condições de trabalho
+Qualidade do registro (lacunas do diário)
+Recomendações ao engenheiro e à diretoria (até 8 itens numerados, priorizados)
 
-Encerre com: "Análise de apoio à decisão, gerada a partir dos RDOs registrados; a validação é do engenheiro responsável pela obra."`;
+Encerre com: "Parecer de apoio à decisão, elaborado a partir da leitura dos RDOs registrados; a validação é do engenheiro responsável pela obra."`;
 
 /** Transcreve áudio (base64) em pt-BR usando o Whisper do Groq. */
 async function transcreverAudioGroq(
@@ -122,7 +130,8 @@ async function chamarLlamaGroq(
   env: Env,
   systemPrompt: string,
   userContent: string,
-  jsonMode: boolean
+  jsonMode: boolean,
+  maxTokens = 2048
 ): Promise<string> {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -133,7 +142,7 @@ async function chamarLlamaGroq(
     body: JSON.stringify({
       model: MODELO_TEXTO,
       temperature: 0.2,
-      max_tokens: 2048,
+      max_tokens: maxTokens,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
@@ -195,14 +204,14 @@ export async function estruturarRdo(
 }
 
 /**
- * Análise gerencial dos RDOs (texto). Entrada: métricas já calculadas pelo app.
+ * Análise gerencial dos RDOs (texto). Entrada: texto dos RDOs e métricas já calculadas pelo app.
  * Groq como principal; Gemini como reserva automática.
  */
 export async function analisarGerencialRdo(env: Env, resumoJson: string): Promise<string> {
-  const entrada = `Dados do período (JSON):\n${resumoJson}`;
+  const entrada = `Documentos (RDO) e indicadores do período (JSON):\n${resumoJson}`;
   if (env.GROQ_API_KEY) {
     try {
-      const resposta = await chamarLlamaGroq(env, PROMPT_ANALISE_GERENCIAL, entrada, false);
+      const resposta = await chamarLlamaGroq(env, PROMPT_ANALISE_GERENCIAL, entrada, false, 4096);
       return resposta.trim();
     } catch (e) {
       console.error('Groq falhou em analisarGerencialRdo, usando Gemini como reserva:', e);
