@@ -17,3 +17,6 @@ Prompt reescrito: parecer técnico de engenheiro sênior a partir de "documentos
 
 ## 2026-11-23 (2) — Parecer de engenheiro sênior mais profundo
 Prompt reescrito para DIAGNOSTICAR (cronologia, causa raiz, segurança/NR, inconsistências do diário, comparativo, plano de ação com prazo e responsável, perguntas para a obra). Gemini 2.5 Flash passa a ser o principal da análise gerencial (8192 tokens); Groq/Llama fica de reserva (4096). Falta avaliar a qualidade em produção.
+
+## 2026-11-23 (3) — Parecer cortado
+Causa: Gemini 2.5 gasta o limite de saída "pensando". Correção: thinkingBudget 1024, saída 16384, e resposta com finishReason MAX_TOKENS cai no Groq em vez de ser mostrada cortada.

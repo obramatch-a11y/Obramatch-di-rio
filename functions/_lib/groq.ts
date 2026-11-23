@@ -219,7 +219,7 @@ export async function analisarGerencialRdo(env: Env, resumoJson: string): Promis
   // Gemini primeiro: lê bem contexto longo e escreve parecer extenso. Groq (Llama) fica como reserva.
   if (env.GEMINI_API_KEY) {
     try {
-      const resposta = await chamarGemini(env, [{ text: PROMPT_ANALISE_GERENCIAL }, { text: entrada }], false, 8192);
+      const resposta = await chamarGemini(env, [{ text: PROMPT_ANALISE_GERENCIAL }, { text: entrada }], false, 16384, 1024);
       return resposta.trim();
     } catch (e) {
       console.error('Gemini falhou em analisarGerencialRdo, usando Groq como reserva:', e);
