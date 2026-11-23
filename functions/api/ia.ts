@@ -112,7 +112,7 @@ export const onRequestPost = async (ctx: { request: Request; env: Env }): Promis
         return resposta(400, { erro: 'Envie o resumo do período para a análise.' });
       }
       const resumoJson = JSON.stringify(resumo);
-      if (resumoJson.length > 30_000) return resposta(413, { erro: 'Resumo muito grande para a análise.' });
+      if (resumoJson.length > 70_000) return resposta(413, { erro: 'Resumo muito grande para a análise.' });
       const texto = await analisarGerencialRdo(env, resumoJson);
       await consumirFranquia(env, uid, estado, 'melhoria');
       return resposta(200, { texto });

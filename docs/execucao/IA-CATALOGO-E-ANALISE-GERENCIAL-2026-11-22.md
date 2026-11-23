@@ -11,3 +11,6 @@
 
 ## Efeito a conhecer
 Com a promoção de lançamento ativa, usuários Free passam a ter as franquias de IA do Pro no Worker.
+
+## 2026-11-23 — A IA passa a ler o texto dos RDOs
+Prompt reescrito: parecer técnico de engenheiro sênior a partir de "documentos" (texto dos RDOs) + indicadores; fatos só dos RDOs, interpretação marcada como "avaliação técnica"/"hipótese". Limite do resumo 30 mil → 70 mil caracteres; saída até 4096 tokens. Falta validar em produção.
