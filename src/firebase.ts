@@ -9,7 +9,7 @@ const env = (import.meta as any).env || {};
 // Domínio de login próprio: quando o app roda num destes endereços, o login
 // passa pelo próprio Worker (que repassa ao Firebase). Assim o Google mostra
 // o endereço do app. Em qualquer outro endereço usa o padrão do Firebase.
-const HOSTS_LOGIN_PROPRIO = ['diariomatch.obramatch.workers.dev'];
+const HOSTS_LOGIN_PROPRIO: string[] = []; // desligado: reativar após validar o proxy /__/auth
 const hostAtual = typeof window !== 'undefined' ? window.location.hostname : '';
 const authDomainProprio = HOSTS_LOGIN_PROPRIO.includes(hostAtual) ? hostAtual : '';
 
