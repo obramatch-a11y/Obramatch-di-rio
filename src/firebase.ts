@@ -6,9 +6,16 @@ import firebaseConfigJson from '../firebase-applet-config.json';
 
 // Support Vercel environment variables or fallback to JSON configuration
 const env = (import.meta as any).env || {};
+// Domínio de login próprio: quando o app roda num destes endereços, o login
+// passa pelo próprio Worker (que repassa ao Firebase). Assim o Google mostra
+// o endereço do app. Em qualquer outro endereço usa o padrão do Firebase.
+const HOSTS_LOGIN_PROPRIO = ['diariomatch.obramatch.workers.dev'];
+const hostAtual = typeof window !== 'undefined' ? window.location.hostname : '';
+const authDomainProprio = HOSTS_LOGIN_PROPRIO.includes(hostAtual) ? hostAtual : '';
+
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || env.VITE_API_KEY || firebaseConfigJson.apiKey,
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || env.VITE_AUTH_DOMAIN || firebaseConfigJson.authDomain,
+  authDomain: authDomainProprio || env.VITE_FIREBASE_AUTH_DOMAIN || env.VITE_AUTH_DOMAIN || firebaseConfigJson.authDomain,
   projectId: env.VITE_FIREBASE_PROJECT_ID || env.VITE_PROJECT_ID || firebaseConfigJson.projectId,
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || env.VITE_STORAGE_BUCKET || firebaseConfigJson.storageBucket,
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || env.VITE_MESSAGING_SENDER_ID || firebaseConfigJson.messagingSenderId,
