@@ -203,7 +203,8 @@ export async function estruturarRdo(
         env,
         PROMPT_ESTRUTURAR,
         `Relato: ${relato}`,
-        true
+        true,
+        4096
       );
       return parsearJsonRdo(resposta);
     } catch (e) {
