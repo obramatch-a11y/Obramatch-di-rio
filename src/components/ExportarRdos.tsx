@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Diario } from '../types';
 import { ArrowLeft, FileDown, AlertTriangle, WifiOff } from 'lucide-react';
-import RdoPrintBlock from './RdoPrintBlock';
+import { montarDocumentoRdo, entregarPdfRdo } from '../lib/documentoRdo';
 import { dataLocalISO } from '../lib/dataLocal';
 
 function intervaloDoPeriodo(p: string, de: string, ate: string): { de: string; ate: string } | null {
@@ -21,8 +21,6 @@ export default function ExportarRdos() {
   const [dataDe, setDataDe] = useState('');
   const [dataAte, setDataAte] = useState('');
   const [preparando, setPreparando] = useState(false);
-  const [progresso, setProgresso] = useState({ carregadas: 0, total: 0 });
-  const printRef = useRef<HTMLDivElement>(null);
 
   if (!selectedObra) return null;
 
@@ -68,21 +66,15 @@ export default function ExportarRdos() {
     setSelecionados(new Set());
   };
 
+  const [erroPdf, setErroPdf] = useState('');
   const gerarPdf = async () => {
     if (diariosParaExportar.length === 0 || preparando) return;
-    setPreparando(true);
+    setPreparando(true); setErroPdf('');
     try {
-      const imgs = Array.from(printRef.current?.querySelectorAll('img') || []) as HTMLImageElement[];
-      setProgresso({ carregadas: imgs.filter(i => i.complete).length, total: imgs.length });
-      await Promise.race([
-        Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(res => {
-          const fim = () => { setProgresso(p => ({ ...p, carregadas: p.carregadas + 1 })); res(); };
-          img.addEventListener('load', fim, { once: true });
-          img.addEventListener('error', fim, { once: true });
-        }))),
-        new Promise<void>(res => setTimeout(res, 15000)),
-      ]);
-      window.print();
+      const docs = diariosParaExportar.map((d) => montarDocumentoRdo(selectedObra, d, fotos.filter((f) => f.diarioId === d.id), { semRodapeObraMatch: plano.plano !== 'free' }));
+      await entregarPdfRdo(docs, 'baixar');
+    } catch (err) {
+      setErroPdf(err instanceof Error ? err.message : 'Não foi possível gerar o PDF.');
     } finally {
       setPreparando(false);
     }
@@ -256,6 +248,7 @@ export default function ExportarRdos() {
                 ? `${selecionados.size} RDO${selecionados.size > 1 ? 's' : ''} selecionado${selecionados.size > 1 ? 's' : ''} · ${totalFotos} foto${totalFotos !== 1 ? 's' : ''}${periodoReal ? ` · ${periodoReal}` : ''}`
                 : 'Selecione os RDOs para exportar'}
             </p>
+            {erroPdf && <p role="alert" className="text-xs font-bold text-red-600">{erroPdf}</p>}
             <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => setView('obra-dashboard', selectedObra)}
@@ -269,115 +262,13 @@ export default function ExportarRdos() {
                 className="nb-btn nb-btn-primary py-2.5 px-4 text-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FileDown className="w-4 h-4" />
-                {preparando
-                  ? `Preparando… (${progresso.carregadas}/${progresso.total} fotos)`
-                  : 'Gerar PDF'}
+                {preparando ? 'Gerando PDF…' : 'Gerar PDF'}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PRINT-ONLY DOCUMENT */}
-      {selecionados.size > 0 && (
-        <div ref={printRef} className="hidden print:block">
-
-          {/* CAPA */}
-          <div className="bg-white text-black p-8 font-sans min-h-screen flex flex-col justify-between">
-            <div>
-              <p className="text-xs font-bold tracking-widest text-neutral-500 uppercase">ECOSSISTEMA OBRAMATCH</p>
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <h1 className="text-3xl font-black text-[#111111]">RELATÓRIOS DIÁRIOS DE OBRA (RDO)</h1>
-              <div className="mt-8 space-y-3 text-sm">
-                <div>
-                  <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">OBRA:</span>
-                  <span className="text-[#111111] font-bold text-lg">{selectedObra.nome}</span>
-                </div>
-                <div>
-                  <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">CLIENTE:</span>
-                  <span className="text-[#111111] font-semibold">{selectedObra.cliente}</span>
-                </div>
-                {selectedObra.endereco && (
-                  <div>
-                    <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">ENDEREÇO:</span>
-                    <span className="text-[#111111] font-semibold">{selectedObra.endereco}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">RESPONSÁVEL TÉCNICO:</span>
-                  <span className="text-[#111111] font-semibold">{selectedObra.responsavelTecnico}</span>
-                </div>
-                <div>
-                  <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">PERÍODO:</span>
-                  <span className="text-[#111111] font-semibold">{periodoReal}</span>
-                </div>
-                <div>
-                  <span className="text-neutral-500 font-bold text-[10px] uppercase tracking-wider block">QUANTIDADE DE RELATÓRIOS:</span>
-                  <span className="text-[#111111] font-semibold">{diariosParaExportar.length}</span>
-                </div>
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-[10px] text-neutral-500">
-                Gerado pelo ObraMatch Diário em {new Date().toLocaleString('pt-BR')}
-              </p>
-            </div>
-          </div>
-
-          {/* SUMÁRIO */}
-          <div className="bg-white text-black p-8 font-sans page-break-before">
-            <h2 className="text-xl font-black text-[#111111] mb-6 border-b-4 border-[#D1D1D1] pb-3">SUMÁRIO</h2>
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="text-left border-b-2 border-[#D1D1D1]">
-                  <th className="py-2 font-bold text-neutral-500 uppercase tracking-wider">RDO Nº</th>
-                  <th className="py-2 font-bold text-neutral-500 uppercase tracking-wider">Data</th>
-                  <th className="py-2 font-bold text-neutral-500 uppercase tracking-wider">Condição de trabalho</th>
-                  <th className="py-2 font-bold text-neutral-500 uppercase tracking-wider">Ocorrência</th>
-                </tr>
-              </thead>
-              <tbody>
-                {diariosParaExportar.map(d => (
-                  <tr key={d.id} className="border-b border-[#D1D1D1]">
-                    <td className="py-1.5 font-semibold">{String(d.numeroRdo || 0).padStart(3, '0')}</td>
-                    <td className="py-1.5">{new Date(d.data + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                    <td className="py-1.5">{d.condicaoTrabalho || '—'}</td>
-                    <td className="py-1.5">{d.ocorrencias ? '⚠ Sim' : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* RDOs */}
-          {diariosParaExportar.map(d => (
-            <div key={d.id} className="page-break-before">
-              <RdoPrintBlock
-                obra={selectedObra}
-                diario={d}
-                fotos={fotos.filter(f => f.diarioId === d.id)}
-                mostrarRodape={false}
-              />
-            </div>
-          ))}
-
-          {/* Rodapé final do documento */}
-          <div className="bg-white text-black p-8 pt-4 font-sans text-center border-t border-[#D1D1D1]">
-            <p className="text-[10px] text-neutral-500 font-bold">
-              Documento gerado pelo ObraMatch Diário — diariomatch.obramatch.workers.dev
-            </p>
-            <p className="text-[9px] text-neutral-500">
-              Exportado em {new Date().toLocaleString('pt-BR')} · {diariosParaExportar.length} relatórios
-            </p>
-            {plano.plano === 'free' && (
-              <p className="text-[9px] text-neutral-500 mt-1">
-                Gerado com ObraMatch Diário — RDO por voz com código de integridade · obramatch.com.br
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
