@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
-import { motion } from 'motion/react';
-import { Construction, Mail, Lock, LogIn, UserPlus, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
 import InstallButton from './InstallButton';
 
@@ -109,172 +108,79 @@ export default function Login() {
     }
   };
 
+  const trocarModo = (cadastro: boolean) => { setIsSignUp(cadastro); setError(null); setResetEnviado(false); };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F4F4] p-4 relative overflow-hidden">
-      <div className="w-full max-w-md flex flex-col gap-4 relative z-10 my-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full nb-card nb-shadow p-7"
-        >
-          <div className="flex flex-col items-center mb-7">
-            <div className="w-16 h-16 bg-[#0A3D91] border-2 border-black rounded-xl nb-shadow-sm flex items-center justify-center mb-4">
-              <Construction className="w-8 h-8 text-[#FFB347] stroke-[2.5]" />
-            </div>
-            <h1 className="text-3xl font-display font-black tracking-tight text-[#111] text-center">
-              Obra<span className="text-[#FF6F00]">Match</span> <span className="text-[#0A3D91]">Diário</span>
-            </h1>
-            <p className="text-neutral-600 text-sm mt-1 font-medium">Diário de Obra Profissional</p>
-          </div>
+    <main className="auth-page-v4 app-login-shell">
+      <div className="app-login-hero">
+        <img src="/icon-512.png" alt="" width="64" height="64" />
+        <div><strong>Obra<span>Match</span></strong><small>DIÁRIO</small></div>
+      </div>
 
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3 bg-white border-2 border-black border-l-4 border-l-red-600 rounded-lg flex items-start gap-3"
-            >
-              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <span className="text-[#111] text-sm">{error}</span>
-            </motion.div>
-          )}
+      <div className="nb-card auth-card-v4">
+        <nav className="auth-tabs-v4" aria-label="Entrar ou criar conta">
+          <button type="button" aria-current={!isSignUp ? 'page' : undefined} onClick={() => trocarModo(false)}>Entrar</button>
+          <button type="button" aria-current={isSignUp ? 'page' : undefined} onClick={() => trocarModo(true)}>Criar conta</button>
+        </nav>
+        <span className="auth-eyebrow-v4">Área do profissional</span>
+        <h2>{isSignUp ? 'Crie sua conta' : 'Bem-vindo!'}</h2>
+        <p>{isSignUp ? 'Cadastre-se para registrar RDOs e organizar suas obras.' : 'Entre para registrar RDOs e consultar suas obras.'}</p>
 
-          {resetEnviado && !error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-5 p-3 bg-white border-2 border-black border-l-4 border-l-emerald-600 rounded-lg"
-            >
-              <span className="text-[#111] text-sm">
-                Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira sua caixa de entrada e o spam.
-              </span>
-            </motion.div>
-          )}
+        {error && <div className="auth-feedback-v4 auth-feedback-error-v4" role="alert">{error}</div>}
+        {resetEnviado && !error && (
+          <div className="auth-feedback-v4" role="status">Se existir uma conta com esse e-mail, enviamos um link para redefinir a senha. Confira sua caixa de entrada e o spam.</div>
+        )}
 
-          <form onSubmit={handleEmailAuth} className="space-y-4">
-            <div>
-              <label htmlFor="login-email" className="block text-xs font-display font-extrabold text-[#111] uppercase tracking-wider mb-2">
-                E-mail
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-3.5 w-5 h-5 text-[#0A3D91]" />
-                <input
-                  id="login-email"
-                  type="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemplo@obramatch.com"
-                  className="nb-input w-full pl-12 pr-4 py-3.5 text-sm"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="login-senha" className="block text-xs font-display font-extrabold text-[#111] uppercase tracking-wider mb-2">
-                Senha
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-[#0A3D91]" />
-                <input
-                  id="login-senha"
-                  type={mostrarSenha ? 'text' : 'password'}
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha secreta"
-                  className="nb-input w-full pl-12 pr-14 py-3.5 text-sm"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setMostrarSenha(v => !v)}
-                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                  aria-pressed={mostrarSenha}
-                  className="absolute right-1 top-0 h-full min-w-11 px-3 text-[#0A3D91]"
-                >
-                  {mostrarSenha ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="nb-btn nb-btn-primary w-full py-3.5 px-4 flex items-center justify-center gap-2 mt-6 text-sm"
-            >
-              {isSignUp ? <UserPlus className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
-              {loading ? 'Aguarde...' : isSignUp ? 'Criar conta' : 'Entrar'}
-            </button>
-          </form>
-
-          {!isSignUp && (
-            <div className="text-right mt-3">
-              <button
-                type="button"
-                onClick={handleEsqueciSenha}
-                disabled={loading}
-                className="text-[#0A3D91] hover:text-[#2E6DEB] text-xs font-display font-extrabold transition-colors cursor-pointer"
-              >
-                Esqueci minha senha
-              </button>
-            </div>
-          )}
-
-          <div className="relative my-7">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t-2 border-[#D1D1D1]"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-4 text-neutral-500 font-semibold">Ou continuar com</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="nb-btn nb-btn-ghost w-full py-3.5 px-4 flex items-center justify-center gap-3 text-sm"
-          >
-            <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24">
+        <button type="button" onClick={handleGoogleLogin} disabled={loading} className="nb-btn nb-btn-ghost auth-google-v4">
+          <svg width="18" height="18" aria-hidden="true" viewBox="0 0 24 24">
               <path
                 fill="#EA4335"
                 d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.14-5.136 4.14a5.95 5.95 0 0 1-5.95-5.95a5.95 5.95 0 0 1 5.95-5.95c1.502 0 2.863.56 3.91 1.48l3.123-3.123C18.847 2.844 15.772 1.8 12.24 1.8A10.2 10.2 0 0 0 2.04 12a10.2 10.2 0 0 0 10.2 10.2c5.695 0 9.927-3.9 9.927-9.6a9.55 9.55 0 0 0-.21-2.315H12.24z"
               />
             </svg>
-            Entrar com Google
-          </button>
+          {isSignUp ? 'Cadastrar com o Google' : 'Entrar com o Google'}
+        </button>
 
-          {/* PWA Installation Button - only visible when installable */}
-          <InstallButton variant="login" className="mt-6 pt-6 border-t-2 border-[#D1D1D1]" />
+        <div className="auth-divider-v4"><span>ou use seu e-mail</span></div>
 
-          <div className="text-center mt-7">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[#0A3D91] hover:text-[#2E6DEB] text-sm font-display font-extrabold transition-colors cursor-pointer"
-            >
-              {isSignUp ? 'Já tem uma conta? Entre aqui' : 'Não tem conta? Cadastre-se agora'}
-            </button>
+        <form onSubmit={handleEmailAuth} className="auth-form-v4">
+          <div>
+            <label htmlFor="login-email">E-mail</label>
+            <input id="login-email" type="email" required autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false}
+              value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seuemail@exemplo.com" />
           </div>
-        </motion.div>
+          <div>
+            <label htmlFor="login-senha">Senha</label>
+            <div className="password-field-v4">
+              <input id="login-senha" type={mostrarSenha ? 'text' : 'password'} required autoCapitalize="none" spellCheck={false}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                value={password} onChange={(e) => setPassword(e.target.value)} placeholder={isSignUp ? 'Mínimo de 6 caracteres' : 'Digite sua senha'} />
+              <button type="button" className="password-toggle-v4" onClick={() => setMostrarSenha((v) => !v)}
+                aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={mostrarSenha}>
+                {mostrarSenha ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+              </button>
+            </div>
+          </div>
+          {!isSignUp && (
+            <div className="auth-link-row-v4">
+              <button type="button" onClick={handleEsqueciSenha} disabled={loading}>Esqueceu sua senha?</button>
+            </div>
+          )}
+          <button type="submit" disabled={loading} className="nb-btn nb-btn-primary auth-primary-v4">
+            {loading ? 'Aguarde...' : isSignUp ? 'Criar conta' : 'Entrar'}
+          </button>
+        </form>
+      </div>
 
-        {/* Bloco promocional único da tela de login: institucional ObraMatch */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="w-full"
-        >
-          <ObraMatchSoftPromo variant="login" />
-        </motion.div>
-
-        <p className="text-center text-[10px] text-neutral-500 mt-2">
+      <div className="app-login-extra">
+        <InstallButton variant="login" className="" />
+        <ObraMatchSoftPromo variant="login" />
+        <p className="app-login-terms">
           Ao entrar você concorda com os{' '}
-          <a href="/termos-de-uso.html" target="_blank" rel="noopener" className="underline font-semibold text-[#0A3D91]">Termos de Uso</a>{' '}e a{' '}
-          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener" className="underline font-semibold text-[#0A3D91]">Política de Privacidade</a>.
+          <a href="/termos-de-uso.html" target="_blank" rel="noopener">Termos de Uso</a>{' '}e a{' '}
+          <a href="/politica-de-privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.
         </p>
       </div>
-    </div>
+    </main>
   );
 }
