@@ -222,11 +222,12 @@ export default function Dashboard() {
         <section className="app-dashboard-intro">
           <div>
             <div className="campo-web-welcome">
+              <img className="campo-web-mascot" src={user?.photoURL || '/img/campo-web-mascote.webp'} width="96" height="96" alt="" referrerPolicy="no-referrer" />
               <div>
-                <h1>ObraMatch Campo</h1>
-                <p>Registre por áudio e revise o RDO antes de salvar.</p>
+                <p className="campo-web-brand-label">OBRAMATCH CAMPO</p>
+                <h1>Olá{user?.displayName ? `, ${user.displayName.trim().split(/\s+/)[0]}` : ''}!</h1>
+                <p>Pronto para registrar o dia da obra?</p>
               </div>
-              <img className="campo-web-mascot" src="/img/campo-web-mascote.webp" width="320" height="320" alt="" />
             </div>
 
             <p role="status" className="campo-web-escolher-obra" style={{ margin: '8px 0 0' }}>
@@ -275,25 +276,12 @@ export default function Dashboard() {
                   </label>
                 )}
                 {!obraAtual && <p className="campo-web-escolher-obra">Escolha a obra para começar a gravação.</p>}
-                <p className="campo-web-passo"><b>1.</b> Toque no botão e fale o que foi feito hoje. <b>2.</b> Toque em parar. <b>3.</b> Confira e envie.</p>
                 <div className="campo-web-actions">
                   <GravarAgora disabled={!obraAtual} onGravado={audioGravado} />
                   <button type="submit" className="campo-web-manual" disabled={!obraAtual}>
-                    <FilePlus2 size={19} aria-hidden="true" /> Prefiro escrever
+                    <FilePlus2 size={19} aria-hidden="true" /> Escrever RDO
                   </button>
                 </div>
-                <p className="campo-web-passo">Quer anexar fotos? É opcional. Pode tirar agora ou escolher da galeria.</p>
-                {fotosEscolhidas.length > 0 && (
-                  <div className="campo-web-anexos" aria-label="Fotos anexadas">
-                    <div className="campo-web-anexos-topo"><strong>{fotosEscolhidas.length} foto{fotosEscolhidas.length > 1 ? 's' : ''} anexada{fotosEscolhidas.length > 1 ? 's' : ''}</strong><button type="button" onClick={limparFotos}>Remover todas</button></div>
-                    <div className="campo-web-anexos-grade">
-                      {previas.map((u, i) => (
-                        <div key={u} className="campo-web-anexo"><img src={u} alt={`Foto ${i + 1}`} /><button type="button" aria-label={`Remover foto ${i + 1}`} onClick={() => tirarFoto(i)}>×</button></div>
-                      ))}
-                    </div>
-                    <small>Elas entram no relatório quando você gravar ou escrever.</small>
-                  </div>
-                )}
                 <div className="campo-web-shortcuts" role="group" aria-label="Fotos e relatórios">
                   <label className="campo-web-photo-control">
                     <Camera size={22} aria-hidden="true" /> Tirar foto
@@ -307,6 +295,13 @@ export default function Dashboard() {
                     <ClipboardList size={22} aria-hidden="true" /> {obraAtual?.empresa ? 'Relatórios da obra' : 'Meus relatórios'}
                   </button>
                 </div>
+                {fotosEscolhidas.length > 0 && <div className="campo-web-photo-pending" aria-label="Fotos prontas para o RDO">
+                  {fotosEscolhidas.map((arquivo, indice) => <div key={previas[indice] ?? `${arquivo.name}-${indice}`}>
+                    {previas[indice] && <img src={previas[indice]} alt={`Prévia da foto ${arquivo.name}`} style={{ width: 88, height: 88, objectFit: 'cover', borderRadius: 10, border: '1px solid #d9e5f5' }} />}
+                    <span>{arquivo.name}</span>
+                    <button type="button" onClick={() => tirarFoto(indice)} aria-label={`Remover foto ${indice + 1}`}>Remover</button>
+                  </div>)}
+                </div>}
               </form>
             )}
           </div>

@@ -115,3 +115,11 @@ img, svg, video, canvas { max-width: 100%; }
 .rel-mais[open] > summary::after { content: '–'; }
 .rel-mais[open] { padding-bottom: 14px; }
 .rel-fotos-botoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+/* Gravador: estados de gravação, pausa e erro (mesmo comportamento da web). */
+.app-dashboard .campo-web-recorder { min-width: 0; display: grid; gap: 10px; }
+.app-dashboard .campo-web-record-status { margin: 0; color: #4a5b78; font-variant-numeric: tabular-nums; text-align: center; }
+.app-dashboard .campo-web-record-error { margin: 0; padding: 10px 12px; border: 1px solid #ffc3ba; border-radius: 12px; color: #9b3027; background: #fff4f2; font-weight: 700; }
+.app-dashboard .campo-web-record-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.app-dashboard .campo-web-record-actions > button { min-height: 48px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid #d4e1f2; border-radius: 12px; background: #fff; color: #0a3d91; font-weight: 750; }
+.app-dashboard .campo-web-record { font-variant-numeric: tabular-nums; }
