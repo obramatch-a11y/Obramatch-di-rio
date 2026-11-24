@@ -5,7 +5,7 @@ import { calcularHashRdo } from '../lib/hash';
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
 import { motion } from 'motion/react';
 import ObraMatchSoftPromo from './ObraMatchSoftPromo';
-import RdoPrintBlock from './RdoPrintBlock';
+import { montarDocumentoRdo, entregarPdfRdo } from '../lib/documentoRdo';
 import { 
   ArrowLeft, 
   Printer, 
@@ -39,7 +39,6 @@ const CLIMA_ICONS: { [key: string]: any } = {
 export default function DiarioDetail() {
   const dialog = useDialog();
   const { selectedObra, selectedDiario, deleteDiario, setView, fotos, plano } = useApp();
-  const [copied, setCopied] = useState(false);
   const [verificacao, setVerificacao] = useState<'idle' | 'integro' | 'alterado' | 'verificando'>('idle');
 
   if (!selectedObra || !selectedDiario) return null;
@@ -84,34 +83,6 @@ export default function DiarioDetail() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleShare = async () => {
-    const shareText = `ObraMatch Diário — ${selectedObra.nome}\nData: ${new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR')}\nAtividades: ${selectedDiario.atividades}\nRT: ${selectedObra.responsavelTecnico}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `ObraMatch Diário — ${selectedObra.nome}`,
-          text: shareText,
-        });
-      } catch (err) {
-        console.warn('Share error:', err);
-      }
-    } else {
-      // Fallback copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error('Failed to copy text:', err);
-      }
-    }
-  };
-
   const dataBr = new Date(selectedDiario.data + 'T12:00:00').toLocaleDateString('pt-BR');
   const condicao = (selectedDiario as any).condicaoTrabalho as string | undefined;
   const secoes: [string, string | undefined][] = [
@@ -121,6 +92,19 @@ export default function DiarioDetail() {
     ['Ocorrências', selectedDiario.ocorrencias],
     ['Observações', selectedDiario.observacoes],
   ];
+  const [gerando, setGerando] = useState<'' | 'baixar' | 'compartilhar'>('');
+  const [avisoPdf, setAvisoPdf] = useState('');
+  const gerarPdf = async (modo: 'baixar' | 'compartilhar') => {
+    if (gerando) return;
+    setGerando(modo); setAvisoPdf('');
+    try {
+      const doc = montarDocumentoRdo(selectedObra, selectedDiario, dPhotos, { semRodapeObraMatch: plano.plano !== 'free' });
+      const r = await entregarPdfRdo(doc, modo);
+      setAvisoPdf(r === 'baixado' ? 'PDF gerado. Veja em Downloads.' : '');
+    } catch (err) {
+      setAvisoPdf(err instanceof Error ? err.message : 'Não foi possível gerar o PDF.');
+    } finally { setGerando(''); }
+  };
 
   return (
     <div className="app-shell">
@@ -162,9 +146,10 @@ export default function DiarioDetail() {
           )}
 
           <div className="rel-fotos-botoes">
-            <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={handlePrint}><Printer size={20} aria-hidden="true" /> Gerar PDF / Imprimir</button>
-            <button type="button" className="campo-web-manual" onClick={handleShare}><Share2 size={19} aria-hidden="true" /> {copied ? 'Copiado!' : 'Compartilhar'}</button>
+            <button type="button" className="campo-web-record" style={{ minHeight: 56 }} disabled={!!gerando} onClick={() => void gerarPdf('baixar')}><Printer size={20} aria-hidden="true" /> {gerando === 'baixar' ? 'Gerando PDF…' : 'Gerar PDF'}</button>
+            <button type="button" className="campo-web-manual" disabled={!!gerando} onClick={() => void gerarPdf('compartilhar')}><Share2 size={19} aria-hidden="true" /> {gerando === 'compartilhar' ? 'Preparando…' : 'Compartilhar PDF'}</button>
           </div>
+          {avisoPdf && <p role="status" className="campo-web-escolher-obra">{avisoPdf}</p>}
           {!selectedObra.arquivada && (
             <button type="button" className="campo-web-manual" onClick={() => setView('diario-form', selectedObra, selectedDiario)}><Edit size={19} aria-hidden="true" /> Editar relatório</button>
           )}
@@ -209,16 +194,6 @@ export default function DiarioDetail() {
 
           <div id="diario-detail-ecosystem-footer"><ObraMatchSoftPromo variant="footer" className="mt-0" /></div>
         </main>
-      </div>
-
-      {/* PRINT-ONLY TECHNICAL REPORT */}
-      <div className="hidden print:block min-h-screen">
-        <RdoPrintBlock obra={selectedObra} diario={selectedDiario} fotos={dPhotos} mostrarRodape={true} />
-        {plano.plano === 'free' && (
-          <p style={{ fontSize: '9px', color: '#666', textAlign: 'center', marginTop: '8px' }}>
-            Gerado com ObraMatch Diário — RDO por voz com código de integridade · obramatch.com.br
-          </p>
-        )}
       </div>
 
     </div>

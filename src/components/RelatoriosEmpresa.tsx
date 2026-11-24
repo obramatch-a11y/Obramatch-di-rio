@@ -226,8 +226,11 @@ export default function RelatoriosEmpresa({ obra, rdoInicial, onVoltar }: { obra
                   {detalhe.rdo.submittedByName && <p style={{ margin: '12px 0 0', color: '#cfe0ff', fontSize: 13 }}>Enviado por {detalhe.rdo.submittedByName}</p>}
                 </div>
                 {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.lastReason && <p className="rel-motivo">Motivo da devolução: {detalhe.rdo.lastReason}</p>}
-                {detalhe.rdo.status === 'needs_correction' && detalhe.rdo.submittedBy === meuUid && !editando && (
-                  <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={iniciarCorrecao}>Corrigir e reenviar</button>
+                {(detalhe.rdo.status === 'needs_correction' || detalhe.rdo.status === 'submitted') && detalhe.rdo.submittedBy === meuUid && !editando && (
+                  <>
+                    <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={iniciarCorrecao}>{detalhe.rdo.status === 'submitted' ? 'Editar relatório' : 'Corrigir e reenviar'}</button>
+                    {detalhe.rdo.status === 'submitted' && <p style={{ margin: 0, fontSize: 12, color: '#5d6678' }}>Ainda não validado: ao editar nasce uma nova versão e a anterior fica guardada. Depois de validado, o relatório não pode mais ser editado nem apagado.</p>}
+                  </>
                 )}
                 {editando && (
                   <div className="rel-acoes">
