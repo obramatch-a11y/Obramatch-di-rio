@@ -20,6 +20,7 @@ export function montarDocumentoRdo(obra: Obra, diario: Diario, fotos: Foto[], op
     nomeArquivo: `obramatch-rdo-${numero || diario.id}.pdf`,
     titulo: numero ? `Relatório diário de obra nº ${numero}` : 'Relatório diário de obra',
     subtitulo: obra.nome,
+    numero: numero || undefined,
     dataRegistro: diario.data,
     horaRegistro: diario.horario,
     dados: ok([
