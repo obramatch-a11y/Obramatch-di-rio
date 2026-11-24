@@ -79,6 +79,17 @@ export default {
 
         if (pathname === '/api/obras/dispatcher') return await proxyCentral(request);
 
+        // Planos vigentes para a página /planos do app: leitura pública do catálogo da plataforma (sem login).
+        if (pathname === '/api/comercial' && request.method === 'GET') {
+          try {
+            const r = await fetch('https://diario.obramatch.com.br/api/obras/dispatcher?scope=public&action=commercial', { headers: { Accept: 'application/json' } });
+            const corpo = await r.text();
+            return new Response(corpo, { status: r.status, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': r.ok ? 'public, max-age=30' : 'no-store' } });
+          } catch {
+            return json(503, { erro: 'Planos indisponíveis agora.' });
+          }
+        }
+
         return json(404, { erro: 'Rota de API não encontrada.' });
       } catch (error) {
         console.error('Erro na API:', error instanceof Error ? error.message : error);
