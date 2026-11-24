@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Mic, Square, X } from 'lucide-react';
+import { Mic, Square, Pause, Play } from 'lucide-react';
 
 interface Props {
   disabled: boolean;
@@ -7,20 +7,30 @@ interface Props {
   onGravado: (audio: Blob) => void;
 }
 
-// Grava aqui mesmo na tela inicial. Só ao parar é que o relatório abre, já com o texto pré-preenchido.
+type Estado = 'ocioso' | 'gravando' | 'pausado';
+
+const formatar = (ms: number) => {
+  const s = Math.floor(ms / 1000);
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+};
+
+// Mesma experiência da web: botão grande, tempo de gravação, pausa/retomada e descarte.
+// Só ao concluir é que o relatório abre, já com o texto pré-preenchido.
 export default function GravarAgora({ disabled, onGravado }: Props) {
-  const [gravando, setGravando] = useState(false);
-  const [segundos, setSegundos] = useState(0);
+  const [estado, setEstado] = useState<Estado>('ocioso');
+  const [duracaoMs, setDuracaoMs] = useState(0);
   const [erro, setErro] = useState('');
   const gravadorRef = useRef<MediaRecorder | null>(null);
   const pedacosRef = useRef<Blob[]>([]);
   const descartarRef = useRef(false);
+  const acumuladoRef = useRef(0);
+  const retomadoEmRef = useRef(0);
 
   useEffect(() => {
-    if (!gravando) return;
-    const t = window.setInterval(() => setSegundos((s) => s + 1), 1000);
+    if (estado !== 'gravando') return;
+    const t = window.setInterval(() => setDuracaoMs(acumuladoRef.current + (Date.now() - retomadoEmRef.current)), 250);
     return () => window.clearInterval(t);
-  }, [gravando]);
+  }, [estado]);
 
   useEffect(() => () => {
     descartarRef.current = true;
@@ -39,40 +49,63 @@ export default function GravarAgora({ disabled, onGravado }: Props) {
         stream.getTracks().forEach((t) => t.stop());
         if (descartarRef.current) return;
         const audio = new Blob(pedacosRef.current, { type: gravador.mimeType || 'audio/webm' });
-        if (audio.size < 1000) { setErro('Áudio muito curto. Fale por alguns segundos e toque em parar.'); return; }
+        if (audio.size < 1000) { setErro('Áudio muito curto. Fale por alguns segundos e toque em concluir.'); return; }
         onGravado(audio);
       };
       gravador.start();
       gravadorRef.current = gravador;
-      setSegundos(0);
-      setGravando(true);
+      acumuladoRef.current = 0;
+      retomadoEmRef.current = Date.now();
+      setDuracaoMs(0);
+      setEstado('gravando');
     } catch {
       setErro('Não foi possível acessar o microfone. Permita o microfone nas configurações do aplicativo.');
     }
   };
 
-  const parar = () => { setGravando(false); gravadorRef.current?.stop(); };
-  const cancelar = () => { descartarRef.current = true; setGravando(false); gravadorRef.current?.stop(); };
-  const tempo = `${String(Math.floor(segundos / 60)).padStart(2, '0')}:${String(segundos % 60).padStart(2, '0')}`;
+  const pausar = () => {
+    const g = gravadorRef.current;
+    if (!g || g.state !== 'recording') return;
+    g.pause();
+    acumuladoRef.current += Date.now() - retomadoEmRef.current;
+    setDuracaoMs(acumuladoRef.current);
+    setEstado('pausado');
+  };
+  const retomar = () => {
+    const g = gravadorRef.current;
+    if (!g || g.state !== 'paused') return;
+    g.resume();
+    retomadoEmRef.current = Date.now();
+    setEstado('gravando');
+  };
+  const concluir = () => { setEstado('ocioso'); gravadorRef.current?.stop(); };
+  const descartar = () => { descartarRef.current = true; setEstado('ocioso'); setDuracaoMs(0); gravadorRef.current?.stop(); };
 
-  if (gravando) {
-    return (
-      <div className="campo-web-recorder">
-        <button type="button" className="campo-web-record is-gravando" onClick={parar}>
-          <Square size={28} aria-hidden="true" />
-          <span>Parar e continuar<small>Gravando… {tempo}</small></span>
-        </button>
-        <button type="button" className="campo-web-cancelar" onClick={cancelar}><X size={16} aria-hidden="true" /> Cancelar gravação</button>
-      </div>
-    );
-  }
+  const ativo = estado !== 'ocioso';
   return (
-    <div className="campo-web-recorder">
-      <button type="button" className="campo-web-record" disabled={disabled} onClick={iniciar}>
-        <Mic size={30} aria-hidden="true" />
-        <span>Gravar RDO<small>Fale o que foi feito na obra</small></span>
+    <div className="campo-web-recorder" data-gravando={ativo} data-pausado={estado === 'pausado'}>
+      <button
+        type="button"
+        className="campo-web-record"
+        disabled={!ativo && disabled}
+        onClick={ativo ? concluir : iniciar}
+        aria-describedby="campo-web-record-consent"
+      >
+        {ativo ? <Square size={24} aria-hidden="true" /> : <Mic size={30} aria-hidden="true" />}
+        <span>{ativo ? 'Concluir gravação' : 'Gravar RDO'}<small>{ativo ? formatar(duracaoMs) : 'Fale o que foi feito na obra'}</small></span>
       </button>
-      {erro ? <small role="alert" style={{ color: '#b42318', fontWeight: 700 }}>{erro}</small> : <small>Ao parar, o relatório abre já preenchido para você revisar.</small>}
+      <small id="campo-web-record-consent">Ao parar, o áudio é enviado à IA para gerar o texto que você poderá revisar.</small>
+      {ativo && <p className="campo-web-record-status" role="status">{estado === 'pausado' ? 'Gravação pausada' : 'Gravando'}</p>}
+      {erro && <p className="campo-web-record-error" role="alert">{erro}</p>}
+      {ativo && (
+        <div className="campo-web-record-actions">
+          <button type="button" onClick={estado === 'pausado' ? retomar : pausar}>
+            {estado === 'pausado' ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}
+            {estado === 'pausado' ? 'Retomar gravação' : 'Pausar gravação'}
+          </button>
+          <button type="button" onClick={descartar}>Descartar áudio</button>
+        </div>
+      )}
     </div>
   );
 }

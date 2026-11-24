@@ -434,3 +434,306 @@
 @media screen and (min-width: 720px) {
   .campo-web-start-guide ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+
+/* Campo: ação principal circular, conforme referência visual aprovada. */
+@media screen {
+  .campo-web-entry .campo-web-actions {
+    align-items: center;
+    gap: 16px;
+  }
+  .campo-web-entry .campo-web-recorder {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    max-width: 100%;
+    text-align: center;
+  }
+  .campo-web-entry .campo-web-record {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    width: 180px;
+    height: 180px;
+    min-height: 180px;
+    padding: 20px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    background: linear-gradient(155deg, #ff8b00, #e75200);
+    box-shadow: 0 0 0 7px #ffd2a9, 0 0 0 14px #ffead9, 0 9px 25px #b74f0050;
+    font-size: 18px !important;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .campo-web-entry .campo-web-record svg { width: 38px; height: 38px; }
+  .campo-web-entry .campo-web-record small { color: #fff; margin-top: 5px; font-size: 12px; line-height: 1.2; }
+  .campo-web-entry .campo-web-record:focus-visible { outline: 3px solid #0a3d91; outline-offset: 16px; }
+  .campo-web-entry .campo-web-recorder[data-gravando="true"] .campo-web-record {
+    background: linear-gradient(155deg, #bd2c24, #861b17);
+  }
+  .campo-web-entry .campo-web-recorder > small {
+    max-width: 270px;
+    color: #334d69;
+    line-height: 1.4;
+  }
+}
+@media screen and (max-width: 640px) {
+  .campo-web-entry .campo-web-actions {
+    justify-items: center;
+  }
+  .campo-web-entry .campo-web-recorder { width: 100%; padding-top: 16px; }
+  .campo-web-entry .campo-web-record { width: 180px; height: 180px; min-height: 180px; border-radius: 50%; }
+  .campo-web-entry .campo-web-manual { justify-self: center; }
+}
+
+
+/* Linguagem visual Campo: cabeçalho azul, cartões claros e ações laranja. */
+@media screen {
+  .campo-web-dashboard {
+    background: linear-gradient(155deg, #edf4ff 0%, #f8faff 55%, #eaf2ff 100%);
+    color: #10294c;
+  }
+  .campo-web-dashboard .app-dashboard-intro {
+    align-items: start;
+    padding: 0;
+  }
+  .campo-web-dashboard .app-dashboard-intro > div:first-child {
+    flex: 1 1 680px;
+    min-width: 0;
+    overflow: visible;
+    border: 1px solid #d9e5f5;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 12px 34px #05265c1a;
+  }
+  .campo-web-dashboard .campo-web-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 135px;
+    padding: 24px 28px;
+    border-radius: 23px 23px 0 0;
+    background: radial-gradient(circle at 85% 5%, #155cb1, transparent 40%), linear-gradient(125deg, #06265a, #0a3d91);
+    color: #fff;
+  }
+  .campo-web-dashboard .campo-web-welcome h1 {
+    color: #fff;
+    font-size: clamp(25px, 3vw, 36px);
+    line-height: 1.1;
+  }
+  .campo-web-dashboard .campo-web-welcome p { color: #e5efff; font-size: 15px; }
+  .campo-web-dashboard .campo-web-welcome .campo-web-mascot {
+    display: block;
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: #ffffff18;
+  }
+  .campo-web-dashboard .campo-web-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    margin: 0;
+    padding: 22px 28px 28px;
+  }
+  .campo-web-entry > label, .campo-web-entry .campo-web-current {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+  }
+  .campo-web-entry select {
+    min-height: 56px;
+    padding-inline: 14px;
+    border: 1px solid #cbdcf1;
+    border-radius: 14px;
+    background-color: #f6f9ff;
+    font-size: 16px;
+  }
+  .campo-web-entry .campo-web-current {
+    border-color: #cbdcf1;
+    box-shadow: 0 5px 14px #0a3d9114;
+  }
+  .campo-web-entry .campo-web-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    width: 100%;
+    padding: 15px 0 0;
+  }
+  .campo-web-entry .campo-web-manual {
+    justify-self: center;
+    padding: 10px 18px;
+    border-radius: 12px;
+    background: #fff;
+    color: #0a3d91;
+    box-shadow: 0 5px 14px #0a3d9114;
+  }
+  .campo-web-dashboard .campo-web-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+  }
+  .campo-web-dashboard .campo-web-shortcuts :is(button, .campo-web-photo-control) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 88px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d9e6f5;
+    border-radius: 16px;
+    background: linear-gradient(155deg, #fff, #eef5ff);
+    box-shadow: 0 6px 14px #123b761c;
+    color: #073678;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: center;
+    cursor: pointer;
+  }
+  .campo-web-dashboard .campo-web-shortcuts svg { color: #0755b7; }
+  .campo-web-dashboard .campo-web-shortcuts :is(button, .campo-web-photo-control):focus-within,
+  .campo-web-dashboard .campo-web-shortcuts button:focus-visible {
+    outline: 3px solid #ff8500;
+    outline-offset: 2px;
+  }
+  .campo-web-dashboard .app-dashboard-summary > span {
+    border: 1px solid #d5e4f6;
+    box-shadow: 0 8px 24px #0a3d9117;
+  }
+  .campo-web-dashboard :is(.app-works-panel, .app-account-sidebar, .app-mobile-account) {
+    border-color: #d9e6f5;
+    box-shadow: 0 12px 30px #0a3d9114;
+  }
+  .rdo-detail-screen .rdo-title-section {
+    background: linear-gradient(115deg, #07245a, #0a3d91);
+  }
+  .rdo-detail-screen .rdo-actions-desktop .nb-btn-ghost {
+    color: #073678;
+    background: #fff;
+    border: 1px solid #d0def0;
+  }
+  .rdo-detail-screen .rdo-actions-desktop .rdo-delete-button {
+    color: #a91b18;
+    background: #fff4f2;
+    border: 1px solid #f4c6c0;
+  }
+}
+@media screen and (max-width: 640px) {
+  .campo-web-dashboard .app-dashboard-intro > div:first-child { width: 100%; border-radius: 20px; }
+  .campo-web-dashboard .campo-web-welcome { min-height: 108px; padding: 18px; border-radius: 19px 19px 0 0; }
+  .campo-web-dashboard .campo-web-welcome > div { padding: 0; }
+  .campo-web-dashboard .campo-web-welcome .campo-web-mascot { width: 76px; height: 76px; }
+  .campo-web-dashboard .campo-web-entry { padding: 16px 15px 20px; }
+  .campo-web-dashboard .campo-web-shortcuts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .campo-web-dashboard .campo-web-shortcuts :is(button, .campo-web-photo-control) {
+    min-height: 78px;
+    padding: 7px 4px;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .campo-web-dashboard .campo-web-bottom {
+    inset-inline: 0;
+    border-radius: 17px 17px 0 0;
+    box-shadow: 0 -8px 25px #0a3d9120;
+  }
+  .campo-web-dashboard .campo-web-bottom a:first-child {
+    background: #fff2e5;
+    color: #c54b00;
+  }
+}
+
+
+/* Campo: composição de entrada baseada na referência visual. */
+@media screen {
+  .campo-web-dashboard .campo-web-welcome {
+    justify-content: flex-start;
+    gap: 18px;
+    min-height: 120px;
+    padding: 20px 25px;
+  }
+  .campo-web-dashboard .campo-web-welcome > div { min-width: 0; }
+  .campo-web-dashboard .campo-web-welcome .campo-web-mascot {
+    width: 72px;
+    height: 72px;
+    border: 3px solid #fff;
+    object-fit: cover;
+    box-shadow: 0 4px 15px #00153555;
+  }
+  .campo-web-dashboard .campo-web-welcome .campo-web-brand-label {
+    color: #c7dcfa;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    margin: 0 0 4px;
+  }
+  .campo-web-dashboard .campo-web-welcome h1 {
+    font-size: clamp(22px, 3vw, 30px);
+    overflow-wrap: anywhere;
+  }
+  .campo-web-dashboard .campo-web-welcome h1 + p { margin: 5px 0 0; }
+  .campo-web-dashboard .campo-web-entry .campo-web-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .campo-web-dashboard .campo-web-entry .campo-web-shortcuts > :nth-child(1) { grid-column: 1; grid-row: 1; }
+  .campo-web-dashboard .campo-web-entry .campo-web-shortcuts > :nth-child(3) { grid-column: 2; grid-row: 1; }
+  .campo-web-dashboard .campo-web-entry .campo-web-shortcuts > :nth-child(2) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 48px;
+    flex-direction: row;
+  }
+}
+@media screen and (max-width: 640px) {
+  .campo-web-dashboard .campo-web-welcome { min-height: 92px; padding: 16px; gap: 12px; }
+  .campo-web-dashboard .campo-web-welcome .campo-web-mascot { width: 58px; height: 58px; }
+  .campo-web-dashboard .campo-web-welcome h1 { font-size: 22px; }
+  .campo-web-dashboard .campo-web-welcome h1 + p { font-size: 13px; }
+  .campo-web-dashboard .campo-web-entry .campo-web-shortcuts > :nth-child(2) { min-height: 44px; }
+  .campo-web-bottom { inset-inline: 0; border-radius: 17px 17px 0 0; }
+  .campo-web-bottom a:first-child { background: #fff2e5; color: #b24400; }
+}
+
+@media screen {
+  .campo-web-dashboard .campo-web-photo-pending {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    width: 100%;
+    padding: 14px;
+    border: 1px solid #dce8f6;
+    border-radius: 16px;
+    background: #f5f9ff;
+  }
+  .campo-web-dashboard .campo-web-photo-pending > div {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .campo-web-dashboard .campo-web-photo-pending span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    color: #10294c;
+  }
+  .campo-web-dashboard .campo-web-photo-pending button {
+    min-height: 44px;
+    border: 1px solid #d4e1f2;
+    background: #fff;
+    color: #0a3d91;
+  }
+}
