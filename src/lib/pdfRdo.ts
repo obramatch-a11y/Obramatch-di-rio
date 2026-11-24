@@ -12,6 +12,11 @@ export interface DocumentoRdo {
   assinatura?: string;
   nomeAssinante?: string;
   rodape?: string;
+  /** Número do RDO (ex.: 012), versão (ex.: 2), situação (ex.: Aceito) e nomes para o cabeçalho. */
+  numero?: string;
+  versao?: string;
+  situacao?: string;
+  empresa?: string;
   /** Marca própria (plano): logo e nome da empresa no cabeçalho. Ausente = marca ObraMatch. */
   marca?: { nome?: string; logo?: string };
   /** PDF limpo (plano): remove a assinatura ObraMatch do rodapé das páginas. */
@@ -34,12 +39,8 @@ export function aplicarPlanoAoDocumento(
 const azul = '#0A3D91';
 const cinza = '#475569';
 const texto = '#101828';
-const margem = 17;
-const inicio = 25;
-const fim = 274;
-const intervalo = 1.8;
-const faixa = 7;
-const espacoSecao = 2.4;
+const margem = 16;
+const fim = 277;
 const laranja = '#FF6F00';
 const borda = '#CBD5E1';
 
@@ -106,225 +107,325 @@ export async function gerarArquivoPdfRdo(
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const larguraPagina = doc.internal.pageSize.getWidth();
   const largura = larguraPagina - margem * 2;
+  const direita = larguraPagina - margem;
   doc.setProperties({ title: relatorios.length === 1 ? relatorios[0].titulo : 'Relatórios diários de obra', creator: 'ObraMatch Diário' });
-
-  const marca = relatorios.find(r => r.marca && (r.marca.nome || r.marca.logo))?.marca;
   const semRodapeObraMatch = relatorios.some(r => r.semRodapeObraMatch);
-  let logo: Awaited<ReturnType<typeof prepararImagem>> | undefined;
-  if (marca?.logo) { try { logo = await prepararImagem(marca.logo, /^data:image\/jpe?g/i.test(marca.logo) ? 'JPEG' : 'PNG', 500, signal); } catch { logo = undefined; } }
+  const valorDe = (r: DocumentoRdo, re: RegExp) => r.dados.find(d => re.test(d.rotulo))?.valor.trim() || '';
 
-  const cabecalho = () => {
-    doc.setFillColor(azul);
-    doc.rect(0, 0, larguraPagina, 16, 'F');
-    doc.setFillColor(laranja);
-    doc.rect(0, 16, larguraPagina, 1.2, 'F');
-    let xMarca = margem;
-    if (logo) {
-      const esc = Math.min(30 / logo.largura, 10 / logo.altura);
-      doc.setFillColor('#FFFFFF');
-      doc.roundedRect(margem, 2.6, logo.largura * esc + 3, logo.altura * esc + 2, 1, 1, 'F');
-      doc.addImage(logo.dados, 'PNG', margem + 1.5, 3.6, logo.largura * esc, logo.altura * esc);
-      xMarca = margem + logo.largura * esc + 6;
+  // Logo: da empresa quando houver; senão o ícone do aplicativo (ou um selo desenhado, se o ícone não carregar).
+  const logos = new Map<string, Awaited<ReturnType<typeof prepararImagem>> | null>();
+  const carregarLogo = async (url: string | undefined) => {
+    const chave = url || '__app__';
+    if (logos.has(chave)) return logos.get(chave)!;
+    let img: Awaited<ReturnType<typeof prepararImagem>> | null = null;
+    try {
+      img = url
+        ? await prepararImagem(url, /^data:image\/jpe?g/i.test(url) ? 'JPEG' : 'PNG', 500, signal)
+        : await prepararImagem('/img/icon-512-maskable.png', 'PNG', 300, signal).catch(() => prepararImagem('/icon-512.png', 'PNG', 300, signal));
+    } catch { img = null; }
+    logos.set(chave, img);
+    return img;
+  };
+  const desenharLogo = (img: Awaited<ReturnType<typeof prepararImagem>> | null, personalizada: boolean, x: number, yTopo: number, lado: number) => {
+    if (img && personalizada) {
+      const esc = Math.min(lado / img.largura, lado / img.altura);
+      const w = img.largura * esc, h = img.altura * esc;
+      doc.addImage(img.dados, 'PNG', x + (lado - w) / 2, yTopo + (lado - h) / 2, w, h);
+    } else if (img) {
+      doc.addImage(img.dados, 'PNG', x, yTopo, lado, lado);
+    } else {
+      doc.setFillColor(azul);
+      doc.roundedRect(x, yTopo, lado, lado, 2, 2, 'F');
+      formatoTexto(doc, lado * 0.9, '#FFFFFF', true);
+      doc.text('OM', x + lado / 2, yTopo + lado * 0.64, { align: 'center' });
     }
-    formatoTexto(doc, 11, '#FFFFFF', true);
-    doc.text((marca?.nome || 'OBRAMATCH').toLocaleUpperCase('pt-BR').slice(0, 40), xMarca, 10.4);
-    formatoTexto(doc, 8, '#FFFFFF');
-    doc.text('RELATÓRIO DIÁRIO DE OBRA', larguraPagina - margem, 10.4, { align: 'right' });
+  };
+
+  const tonsSituacao = (rotulo: string) => {
+    if (/aceit|finaliz/i.test(rotulo)) return { fundo: '#E6F8ED', texto: '#087A36' };
+    if (/devolv|correç|anterior/i.test(rotulo)) return { fundo: '#FFF1E0', texto: '#B45500' };
+    return { fundo: '#E6EFFF', texto: azul };
   };
 
   const inicios: number[] = [];
   for (const [indice, relatorio] of relatorios.entries()) {
     if (indice) doc.addPage();
     inicios.push(doc.getNumberOfPages());
-    cabecalho();
-    let y = inicio;
-    const referencia = relatorio.dados.find(({ rotulo }) => /^referência do rdo$/i.test(rotulo))?.valor.trim();
-    const numero = /(?:\bn[º°o]\.?\s*|\bRDO[\s-]+)(\d+)/i.exec(relatorio.titulo)?.[1];
-    const identificador = numero
-      ? `RDO nº ${numero}`
-      : `RDO ${referencia?.slice(0, 12) || relatorio.nomeArquivo.replace(/^(?:obramatch-)?rdo-/i, '').replace(/\.pdf$/i, '')}`;
+    const cliente = valorDe(relatorio, /^cliente$/i);
+    const nomeMarca = (relatorio.marca?.nome || relatorio.empresa || cliente || 'ObraMatch Diário').trim();
+    const subMarca = relatorio.marca?.nome || relatorio.empresa || cliente ? 'Relatório diário de obra' : 'Registro técnico de execução';
+    const logoImg = await carregarLogo(relatorio.marca?.logo);
+    const logoPersonalizada = !!relatorio.marca?.logo && !!logoImg;
+    const numero = relatorio.numero
+      || /(?:\bn[º°o]\.?\s*|\bRDO[\s-]+)(\d+)/i.exec(relatorio.titulo)?.[1]
+      || '';
+    const referencia = valorDe(relatorio, /^referência do rdo$/i);
+    const identificador = numero ? `RDO nº ${numero}` : `RDO ${referencia.slice(0, 12) || relatorio.nomeArquivo.replace(/^(?:obramatch-)?rdo-/i, '').replace(/\.pdf$/i, '')}`;
+    const dataTexto = valorDe(relatorio, /^data(?: do registro)?$/i) || relatorio.dataRegistro || '';
+    let inicioPagina = 38;
+    let y = inicioPagina;
+
+    const cabecalhoCompleto = () => {
+      desenharLogo(logoImg, logoPersonalizada, margem, 8, 16);
+      formatoTexto(doc, 13, texto, true);
+      doc.text((doc.splitTextToSize(nomeMarca, 100) as string[])[0], margem + 20, 14.8);
+      formatoTexto(doc, 8.5, cinza);
+      doc.text(subMarca, margem + 20, 20.2);
+      formatoTexto(doc, 15, azul, true);
+      doc.text(identificador.toLocaleUpperCase('pt-BR'), direita, 14.2, { align: 'right' });
+      formatoTexto(doc, 8.5, cinza);
+      doc.text([relatorio.versao ? `Versão ${relatorio.versao}` : '', dataTexto].filter(Boolean).join('  ·  '), direita, 19.6, { align: 'right' });
+      if (relatorio.situacao) {
+        const tom = tonsSituacao(relatorio.situacao);
+        formatoTexto(doc, 7.5, tom.texto, true);
+        const rotulo = relatorio.situacao.toLocaleUpperCase('pt-BR');
+        const w = doc.getTextWidth(rotulo) + 6;
+        doc.setFillColor(tom.fundo);
+        doc.roundedRect(direita - w, 22, w, 5, 2.5, 2.5, 'F');
+        doc.text(rotulo, direita - w / 2, 25.5, { align: 'center' });
+      }
+      doc.setFillColor(azul);
+      doc.rect(margem, 30, largura, 0.7, 'F');
+      doc.setFillColor(laranja);
+      doc.rect(margem, 30, 32, 0.7, 'F');
+    };
+    const cabecalhoContinuacao = () => {
+      desenharLogo(logoImg, logoPersonalizada, margem, 6.5, 7);
+      formatoTexto(doc, 9, texto, true);
+      doc.text((doc.splitTextToSize(nomeMarca, 100) as string[])[0], margem + 10, 11);
+      formatoTexto(doc, 8.5, azul, true);
+      doc.text(`${identificador} · continuação`, direita, 11, { align: 'right' });
+      doc.setFillColor(azul);
+      doc.rect(margem, 15.5, largura, 0.5, 'F');
+    };
+    cabecalhoCompleto();
 
     const reservar = (altura: number) => {
-      if (y + altura <= fim || y === inicio) return;
+      if (y + altura <= fim || y === inicioPagina) return;
       doc.addPage();
-      cabecalho();
-      formatoTexto(doc, 8, azul, true);
-      const identificacao = (doc.splitTextToSize(`${identificador} · continuação`, largura) as string[])[0];
-      doc.text(identificacao, margem, 22);
-      y = inicio;
+      cabecalhoContinuacao();
+      inicioPagina = 22;
+      y = inicioPagina;
     };
-    const montarTexto = (conteudo: string, tamanho = 10, cor = texto, negrito = false, larguraTexto = largura) => {
-      formatoTexto(doc, tamanho, cor, negrito);
-      const linhas = doc.splitTextToSize(conteudo.replace(/\r\n?/g, '\n'), larguraTexto) as string[];
-      return { linhas, passo: tamanho * 0.43, tamanho, cor, negrito };
-    };
-    type Bloco = ReturnType<typeof montarTexto>;
-    const alturaTexto = (bloco: Bloco) => bloco.linhas.length * bloco.passo + intervalo;
-    const desenharTexto = (bloco: Bloco, reservarFechamento = 0) => {
-      const linhasFinais = Math.min(bloco.linhas.length, 2);
-      for (const [i, linha] of bloco.linhas.entries()) {
-        const reserva = i === bloco.linhas.length - linhasFinais
-          ? reservarFechamento + linhasFinais * bloco.passo + intervalo : bloco.passo;
-        reservar(Math.min(reserva, fim - inicio));
-        formatoTexto(doc, bloco.tamanho, bloco.cor, bloco.negrito);
-        doc.text(linha, margem, y + bloco.passo * 0.78);
-        y += bloco.passo;
-      }
-      y += intervalo;
-    };
-    const alturaFaixa = (bloco: Bloco) => Math.max(faixa, bloco.linhas.length * bloco.passo + 3) + espacoSecao;
-    const montarFaixa = (titulo: string) => montarTexto(titulo.toLocaleUpperCase('pt-BR'), 9, azul, true, largura - 6);
-    const secao = (titulo: string, primeiraParte = 0) => {
-      const bloco = montarFaixa(titulo);
-      const altura = alturaFaixa(bloco);
-      reservar(altura + primeiraParte);
-      doc.setFillColor('#EDF3FA');
-      doc.roundedRect(margem, y, largura, altura - espacoSecao, 1, 1, 'F');
-      formatoTexto(doc, bloco.tamanho, bloco.cor, bloco.negrito);
-      for (const [i, linha] of bloco.linhas.entries()) doc.text(linha, margem + 3, y + 1.6 + bloco.passo * (i + 0.78));
-      y += altura;
+    const linhasDe = (conteudo: string, tamanho: number, larguraTexto: number, negrito = false) => {
+      formatoTexto(doc, tamanho, texto, negrito);
+      return doc.splitTextToSize(conteudo.replace(/\r\n?/g, '\n'), larguraTexto) as string[];
     };
 
-    desenharTexto(montarTexto(relatorio.titulo, 18, texto, true));
-    if (relatorio.subtitulo) desenharTexto(montarTexto(relatorio.subtitulo, 10.5, azul, true));
+    // ----- Título -----
+    formatoTexto(doc, 8, laranja, true);
+    doc.text('RELATÓRIO DIÁRIO DE OBRA', margem, y);
+    y += 7;
+    const nomeObra = relatorio.subtitulo || relatorio.titulo;
+    const linhasObra = linhasDe(nomeObra, 18, largura, true);
+    formatoTexto(doc, 18, texto, true);
+    for (const linha of linhasObra) { doc.text(linha, margem, y); y += 7.4; }
+    y += 1;
 
+    // ----- Ficha de identificação -----
     const todosDados = relatorio.dados.filter(({ valor }) => valor.trim());
     const autenticidade = todosDados.filter(({ rotulo }) => /^(sha[- ]?256|hash|referência do rdo)/i.test(rotulo));
-    const dadosVisiveis = todosDados.filter(item => !autenticidade.includes(item));
-
-    const larguraMeiaCelula = (largura - 4) / 2;
-    const cabeMeiaCelula = ({ valor }: DocumentoRdo['dados'][number]) =>
-      montarTexto(valor, 10, texto, true, larguraMeiaCelula - 6).linhas.length === 1 && valor.length <= 38;
-    const dadosPorLinha: DocumentoRdo['dados'][] = [];
-    for (let i = 0; i < dadosVisiveis.length; i++) {
-      const atual = dadosVisiveis[i];
-      const seguinte = dadosVisiveis[i + 1];
-      if (seguinte && cabeMeiaCelula(atual) && cabeMeiaCelula(seguinte)) { dadosPorLinha.push([atual, seguinte]); i++; }
-      else dadosPorLinha.push([atual]);
+    const ocultos = /^(data(?: do registro)?|hor[áa]rio|clima|condição de trabalho|situação|cliente|nome do assinante|assinante|assinado por)$/i;
+    const buscar = (re: RegExp) => todosDados.find(d => re.test(d.rotulo));
+    const principais = [buscar(/^data(?: do registro)?$/i), buscar(/^hor[áa]rio$/i), buscar(/^clima$/i), buscar(/^condição de trabalho$/i)].filter(Boolean) as DocumentoRdo['dados'];
+    const secundarios = [
+      buscar(/^cliente$/i),
+      ...todosDados.filter(d => !ocultos.test(d.rotulo) && !autenticidade.includes(d)),
+    ].filter(Boolean) as DocumentoRdo['dados'];
+    type Celula = { rotulo: string; valor: string; coluna: number; colunas: number };
+    const linhasFicha: Celula[][] = [];
+    if (principais.length) linhasFicha.push(principais.map((d, i) => ({ ...d, coluna: i, colunas: principais.length })));
+    for (let i = 0; i < secundarios.length; i++) {
+      const atual = secundarios[i];
+      const seguinte = secundarios[i + 1];
+      if (seguinte && atual.valor.length <= 34 && seguinte.valor.length <= 34) {
+        linhasFicha.push([{ ...atual, coluna: 0, colunas: 2 }, { ...seguinte, coluna: 1, colunas: 2 }]);
+        i++;
+      } else linhasFicha.push([{ ...atual, coluna: 0, colunas: 1 }]);
     }
-    if (dadosPorLinha.length) {
-      y += 2;
-      secao('Identificação do registro', 14);
-    }
-    for (const linha of dadosPorLinha) {
-      const larguraCelula = linha.length === 2 ? larguraMeiaCelula : largura;
-      const valores = linha.map(({ valor }) => montarTexto(valor, 10, texto, true, larguraCelula - 6));
-      const passo = valores[0].passo;
-      const totalLinhas = Math.max(...valores.map(valor => valor.linhas.length));
-      const altura = 6.2 + totalLinhas * passo + 2;
-      reservar(altura + 2);
-      for (const [coluna, valor] of valores.entries()) {
-        const x = margem + coluna * (larguraCelula + 4);
-        doc.setFillColor('#F8FAFC');
-        doc.setDrawColor(borda);
-        doc.setLineWidth(0.22);
-        doc.roundedRect(x, y, larguraCelula, altura, 1, 1, 'FD');
-        formatoTexto(doc, 7, cinza, true);
-        doc.text(linha[coluna].rotulo.toLocaleUpperCase('pt-BR').slice(0, 40), x + 3, y + 4);
-        formatoTexto(doc, valor.tamanho, valor.cor, true);
-        for (const [i, textoLinha] of valor.linhas.entries()) doc.text(textoLinha, x + 3, y + 6.2 + passo * (i + 0.78));
+    if (linhasFicha.length) {
+      const medidas = linhasFicha.map(linha => {
+        const lin = linha.map(cel => linhasDe(cel.valor, 9.5, largura / cel.colunas - 6, true));
+        return { lin, altura: 4.8 + Math.max(...lin.map(l => l.length)) * 4.1 + 2.6 };
+      });
+      const total = medidas.reduce((t, m) => t + m.altura, 0);
+      reservar(total + 4);
+      doc.setFillColor('#F8FAFC');
+      doc.setDrawColor(borda);
+      doc.setLineWidth(0.25);
+      doc.roundedRect(margem, y, largura, total, 1.6, 1.6, 'FD');
+      let yy = y;
+      for (const [r, linha] of linhasFicha.entries()) {
+        if (r) { doc.setDrawColor(borda); doc.line(margem, yy, direita, yy); }
+        for (const [k, cel] of linha.entries()) {
+          const w = largura / cel.colunas;
+          const x = margem + cel.coluna * w;
+          if (cel.coluna) { doc.setDrawColor(borda); doc.line(x, yy + 1.8, x, yy + medidas[r].altura - 1.8); }
+          formatoTexto(doc, 6.8, cinza, true);
+          doc.text(cel.rotulo.toLocaleUpperCase('pt-BR').slice(0, 40), x + 3, yy + 4.2);
+          formatoTexto(doc, 9.5, texto, true);
+          for (const [i, l] of medidas[r].lin[k].entries()) doc.text(l, x + 3, yy + 8.4 + i * 4.1);
+        }
+        yy += medidas[r].altura;
       }
-      y += altura + 2;
+      y += total + 5;
     }
 
+    // ----- Seções de texto -----
+    const titulo = (rotulo: string, primeiraParte: number) => {
+      y += 3;
+      reservar(9 + primeiraParte);
+      doc.setFillColor(laranja);
+      doc.rect(margem, y - 2.6, 2.2, 2.2 + 0.4, 'F');
+      formatoTexto(doc, 9, azul, true);
+      const t = rotulo.toLocaleUpperCase('pt-BR');
+      doc.text(t, margem + 4.2, y);
+      doc.setDrawColor(borda);
+      doc.setLineWidth(0.25);
+      doc.line(margem + 6 + doc.getTextWidth(t), y - 1, direita, y - 1);
+      y += 5;
+    };
+    const paragrafo = (conteudo: string, cor = texto) => {
+      const linhas = linhasDe(conteudo, 10, largura);
+      for (const linha of linhas) {
+        reservar(4.8);
+        formatoTexto(doc, 10, cor);
+        doc.text(linha, margem, y);
+        y += 4.8;
+      }
+      y += 3.2;
+    };
+    for (const secaoRdo of relatorio.secoes.filter(({ texto: t }) => t.trim())) {
+      const ocorrencia = /ocorr/i.test(secaoRdo.titulo);
+      titulo(secaoRdo.titulo, 10);
+      if (ocorrencia) {
+        const linhas = linhasDe(secaoRdo.texto, 10, largura - 6);
+        const altura = linhas.length * 4.8 + 4;
+        reservar(Math.min(altura, fim - inicioPagina));
+        if (y + altura <= fim) {
+          doc.setFillColor('#FFF8F0');
+          doc.setDrawColor('#F5C99A');
+          doc.setLineWidth(0.25);
+          doc.roundedRect(margem, y - 3.4, largura, altura, 1.2, 1.2, 'FD');
+          doc.setFillColor(laranja);
+          doc.rect(margem, y - 3.4, 1.2, altura, 'F');
+          formatoTexto(doc, 10, '#7A3A00');
+          for (const l of linhas) { doc.text(l, margem + 4, y); y += 4.8; }
+          y += 4;
+          continue;
+        }
+      }
+      paragrafo(secaoRdo.texto);
+    }
+
+    // ----- Fotografias -----
+    if (relatorio.fotos.length) {
+      titulo(`Registro fotográfico (${relatorio.fotos.length})`, 70);
+      const larguraCelula = (largura - 5) / 2;
+      const alturaImagem = 58;
+      for (let i = 0; i < relatorio.fotos.length; i += 2) {
+        const grupo = relatorio.fotos.slice(i, i + 2);
+        const preparadas = await Promise.all(grupo.map(f => prepararImagem(f.url, 'JPEG', 1400, signal)));
+        const legendas = grupo.map((f, k) => linhasDe(`Foto ${i + k + 1}${f.legenda?.trim() ? ` — ${f.legenda.trim()}` : ''}`, 8.5, larguraCelula));
+        const metas = grupo.map(f => (f.metadados?.trim() ? linhasDe(f.metadados, 7.5, larguraCelula) : []));
+        const alturaLinha = alturaImagem + 2 + Math.max(...legendas.map(l => l.length)) * 3.8 + Math.max(...metas.map(m => m.length)) * 3.3 + 4;
+        reservar(alturaLinha);
+        for (const [k, img] of preparadas.entries()) {
+          const x = margem + k * (larguraCelula + 5);
+          doc.setFillColor('#F1F5F9');
+          doc.setDrawColor(borda);
+          doc.setLineWidth(0.25);
+          doc.roundedRect(x, y, larguraCelula, alturaImagem, 1.2, 1.2, 'FD');
+          const esc = Math.min((larguraCelula - 2) / img.largura, (alturaImagem - 2) / img.altura);
+          const w = img.largura * esc, h = img.altura * esc;
+          doc.addImage(img.dados, 'JPEG', x + (larguraCelula - w) / 2, y + (alturaImagem - h) / 2, w, h);
+          formatoTexto(doc, 8.5, texto);
+          for (const [li, l] of legendas[k].entries()) doc.text(l, x, y + alturaImagem + 4.4 + li * 3.8);
+          formatoTexto(doc, 7.5, cinza);
+          for (const [li, l] of metas[k].entries()) doc.text(l, x, y + alturaImagem + 4.4 + legendas[k].length * 3.8 + li * 3.3);
+        }
+        y += alturaLinha;
+      }
+      y += 1;
+    }
+
+    // ----- Assinatura e autenticidade -----
     const assinatura = relatorio.assinatura ? await prepararImagem(relatorio.assinatura, 'PNG', 800, signal) : undefined;
-    const escalaAssinatura = assinatura ? Math.min(76 / assinatura.largura, 21 / assinatura.altura) : 0;
-    const alturaAssinatura = assinatura ? assinatura.altura * escalaAssinatura : 0;
-    const tituloAssinatura = 'Responsável pelo registro';
-    const tituloRodape = 'Observação documental';
-    const tituloAutenticidade = 'Autenticidade e rastreabilidade';
     const assinante = relatorio.nomeAssinante?.trim()
       || todosDados.find(({ rotulo }) => /^(?:nome do assinante|assinante|assinado por)$/i.test(rotulo))?.valor.trim();
-    const assinaturaTexto = montarTexto(
-      assinante ? `Assinante informado: ${assinante}` : 'Assinatura registrada no ObraMatch Diário',
-      8, cinza,
-    );
     const rodape = relatorio.rodape?.trim() || '';
     const rodapeDeIntegridade = /^(?:integridade|sha[- ]?256|hash)\b[^:\n]*:\s*[a-f0-9]{64}$/i.test(rodape);
-    const nota = rodape && !rodapeDeIntegridade ? montarTexto(rodape, 8.5, cinza) : undefined;
-    const codigos = autenticidade.map(({ rotulo, valor }) => montarTexto(`${rotulo}: ${valor}`, 8, cinza));
-    if (rodapeDeIntegridade) codigos.push(montarTexto(rodape, 8, cinza));
-    const blocoAssinatura = assinatura ? alturaFaixa(montarFaixa(tituloAssinatura)) + alturaAssinatura + 5 + alturaTexto(assinaturaTexto) : 0;
-    const blocoNota = nota ? alturaFaixa(montarFaixa(tituloRodape)) + alturaTexto(nota) : 0;
-    const blocoAutenticidade = codigos.length ? alturaFaixa(montarFaixa(tituloAutenticidade)) + codigos.reduce((total, codigo) => total + alturaTexto(codigo), 0) : 0;
-    const fechamento = blocoAssinatura + blocoNota + blocoAutenticidade;
-    const fechamentoComConteudo = fechamento <= fim - inicio - 20 ? fechamento : 0;
-
-    const secoes = relatorio.secoes.filter(({ texto }) => texto.trim());
-    for (const [i, item] of secoes.entries()) {
-      const bloco = montarTexto(item.texto);
-      const reservaFinal = !relatorio.fotos.length && i === secoes.length - 1 ? fechamentoComConteudo : 0;
-      const primeiraParte = bloco.linhas.length <= 2 ? alturaTexto(bloco) + reservaFinal : bloco.passo;
-      secao(item.titulo, primeiraParte);
-      desenharTexto(bloco, reservaFinal);
-    }
-    for (const [i, foto] of relatorio.fotos.entries()) {
-      const imagem = await prepararImagem(foto.url, 'JPEG', 1500, signal);
-      const escala = Math.min((largura - 2) / imagem.largura, 80 / imagem.altura);
-      const altura = imagem.altura * escala;
-      const larguraFoto = imagem.largura * escala;
-      const titulo = `Fotografia ${i + 1} de ${relatorio.fotos.length}`;
-      const legenda = foto.legenda?.trim() ? montarTexto(foto.legenda, 9, cinza) : undefined;
-      const metadados = foto.metadados?.trim() ? montarTexto(foto.metadados, 8, cinza) : undefined;
-      const alturaFoto = altura + 3.2 + (legenda ? alturaTexto(legenda) : 0) + (metadados ? alturaTexto(metadados) : 0);
-      const comFechamento = i === relatorio.fotos.length - 1 ? fechamentoComConteudo : 0;
-      // Quando cabe em uma folha, a última fotografia acompanha o bloco final.
-      const secaoComFoto = alturaFaixa(montarFaixa(titulo)) + alturaFoto;
-      const reservaFoto = secaoComFoto + comFechamento <= fim - inicio ? alturaFoto + comFechamento
-        : secaoComFoto <= fim - inicio ? alturaFoto : altura + 3.2 + (legenda?.passo || metadados?.passo || 0);
-      secao(titulo, reservaFoto);
-      const x = margem + (largura - larguraFoto) / 2;
+    const nota = rodape && !rodapeDeIntegridade ? rodape : '';
+    const codigos = autenticidade.map(({ rotulo, valor }) => `${rotulo}: ${valor}`);
+    if (rodapeDeIntegridade) codigos.push(rodape);
+    if (assinatura || codigos.length || nota || assinante) {
+      const larguraMeia = (largura - 5) / 2;
+      const escAss = assinatura ? Math.min(64 / assinatura.largura, 18 / assinatura.altura) : 0;
+      const hAss = assinatura ? assinatura.altura * escAss : 0;
+      const textoAss = linhasDe(assinante ? `Assinante informado: ${assinante}` : 'Responsável pelo registro', 8, larguraMeia - 6);
+      const linhasCodigo = codigos.flatMap(cod => linhasDe(cod, 6.8, larguraMeia - 6));
+      const linhasNota = nota ? linhasDe(nota, 8, largura - 6) : [];
+      const alturaEsq = 8 + (assinatura ? hAss + 2 : 10) + 1 + textoAss.length * 3.6 + 3;
+      const alturaDir = 8 + linhasCodigo.length * 3.1 + 3;
+      const alturaCaixa = Math.max(alturaEsq, codigos.length ? alturaDir : 0);
+      const alturaTotal = alturaCaixa + (linhasNota.length ? linhasNota.length * 3.6 + 6 : 0);
+      reservar(alturaTotal + 4);
+      y += 2;
+      doc.setFillColor('#F8FAFC');
       doc.setDrawColor(borda);
-      doc.setLineWidth(0.26);
-      doc.rect(x - 0.45, y - 0.45, larguraFoto + 0.9, altura + 0.9);
-      doc.addImage(imagem.dados, 'JPEG', x, y, larguraFoto, altura);
-      y += altura + 3.2;
-      if (legenda) desenharTexto(legenda);
-      if (metadados) desenharTexto(metadados);
-    }
-    if (assinatura) {
-      secao(tituloAssinatura, alturaAssinatura + 5 + Math.min(alturaTexto(assinaturaTexto), 9));
-      doc.addImage(assinatura.dados, 'PNG', margem + 3, y, assinatura.largura * escalaAssinatura, alturaAssinatura);
-      y += alturaAssinatura + 2;
+      doc.setLineWidth(0.25);
+      doc.roundedRect(margem, y, largura, alturaCaixa, 1.6, 1.6, 'FD');
+      formatoTexto(doc, 6.8, cinza, true);
+      doc.text('ASSINATURA', margem + 3, y + 4.2);
+      if (assinatura) doc.addImage(assinatura.dados, 'PNG', margem + 3, y + 6, assinatura.largura * escAss, hAss);
+      const yLinha = y + 6 + (assinatura ? hAss + 1.5 : 9);
       doc.setDrawColor('#94A3B8');
-      doc.setLineWidth(0.22);
-      doc.line(margem, y, margem + 82, y);
-      y += 3;
-      desenharTexto(assinaturaTexto);
-    }
-    if (nota) {
-      secao(tituloRodape, nota.passo);
-      desenharTexto(nota);
-    }
-    if (codigos.length) {
-      secao(tituloAutenticidade, Math.min(14, alturaTexto(codigos[0])));
-      for (const codigo of codigos) desenharTexto(codigo);
+      doc.line(margem + 3, yLinha, margem + 3 + larguraMeia - 8, yLinha);
+      formatoTexto(doc, 8, cinza);
+      for (const [i, l] of textoAss.entries()) doc.text(l, margem + 3, yLinha + 4 + i * 3.6);
+      if (codigos.length) {
+        const xd = margem + larguraMeia + 5;
+        doc.setDrawColor(borda);
+        doc.line(xd - 2.5, y + 2, xd - 2.5, y + alturaCaixa - 2);
+        formatoTexto(doc, 6.8, cinza, true);
+        doc.text('AUTENTICIDADE E RASTREABILIDADE', xd, y + 4.2);
+        formatoTexto(doc, 6.8, cinza);
+        for (const [i, l] of linhasCodigo.entries()) doc.text(l, xd, y + 8 + i * 3.1);
+      }
+      y += alturaCaixa + 3;
+      if (linhasNota.length) {
+        formatoTexto(doc, 8, cinza);
+        for (const [i, l] of linhasNota.entries()) doc.text(l, margem, y + 2 + i * 3.6);
+        y += linhasNota.length * 3.6 + 3;
+      }
     }
     signal?.throwIfAborted();
   }
 
-  // O índice segue a mesma ordem cronológica do consolidado.
+  // Índice (consolidado com vários relatórios).
   if (relatorios.length >= 5 || (relatorios.length >= 3 && doc.getNumberOfPages() >= 8)) {
     const porPagina = 24;
     const paginasIndice = Math.ceil(relatorios.length / porPagina);
-    const posicaoPagina = larguraPagina - margem;
     for (let folha = 0; folha < paginasIndice; folha++) {
       doc.insertPage(folha + 1);
-      cabecalho();
+      doc.setFillColor(azul);
+      doc.rect(margem, 15.5, largura, 0.5, 'F');
+      formatoTexto(doc, 9, texto, true);
+      doc.text('ObraMatch Diário', margem, 11);
       formatoTexto(doc, 17, texto, true);
-      doc.text('Índice de relatórios', margem, inicio + 4);
+      doc.text('Índice de relatórios', margem, 30);
       formatoTexto(doc, 9, cinza);
-      doc.text(`${relatorios.length} registros no consolidado`, margem, inicio + 11);
+      doc.text(`${relatorios.length} registros no consolidado`, margem, 37);
       for (let i = folha * porPagina; i < Math.min((folha + 1) * porPagina, relatorios.length); i++) {
-        const linhaY = inicio + 22 + (i % porPagina) * 9;
+        const linhaY = 48 + (i % porPagina) * 9;
         doc.setDrawColor(borda);
         doc.setLineWidth(0.18);
-        doc.line(margem, linhaY + 2, posicaoPagina, linhaY + 2);
+        doc.line(margem, linhaY + 2, direita, linhaY + 2);
         formatoTexto(doc, 9, texto);
-        const primeiraLinha = (doc.splitTextToSize(relatorios[i].titulo, largura - 18) as string[])[0];
+        const primeiraLinha = (doc.splitTextToSize(`${relatorios[i].titulo}${relatorios[i].dataRegistro ? ` — ${relatorios[i].dataRegistro}` : ''}`, largura - 18) as string[])[0];
         const pagina = inicios[i] + paginasIndice;
         doc.textWithLink(primeiraLinha, margem, linhaY, { pageNumber: pagina });
-        doc.text(String(pagina), posicaoPagina, linhaY, { align: 'right' });
+        doc.text(String(pagina), direita, linhaY, { align: 'right' });
       }
     }
   }
@@ -334,10 +435,10 @@ export async function gerarArquivoPdfRdo(
     doc.setPage(pagina);
     doc.setDrawColor(borda);
     doc.setLineWidth(0.22);
-    doc.line(margem, 281, larguraPagina - margem, 281);
-    formatoTexto(doc, 8, cinza);
-    if (!semRodapeObraMatch) doc.text('ObraMatch Diário  |  Registro documental', margem, 287);
-    doc.text(`${pagina} / ${paginas}`, larguraPagina - margem, 287, { align: 'right' });
+    doc.line(margem, 283, direita, 283);
+    formatoTexto(doc, 7.5, cinza);
+    if (!semRodapeObraMatch) doc.text('Documento gerado pelo ObraMatch Diário  |  obramatch.com.br', margem, 288);
+    doc.text(`Página ${pagina} de ${paginas}`, direita, 288, { align: 'right' });
   }
   const nome = relatorios.length === 1 ? relatorios[0].nomeArquivo : 'relatorios-obramatch';
   const nomeSeguro = nome.replace(/\.pdf$/i, '').replace(/[^\p{L}\p{N}._ -]/gu, '-').slice(0, 100).trim() || 'rdo-obramatch';
