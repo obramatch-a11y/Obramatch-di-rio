@@ -96,7 +96,7 @@ export async function chamarGemini(
     .join('') || '';
   if (!texto) throw new Error('Gemini retornou resposta vazia');
   // Resposta cortada por limite de tokens não pode virar parecer "sem sentido": falha para acionar a reserva.
-  if (maxTokens > 2048 && json?.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new Error('Gemini: resposta cortada por limite de tokens');
+  if (json?.candidates?.[0]?.finishReason === 'MAX_TOKENS') throw new Error('Gemini: resposta cortada por limite de tokens');
   return texto;
 }
 
@@ -124,7 +124,8 @@ export async function estruturarRdo(
     });
   }
   if (opts.texto) partes.push({ text: `Relato: ${opts.texto}` });
-  const resposta = await chamarGemini(env, partes, true);
+  // 4096 tokens e sem "pensar": evita o JSON cortado no meio (Unterminated string).
+  const resposta = await chamarGemini(env, partes, true, 4096, 0);
   return parsearJsonRdo(resposta);
 }
 
@@ -133,7 +134,9 @@ export async function melhorarTextoRdo(env: Env, texto: string): Promise<string>
   const resposta = await chamarGemini(
     env,
     [{ text: PROMPT_MELHORAR }, { text: `Texto original: ${texto}` }],
-    false
+    false,
+    4096,
+    0
   );
   return resposta.trim();
 }
