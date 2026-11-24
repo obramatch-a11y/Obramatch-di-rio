@@ -26,6 +26,8 @@ interface Env extends ApiEnv {
   IA_LIMIT?: RateLimiter;
 }
 
+const FIREBASE_AUTH_HOST = 'gen-lang-client-0809833199.firebaseapp.com';
+
 function json(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -39,6 +41,22 @@ function json(status: number, body: Record<string, unknown>): Response {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
+
+    // Domínio próprio para o login com Google: repassa /__/auth/* e
+    // /__/firebase/* ao Firebase Auth, para a tela do Google mostrar o
+    // endereço do app e não o gen-lang-client-...firebaseapp.com.
+    if (pathname.startsWith('/__/auth/') || pathname.startsWith('/__/firebase/')) {
+      const alvo = new URL(request.url);
+      alvo.protocol = 'https:';
+      alvo.host = FIREBASE_AUTH_HOST;
+      const init: RequestInit = {
+        method: request.method,
+        headers: request.headers,
+        body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
+        redirect: 'manual',
+      };
+      return fetch(new Request(alvo.toString(), init));
+    }
 
     if (pathname.startsWith('/api/')) {
       const ctx = { request, env };
