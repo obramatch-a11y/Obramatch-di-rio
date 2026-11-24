@@ -9,3 +9,5 @@
 
 **Pendente de decisão do André:** as seções 5 e 9 dizem que no Android a cobrança é pela Google Play. Isso conflita com "Mercado Pago é o único gateway". Texto jurídico não foi alterado sem aval.
 **Testes:** tsc; renderização com dados de exemplo em Chrome headless (390 px). Não validado com o catálogo real em produção.
+
+**Atualização (24/11, tarde):** a página passou a dizer que a contratação é feita pelo site (Mercado Pago) e não no aplicativo; seções 5, 9 e 12 ajustadas por orientação do André. Nenhum botão de compra no app.
