@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 
 export interface DocumentoRdo {
   nomeArquivo: string;
@@ -14,6 +15,8 @@ export interface DocumentoRdo {
   rodape?: string;
   /** Número do RDO (ex.: 012), versão (ex.: 2), situação (ex.: Aceito) e nomes para o cabeçalho. */
   numero?: string;
+  /** Link de verificação pública; vira QR code no bloco de autenticidade. */
+  verificacaoUrl?: string;
   versao?: string;
   situacao?: string;
   empresa?: string;
@@ -356,18 +359,23 @@ export async function gerarArquivoPdfRdo(
     const rodape = relatorio.rodape?.trim() || '';
     const rodapeDeIntegridade = /^(?:integridade|sha[- ]?256|hash)\b[^:\n]*:\s*[a-f0-9]{64}$/i.test(rodape);
     const nota = rodape && !rodapeDeIntegridade ? rodape : '';
+    const qr = relatorio.verificacaoUrl
+      ? await QRCode.toDataURL(relatorio.verificacaoUrl, { margin: 1, width: 360, errorCorrectionLevel: 'M' })
+      : '';
     const codigos = autenticidade.map(({ rotulo, valor }) => `${rotulo}: ${valor}`);
     if (rodapeDeIntegridade) codigos.push(rodape);
-    if (assinatura || codigos.length || nota || assinante) {
+    if (assinatura || codigos.length || nota || assinante || qr) {
+      const ladoQr = qr ? 26 : 0;
       const larguraMeia = (largura - 5) / 2;
       const escAss = assinatura ? Math.min(64 / assinatura.largura, 18 / assinatura.altura) : 0;
       const hAss = assinatura ? assinatura.altura * escAss : 0;
       const textoAss = linhasDe(assinante ? `Assinante informado: ${assinante}` : 'Responsável pelo registro', 8, larguraMeia - 6);
-      const linhasCodigo = codigos.flatMap(cod => linhasDe(cod, 6.8, larguraMeia - 6));
+      const linhasCodigo = codigos.flatMap(cod => linhasDe(cod, 6.8, larguraMeia - 6 - (qr ? ladoQr + 3 : 0)));
+      const linhasQr = qr ? linhasDe('Verifique a autenticidade: aponte a câmera para o QR code ou acesse diario.obramatch.com.br/verificar', 6.8, larguraMeia - 6 - ladoQr - 3) : [];
       const linhasNota = nota ? linhasDe(nota, 8, largura - 6) : [];
       const alturaEsq = 8 + (assinatura ? hAss + 2 : 10) + 1 + textoAss.length * 3.6 + 3;
-      const alturaDir = 8 + linhasCodigo.length * 3.1 + 3;
-      const alturaCaixa = Math.max(alturaEsq, codigos.length ? alturaDir : 0);
+      const alturaDir = Math.max(8 + linhasCodigo.length * 3.1 + (qr ? linhasQr.length * 3.1 + 3 : 0) + 3, qr ? ladoQr + 10 : 0);
+      const alturaCaixa = Math.max(alturaEsq, codigos.length || qr ? alturaDir : 0);
       const alturaTotal = alturaCaixa + (linhasNota.length ? linhasNota.length * 3.6 + 6 : 0);
       reservar(alturaTotal + 4);
       y += 2;
@@ -383,7 +391,7 @@ export async function gerarArquivoPdfRdo(
       doc.line(margem + 3, yLinha, margem + 3 + larguraMeia - 8, yLinha);
       formatoTexto(doc, 8, cinza);
       for (const [i, l] of textoAss.entries()) doc.text(l, margem + 3, yLinha + 4 + i * 3.6);
-      if (codigos.length) {
+      if (codigos.length || qr) {
         const xd = margem + larguraMeia + 5;
         doc.setDrawColor(borda);
         doc.line(xd - 2.5, y + 2, xd - 2.5, y + alturaCaixa - 2);
@@ -391,6 +399,12 @@ export async function gerarArquivoPdfRdo(
         doc.text('AUTENTICIDADE E RASTREABILIDADE', xd, y + 4.2);
         formatoTexto(doc, 6.8, cinza);
         for (const [i, l] of linhasCodigo.entries()) doc.text(l, xd, y + 8 + i * 3.1);
+        if (qr) {
+          const xq = direita - ladoQr - 3;
+          doc.addImage(qr, 'PNG', xq, y + 5, ladoQr, ladoQr);
+          formatoTexto(doc, 6.8, azul, true);
+          for (const [i, l] of linhasQr.entries()) doc.text(l, xd, y + 8 + linhasCodigo.length * 3.1 + 3 + i * 3.1);
+        }
       }
       y += alturaCaixa + 3;
       if (linhasNota.length) {
