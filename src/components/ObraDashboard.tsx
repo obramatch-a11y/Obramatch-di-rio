@@ -136,335 +136,100 @@ export default function ObraDashboard() {
     : 'Nenhum registro';
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4] text-[#111111] flex flex-col pb-16">
-      {/* Navbar */}
-      <header className="nb-topbar sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button
-            onClick={() => setView('dashboard')}
-            className="flex items-center gap-2 text-blue-100 hover:text-[#FFB347] font-semibold transition-all cursor-pointer text-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Minhas Obras</span>
+    <div className="app-shell">
+      <header className="app-shell-header">
+        <div className="app-shell-header-inner">
+          <button type="button" className="app-brand" onClick={() => setView('dashboard')} aria-label="Voltar para o início">
+            <span className="app-brand-mark" aria-hidden="true"><ArrowLeft size={22} /></span>
+            <span>Relatórios <strong>{selectedObra.nome}</strong></span>
           </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowEditObraModal(true)}
-              className="p-2 text-blue-100 hover:text-[#FFB347] hover:bg-white/10 rounded-xl transition-all cursor-pointer"
-              title="Configurações da Obra"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
-          </div>
+          <button type="button" className="app-mobile-menu" style={{ display: 'grid' }} onClick={() => setShowEditObraModal(true)} aria-label="Configurações da obra" title="Configurações da obra">
+            <Settings size={22} />
+          </button>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-6 flex-1">
-        {/* Obra Header Info Card */}
-        <div className="bg-[#0A3D91] border-2 border-black rounded-xl nb-shadow p-6 sm:p-8 mb-8 relative overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] w-[40%] h-[120%] rounded-full bg-[#FF6F00]/10 hidden" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <span className="nb-chip nb-chip-orange">
-                {selectedObra.cliente}
-              </span>
-              <h1 className="text-3xl font-display font-black text-white mt-3 tracking-tight">
-                {selectedObra.nome}
-              </h1>
-              
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mt-4 text-sm text-blue-100">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-[#FFB347]" />
-                  <span>{selectedObra.endereco || 'Sem endereço'}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <User className="w-4 h-4 text-[#FFB347]" />
-                  <span>RT: {selectedObra.responsavelTecnico}</span>
-                </div>
-              </div>
-            </div>
-
-            {selectedObra.arquivada ? (
-              <div className="bg-white/10 border border-white/20 text-white/90 font-semibold py-3.5 px-6 rounded-xl w-full md:w-auto text-sm text-center">
-                📦 Obra arquivada — somente leitura. Desarquive para registrar novos RDOs.
-              </div>
-            ) : (
-              <button
-                onClick={() => setView('diario-form', selectedObra)}
-                className="bg-[#FF6F00] hover:bg-[#e86500] text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all w-full md:w-auto text-sm"
-              >
-                <Plus className="w-5 h-5 stroke-[2.5]" />
-                Novo Diário de Obra
-              </button>
-            )}
-            {diarios.length > 0 && (
-              <button
-                onClick={() => setView('exportar-rdos', selectedObra)}
-                className="bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all w-full md:w-auto text-sm border border-white/20"
-              >
-                <FileDown className="w-5 h-5 stroke-[2.5]" />
-                Exportar RDOs
-              </button>
-            )}
+      <main className="app-dashboard campo-web-dashboard" style={{ paddingBottom: 90, display: 'grid', gap: 12 }}>
+        <div className="rel-hero">
+          <small>{selectedObra.cliente || 'Obra'}</small>
+          <h2>{selectedObra.nome}</h2>
+          <div className="rel-chips">
+            <span className="rel-chip">{diarios.length} {diarios.length === 1 ? 'relatório' : 'relatórios'}</span>
+            <span className="rel-chip">{fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}</span>
+            {streak > 1 && <span className="rel-chip">{streak} dias seguidos</span>}
+            {lastUpdated && diarios.length > 0 && <span className="rel-chip">Último: {lastUpdated}</span>}
+            {selectedObra.arquivada && <span className="rel-chip">Arquivada</span>}
           </div>
+          {selectedObra.endereco && <p style={{ margin: '12px 0 0', color: '#cfe0ff', fontSize: 13 }}>{selectedObra.endereco}</p>}
         </div>
 
-        {/* Analytics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <div className="nb-card-quiet p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-neutral-600">Total de Diários</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-[#111111] font-mono">{diarios.length}</span>
-              <FileText className="w-4 h-4 text-[#FF6F00]" />
-            </div>
-          </div>
+        {selectedObra.arquivada ? (
+          <p className="rel-motivo">Obra arquivada: somente leitura. Reative a obra para registrar novos RDOs.</p>
+        ) : (
+          <button type="button" className="campo-web-record" style={{ minHeight: 56 }} onClick={() => setView('diario-form', selectedObra)}>
+            <Plus size={22} aria-hidden="true" /> Novo relatório
+          </button>
+        )}
+        {diarios.length > 0 && (
+          <button type="button" className="campo-web-manual" onClick={() => setView('exportar-rdos', selectedObra)}>
+            <FileDown size={19} aria-hidden="true" /> Exportar vários RDOs em PDF
+          </button>
+        )}
 
-          <div className="nb-card-quiet p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-neutral-600">Fotos Registradas</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-[#111111] font-mono">{fotos.length}</span>
-              <Camera className="w-4 h-4 text-[#FF6F00]" />
-            </div>
-          </div>
-
-          <div className="nb-card-quiet p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-neutral-600">Dias Consecutivos</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-[#111111] font-mono">{streak}</span>
-              <TrendingUp className="w-4 h-4 text-emerald-500" />
-            </div>
-          </div>
-
-          <div className="nb-card-quiet p-4 sm:p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-neutral-600">Último Registro</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-sm font-bold text-[#111111] font-sans truncate max-w-full">
-                {lastUpdated}
-              </span>
-              <Calendar className="w-4 h-4 text-[#FF6F00]" />
-            </div>
-          </div>
+        <div className="app-filter-chips" aria-label="Ver">
+          <button type="button" className={activeTab !== 'fotos' ? 'is-active' : ''} aria-pressed={activeTab !== 'fotos'} onClick={() => setActiveTab('diarios')}>Relatórios {diarios.length}</button>
+          <button type="button" className={activeTab === 'fotos' ? 'is-active' : ''} aria-pressed={activeTab === 'fotos'} onClick={() => setActiveTab('fotos')}>Fotos {fotos.length}</button>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex mb-6 overflow-x-auto gap-2 pb-1">
-          <button
-            onClick={() => setActiveTab('diarios')}
-            className={`nb-tab py-2.5 px-4 text-sm transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'diarios' 
-                ? 'nb-tab-active' 
-                : 'hover:bg-[#F4F4F4]'
-            }`}
-          >
-            Diários de Obra
-          </button>
-          <button
-            onClick={() => setActiveTab('fotos')}
-            className={`nb-tab py-2.5 px-4 text-sm transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'fotos' 
-                ? 'nb-tab-active' 
-                : 'hover:bg-[#F4F4F4]'
-            }`}
-          >
-            Galeria de Fotos
-          </button>
-          <button
-            onClick={() => setActiveTab('timeline')}
-            className={`nb-tab py-2.5 px-4 text-sm transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'timeline' 
-                ? 'nb-tab-active' 
-                : 'hover:bg-[#F4F4F4]'
-            }`}
-          >
-            Linha do Tempo
-          </button>
-        </div>
-
-        {/* Tab Contents */}
-        <div className="min-h-[300px]">
-          {/* DIARIOS TAB */}
-          {activeTab === 'diarios' && (
-            <div className="space-y-4">
-              {diarios.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
-                  <FileText className="w-12 h-12 text-[#222222] mb-3" />
-                  <h4 className="text-base font-bold text-neutral-600">Nenhum diário registrado</h4>
-                  <p className="text-neutral-500 text-xs mt-1 max-w-xs">
-                    Inicie registrando as atividades diárias de execução da obra de hoje.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {diarios.map((diario) => {
-                    const dPhotos = fotos.filter(f => f.diarioId === diario.id);
-                    return (
-                      <motion.div
-                        key={diario.id}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white hover:bg-[#F4F4F4] border border-[#D1D1D1] rounded-xl p-5 cursor-pointer flex flex-col justify-between transition-all group"
-                        onClick={() => setView('diario-detail', selectedObra, diario)}
-                      >
-                        <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <div className="flex items-center gap-2 text-xs text-[#FF6F00] font-bold bg-[#FF6F00]/10 border border-[#FF6F00] px-2.5 py-1 rounded-md">
-                              <Calendar className="w-3.5 h-3.5" />
-                              <span>{new Date(diario.data + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-                              <Clock className="w-3.5 h-3.5" />
-                              <span>{diario.horario}</span>
-                            </div>
-                          </div>
-
-                          <h4 className="text-base font-extrabold text-[#111111] group-hover:text-[#FF6F00] transition-colors line-clamp-1">
-                            {(diario.atividades || '').split('\n')[0] || 'Registro Diário'}
-                          </h4>
-                          <p className="text-neutral-600 text-xs mt-2 line-clamp-2 leading-relaxed">
-                            {diario.atividades}
-                          </p>
-
-                          {diario.ocorrencias && (
-                            <div className="mt-3 p-2 rounded-xl bg-[#FF6F00]/10 border border-[#FF6F00] text-xs text-[#FF6F00] line-clamp-1">
-                              ⚠️ Ocorrência: {diario.ocorrencias}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#D1D1D1] text-xs text-neutral-500">
-                          <span className="flex items-center gap-1 font-semibold text-neutral-600">
-                            <Camera className="w-3.5 h-3.5" />
-                            {dPhotos.length} {dPhotos.length === 1 ? 'Foto' : 'Fotos'}
-                          </span>
-                          <span className="text-[#FF6F00] group-hover:translate-x-1 transition-all flex items-center gap-1 font-bold">
-                            Ver Diário Completo
-                            <ChevronRight className="w-4 h-4" />
-                          </span>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* FOTOS TAB */}
-          {activeTab === 'fotos' && (
-            <div>
-              {fotos.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
-                  <Camera className="w-12 h-12 text-[#222222] mb-3" />
-                  <h4 className="text-base font-bold text-neutral-600">Nenhuma fotografia salva</h4>
-                  <p className="text-neutral-500 text-xs mt-1 max-w-xs">
-                    Fotos anexadas aos diários de obra aparecerão nesta galeria integrada.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {fotos.map((foto) => (
-                    <div 
-                      key={foto.id} 
-                      className="bg-white border border-[#D1D1D1] rounded-xl overflow-hidden group relative flex flex-col justify-between"
-                    >
-                      <div className="aspect-square w-full overflow-hidden bg-[#F4F4F4] relative">
-                        <img 
-                          src={foto.url} 
-                          alt={foto.legenda || 'Foto da obra'} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-2 left-2 px-2 py-0.5 bg-white rounded-lg text-[10px] text-[#222222] font-bold border border-[#D1D1D1]">
-                          {new Date(foto.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-                        </div>
+        {activeTab !== 'fotos' && (
+          diarios.length === 0 ? (
+            <div className="app-empty-state app-empty-bordered"><FileText size={42} /><h3>Nenhum relatório ainda</h3><p>Grave ou escreva o primeiro RDO desta obra.</p></div>
+          ) : (
+            <div className="app-works-list">
+              {diarios.map((diario) => {
+                const qtdFotos = fotos.filter((f) => f.diarioId === diario.id).length;
+                const primeira = (diario.atividades || '').split('\n')[0];
+                return (
+                  <article key={diario.id} className="app-work-card" style={{ cursor: 'pointer' }} onClick={() => setView('diario-detail', selectedObra, diario)}>
+                    <span className="app-work-icon" aria-hidden="true"><FileText size={21} /></span>
+                    <div className="app-work-copy">
+                      <div className="app-work-title">
+                        <h3>RDO {new Date(diario.data + 'T12:00:00').toLocaleDateString('pt-BR')}{diario.numeroRdo ? ` · Nº ${String(diario.numeroRdo).padStart(3, '0')}` : ''}</h3>
                       </div>
-                      <div className="p-3">
-                        <p className="text-xs text-[#111111] font-medium line-clamp-1 italic">
-                          {foto.legenda || 'Sem legenda'}
-                        </p>
-                        <div className="flex justify-between items-center mt-2 text-[10px] text-neutral-500">
-                          <span>Hora: {foto.horario}</span>
-                          {foto.gps && (
-                            <span className="text-[#FF6F00] font-mono">📍 GPS Ativo</span>
-                          )}
-                        </div>
+                      <div className="rel-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                        {diario.clima && <span className="rel-chip info">{diario.clima}</span>}
+                        {diario.ocorrencias && <span className="rel-chip aviso">Ocorrência</span>}
+                        {qtdFotos > 0 && <span className="rel-chip info">{qtdFotos} {qtdFotos === 1 ? 'foto' : 'fotos'}</span>}
                       </div>
+                      {primeira && <div className="app-work-meta"><span><small>Atividades</small><strong style={{ fontWeight: 600, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{primeira}</strong></span></div>}
                     </div>
-                  ))}
-                </div>
-              )}
+                    <button type="button" className="campo-web-open" aria-label={`Abrir relatório de ${new Date(diario.data + 'T12:00:00').toLocaleDateString('pt-BR')}`} onClick={(e) => { e.stopPropagation(); setView('diario-detail', selectedObra, diario); }}>
+                      <ChevronRight size={22} aria-hidden="true" />
+                    </button>
+                  </article>
+                );
+              })}
             </div>
-          )}
+          )
+        )}
 
-          {/* TIMELINE TAB */}
-          {activeTab === 'timeline' && (
-            <div className="max-w-3xl mx-auto py-4">
-              {diarios.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 bg-white border border-dashed border-[#D1D1D1] rounded-xl text-center px-4">
-                  <TrendingUp className="w-12 h-12 text-[#222222] mb-3" />
-                  <h4 className="text-base font-bold text-neutral-600">Sem histórico de progresso</h4>
-                  <p className="text-neutral-500 text-xs mt-1 max-w-xs">
-                    A linha do tempo cronológica será gerada a partir dos seus diários de obra.
-                  </p>
-                </div>
-              ) : (
-                <div className="relative border-l border-[#D1D1D1] ml-4 pl-6 space-y-8">
-                  {diarios.map((diario, index) => (
-                    <motion.div 
-                      key={diario.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="relative"
-                    >
-                      {/* Timeline dot */}
-                      <span className="absolute -left-[31px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#FF6F00] border-4 border-black"></span>
-
-                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 mb-2">
-                        <div className="text-xs font-bold text-[#FF6F00] bg-[#FF6F00]/10 px-2.5 py-0.5 rounded-md border border-[#FF6F00] w-max">
-                          {new Date(diario.data + 'T12:00:00').toLocaleDateString('pt-BR')}
-                        </div>
-                        <span className="text-[10px] text-neutral-500 font-mono font-bold">
-                          {diario.numeroRdo ? `RDO Nº ${String(diario.numeroRdo).padStart(3, '0')}` : `REGISTRO #${diarios.length - index}`}
-                        </span>
-                      </div>
-
-                      <div className="bg-white border border-[#D1D1D1] rounded-xl p-4">
-                        <h5 className="font-bold text-[#111111] text-sm">
-                          {(diario.atividades || '').split('\n')[0] || 'Progresso Diário'}
-                        </h5>
-                        <p className="text-neutral-600 text-xs mt-2 leading-relaxed whitespace-pre-wrap">
-                          {diario.atividades}
-                        </p>
-
-                        {(diario.equipe || diario.materiais || diario.ocorrencias) && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#D1D1D1] text-[11px] text-neutral-600">
-                            {diario.equipe && (
-                              <div>
-                                <span className="text-neutral-500 font-semibold block">Equipe:</span>
-                                <span className="line-clamp-1">{diario.equipe}</span>
-                              </div>
-                            )}
-                            {diario.materiais && (
-                              <div>
-                                <span className="text-neutral-500 font-semibold block">Materiais recebidos:</span>
-                                <span className="line-clamp-1">{diario.materiais}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-                
+        {activeTab === 'fotos' && (
+          fotos.length === 0 ? (
+            <div className="app-empty-state app-empty-bordered"><Camera size={42} /><h3>Nenhuma foto salva</h3><p>As fotos anexadas aos relatórios aparecem aqui.</p></div>
+          ) : (
+            <section className="rel-secao">
+              <h3><Camera size={16} style={{ verticalAlign: '-3px' }} /> Fotos da obra ({fotos.length})</h3>
+              <div className="rel-fotos">
+                {fotos.map((foto) => (
+                  <figure key={foto.id}>
+                    <img src={foto.url} alt={foto.legenda || 'Foto da obra'} />
+                    <figcaption>{new Date(foto.data + 'T12:00:00').toLocaleDateString('pt-BR')}{foto.legenda ? ` · ${foto.legenda}` : ''}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )
+        )}
       </main>
 
       {/* Edit Obra Modal */}

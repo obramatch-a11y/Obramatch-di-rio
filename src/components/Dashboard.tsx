@@ -121,6 +121,18 @@ export default function Dashboard() {
     setView('obra-dashboard', obra);
   };
 
+  // Um toque abre os relatórios da obra (da empresa ou própria, ativa ou arquivada).
+  const abrirRelatorios = (obra: Obra) => {
+    if (obra.empresa) { escolher(obra.id); setRelatoriosEmpresaDe(obra); return; }
+    abrirObra(obra);
+  };
+  // Aba "Relatórios": abre direto se há obra definida; senão leva à lista de obras para tocar numa.
+  const abrirRelatoriosGeral = () => {
+    if (obraAtual) { abrirRelatorios(obraAtual); return; }
+    setFiltroObras('todas');
+    document.getElementById('campo-obras')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const alternarArquivada = async (event: React.MouseEvent, obra: Obra) => {
     event.stopPropagation();
     if (obraEmAtualizacao) return;
@@ -291,7 +303,7 @@ export default function Dashboard() {
                     <ImageIcon size={22} aria-hidden="true" /> Escolher foto
                     <input type="file" accept="image/*" multiple disabled={!obraAtual} onChange={anexarFotos} />
                   </label>
-                  <button type="button" disabled={!obraAtual} onClick={() => { if (!obraAtual) return; if (obraAtual.empresa) setRelatoriosEmpresaDe(obraAtual); else setView('obra-dashboard', obraAtual); }}>
+                  <button type="button" disabled={!obraAtual} onClick={abrirRelatoriosGeral}>
                     <ClipboardList size={22} aria-hidden="true" /> {obraAtual?.empresa ? 'Relatórios da obra' : 'Meus relatórios'}
                   </button>
                 </div>
@@ -335,13 +347,13 @@ export default function Dashboard() {
                 <div className="app-works-heading"><h3 id="obras-empresa-titulo">Obras da empresa</h3></div>
                 <div className="app-works-list">
                   {obrasDaEmpresa.map((o) => (
-                    <article key={o.id} className="app-work-card" onClick={() => { escolher(o.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ cursor: 'pointer' }}>
+                    <article key={o.id} className="app-work-card" onClick={() => abrirRelatorios(o)} style={{ cursor: 'pointer' }}>
                       <span className="app-work-icon" aria-hidden="true"><HardHat size={21} /></span>
                       <div className="app-work-copy">
                         <div className="app-work-title"><h3>{o.nome}</h3></div>
                         <div className="app-work-meta"><span><small>Empresa</small><strong>{o.empresa?.empresaNome}</strong></span></div>
                       </div>
-                      <button type="button" className="campo-web-open" aria-label={`Usar obra ${o.nome}`}><ChevronRight size={22} aria-hidden="true" /></button>
+                      <button type="button" className="campo-web-open" aria-label={`Abrir relatórios da obra ${o.nome}`} onClick={(e) => { e.stopPropagation(); abrirRelatorios(o); }}><ChevronRight size={22} aria-hidden="true" /></button>
                     </article>
                   ))}
                 </div>
@@ -411,7 +423,7 @@ export default function Dashboard() {
       <nav className="campo-web-bottom" aria-label="Navegação do Campo">
         <a href="#campo-inicio"><Home size={21} aria-hidden="true" /> Início</a>
         <a href="#campo-obras"><HardHat size={21} aria-hidden="true" /> Obras</a>
-        <button type="button" disabled={!obraAtual} onClick={() => { if (!obraAtual) return; if (obraAtual.empresa) setRelatoriosEmpresaDe(obraAtual); else setView('obra-dashboard', obraAtual); }}><ClipboardList size={21} aria-hidden="true" /> Relatórios</button>
+        <button type="button" onClick={abrirRelatoriosGeral}><ClipboardList size={21} aria-hidden="true" /> Relatórios</button>
         <button type="button" aria-expanded={menuAberto} onClick={() => setMenuAberto(true)}><MoreVertical size={21} aria-hidden="true" /> Mais</button>
       </nav>
 
